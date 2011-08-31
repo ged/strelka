@@ -4,7 +4,8 @@
 
 == Description
 
-This is a framework for creating and deploying Mongrel2 web applications.
+Strelka is a framework for creating and deploying Mongrel2 web applications
+in Ruby. It's still pre-alpha.
 
 
 == Installation
@@ -12,11 +13,15 @@ This is a framework for creating and deploying Mongrel2 web applications.
     gem install strelka
 
 
+== Usage
+
+
+
 == Contributing
 
 You can check out the current development source with Mercurial via its
-[project page][deveiate]. Or if you prefer Git, via 
-[its Github mirror][github].
+{project page}[http://repo.deveiate.org/Strelka]. Or if you prefer Git, via 
+{its Github mirror}[https://github.com/ged/strelka].
 
 After checking out the source, run:
 
@@ -56,6 +61,3 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-[deveiate]: http://repo.deveiate.org/Strelka
-[github]: FIX (github mirror)
