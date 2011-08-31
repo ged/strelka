@@ -1,0 +1,55 @@
+Leash (?)
+
+
+== Create A Mongrel2 Config
+
+$ leash config.sqlite
+config.sqlite> mkserver main
+Creating a new server (2379AA53-9688-4831-9C8B-9E70FE8A7EB7)
+
+config.sqlite> ls
+
+Name:         'Arrow Bootstrap'
+Chroot:       '/var/www'
+Access log:   '/logs/access.log'
+Error log:     '/logs/error.log'
+Default Host: 'localhost'
+PID File:     '/run/mongrel2.pid'
+Port:         3667
+
+-- Servers
+main {2379AA53-9688-4831-9C8B-9E70FE8A7EB7}
+admin {90A2890D-F386-4841-B664-5DD7FFE97C53}
+
+config.sqlite> cd main
+config.sqlite/main> ls
+
+-- Routes
+d /          -> /public
+d .png       -> /images
+d .css       -> /css
+d .js        -> /js
+p /proxy     -> google.com:80
+h /admin     -> D613E7EE-E2EB-4699-A200-5C8ECAB45D5E
+	tcp://127.0.0.1:9998 tcp://127.0.0.1:9997
+h @directory -> B7EFA46D-FEE4-432B-B80F-E8A9A2CC6FDB
+	tcp://127.0.0.1:9996 tcp://127.0.0.1:9995
+h /directory -> B7EFA46D-FEE4-432B-B80F-E8A9A2CC6FDB
+	tcp://127.0.0.1:9996 tcp://127.0.0.1:9995
+
+
+== Set Up A Mongrel2 Cluster
+
+server1$ leash setup 
+Creating bootstrap config...
+Starting mongrel2...
+Starting up control app...
+Okay, point a browser at http://localhost:37772/
+
+
+== Join a Mongrel2 Cluster
+
+server2$ leash join http://server1:37772/
+
+
+== 

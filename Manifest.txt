@@ -1,0 +1,6 @@
+History.md
+README.md
+Rakefile
+bin/strelka
+lib/strelka.rb
+spec/strelka_spec.rb
