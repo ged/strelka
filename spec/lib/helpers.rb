@@ -3,11 +3,12 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	m2dir = basedir.expand_path.parent + 'Mongrel2'
+	m2libdir = m2dir + "lib"
 
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
+	# Add the Mongrel2 libdir to the LOAD_PATH to allow for parallel development
+	$LOAD_PATH.unshift( m2libdir.to_s ) unless $LOAD_PATH.include?( m2libdir.to_s )
 }
 
 # SimpleCov test coverage reporting; enable this using the :coverage rake task
