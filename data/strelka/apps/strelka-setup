@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require 'inversion'
+require 'strelka'
+
+# The Strelka setup web application.
+class Strelka::SetupProcess < Strelka::Process
+
+	layout 'setup/layout.tmpl'
+
+	views :step1 => 'setup/step1',
+	      :step2 => 'setup/step2'
+
+
+	### Progress through the setup process.
+	def main( req )
+		params = show( :step1 )
+		params = show( :step2, params )
+		
+	end
+
+end # class Strelka::AdminConsole
+
+
+Strelka::SetupProcess.run( 'strelka-setup' )
+

@@ -4,71 +4,41 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	m2dir = basedir.expand_path.parent + 'Mongrel2'
-	m2libdir = m2dir + "lib"
 
-	# Add the Mongrel2 libdir to the LOAD_PATH to allow for parallel development
-	$LOAD_PATH.unshift( m2libdir.to_s ) unless $LOAD_PATH.include?( m2libdir.to_s )
+	srcdir = basedir.parent
+	mongrel2dir = srcdir + 'Mongrel2/lib'
+
+	libdir = basedir + "lib"
+
+	$LOAD_PATH.unshift( mongrel2dir.to_s ) unless $LOAD_PATH.include?( mongrel2dir.to_s )
+	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
+	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
 # SimpleCov test coverage reporting; enable this using the :coverage rake task
 if ENV['COVERAGE']
+	$stderr.puts "\n\n>>> Enabling coverage report.\n\n"
 	require 'simplecov'
 	SimpleCov.start do
 		add_filter 'spec'
-		add_group "Config Classes" do |file|
-			file.filename =~ %r{/config/}
-		end
 		add_group "Needing tests" do |file|
 			file.covered_percent < 90
 		end
 	end
 end
 
+require 'configurability'
 require 'pathname'
 require 'tmpdir'
 
 require 'rspec'
+require 'mongrel2'
+require 'mongrel2/testing'
+
 require 'strelka'
+
 require 'spec/lib/constants'
-
-### IRb.start_session, courtesy of Joel VanderWerf in [ruby-talk:42437].
-require 'irb'
-require 'irb/completion'
-
-module IRB # :nodoc:
-	def self.start_session( obj )
-		unless @__initialized
-			args = ARGV
-			ARGV.replace( ARGV.dup )
-			IRB.setup( nil )
-			ARGV.replace( args )
-			@__initialized = true
-		end
-
-		workspace = WorkSpace.new( obj )
-		irb = Irb.new( workspace )
-
-		@CONF[:IRB_RC].call( irb.context ) if @CONF[:IRB_RC]
-		@CONF[:MAIN_CONTEXT] = irb.context
-
-		begin
-			prevhandler = Signal.trap( 'INT' ) do
-				irb.signal_handle
-			end
-
-			catch( :IRB_EXIT ) do
-				irb.eval_input
-			end
-		ensure
-			Signal.trap( 'INT', prevhandler )
-		end
-
-	end
-end
-
-
-
+# require 'spec/lib/matchers'
 
 ### RSpec helper functions.
 module Strelka::SpecHelpers
@@ -114,6 +84,7 @@ module Strelka::SpecHelpers
 	### Reset the logging subsystem to its default state.
 	def reset_logging
 		Strelka.reset_logger
+		Mongrel2.reset_logger
 	end
 
 
@@ -128,6 +99,7 @@ module Strelka::SpecHelpers
 		logger = Logger.new( $stderr )
 		Strelka.logger = logger
 		Strelka.logger.level = level
+		Mongrel2.logger.level = level
 
 		# Only do this when executing from a spec in TextMate
 		if ENV['HTML_LOGGING'] || (ENV['TM_FILENAME'] && ENV['TM_FILENAME'] =~ /_spec\.rb/)
@@ -136,10 +108,11 @@ module Strelka::SpecHelpers
 			Strelka.logger = Logger.new( logdevice )
 			# Strelka.logger.level = level
 			Strelka.logger.formatter = Strelka::Logging::HtmlFormatter.new( logger )
+			Mongrel2.logger = Strelka.logger
 		end
 	end
 
-end # module Strelka::SpecHelpers
+end
 
 
 abort "You need a version of RSpec >= 2.6.0" unless defined?( RSpec )
@@ -148,16 +121,13 @@ abort "You need a version of RSpec >= 2.6.0" unless defined?( RSpec )
 RSpec.configure do |c|
 	include Strelka::TestConstants
 
-	c.mock_with :rspec
+	c.mock_with( :rspec )
 
 	c.extend( Strelka::TestConstants )
 	c.include( Strelka::TestConstants )
+	c.include( Mongrel2::SpecHelpers )
 	c.include( Strelka::SpecHelpers )
-
-	c.filter_run_excluding( :ruby_1_8_only => true ) if
-		Strelka::SpecHelpers.vvec( RUBY_VERSION ) >= Strelka::SpecHelpers.vvec('1.9.1')
-	c.filter_run_excluding( :mri_only => true ) if
-		defined?( RUBY_ENGINE ) && RUBY_ENGINE != 'ruby'
+	# c.include( Strelka::Matchers )
 end
 
 # vim: set nosta noet ts=4 sw=4:

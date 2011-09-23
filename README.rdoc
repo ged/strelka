@@ -7,6 +7,9 @@
 Strelka is a framework for creating and deploying Mongrel2 web applications
 in Ruby. It's still pre-alpha.
 
+Strelka is named after a Russian dog who was one of the first space travelers
+to orbit the Earth and return alive.
+
 
 == Installation
 

@@ -18,8 +18,12 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'mongrel2', '~> 0.0'
-	self.dependency 'rspec', '~> 2.4', :developer
+	self.dependency 'mongrel2',        '~> 0.2.3'
+	self.dependency 'configurability', '~> 1.0'
+	self.dependency 'inversion',       '~> 0.0', :developer
+
+	self.dependency 'tilt',            '~> 1.3', :developer
+	self.dependency 'rspec',           '~> 2.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.require_ruby_version( '>=1.8.7' )
@@ -45,3 +49,9 @@ end
 # Rebuild the ChangeLog immediately before release
 task :prerelease => 'ChangeLog'
 
+
+desc "Build a coverage report"
+task :coverage do
+	ENV["COVERAGE"] = 'yes'
+	Rake::Task[:spec].invoke
+end

@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'mongrel2'
-require 'inversion'
 require 'configurability'
 
 # An application framework for Ruby-mongrel2
@@ -33,6 +32,9 @@ module Strelka
 		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
 		return vstring
 	end
+
+	require 'strelka/app'
+	require 'strelka/httprequest'
 
 end # module Strelka
 

@@ -1,0 +1,174 @@
+h1. Strelka Ideas
+
+h2. Leash
+
+The main command-line interface to Strelka. It is used to browse and edit Mongrel2 config
+databases, set up a Mongrel2 cluster, join an existing cluster, etc.
+
+h3. Browsing/Editing a Mongrel2 Config
+
+Running 'leash' with no sub-commands starts it up in shell
+mode:
+
+	$ leash config.sqlite
+	Opening shell for config DB: config.sqlite
+
+Create a new server:
+
+    config.sqlite> mkserver test
+    Creating a new server (2379AA53-9688-4831-9C8B-9E70FE8A7EB7)
+
+Show the list of Server configurations:
+
+    config.sqlite> ls
+   
+    -- Servers:
+    main {B5764D79-5BD5-4F43-8FCA-CBB7FD85C4EE}
+    test {2379AA53-9688-4831-9C8B-9E70FE8A7EB7}
+    admin {90A2890D-F386-4841-B664-5DD7FFE97C53}
+
+Now 'cd' into one of them and show its config, and any Hosts
+that live under it:
+    
+    config.sqlite> cd main
+    config.sqlite/main> ls
+
+    -- Server [main] {B5764D79-5BD5-4F43-8FCA-CBB7FD85C4EE}
+    Name:         'Arrow Bootstrap'
+    Chroot:       '/var/www'
+    Access log:   '/logs/access.log'
+    Error log:     '/logs/error.log'
+    Default Host: 'localhost'
+    PID File:     '/run/mongrel2.pid'
+    Port:         3667
+    
+	-- Hosts:
+    localhost
+    deveiate /(.*).deveiate.org/
+
+Change into one of the hosts and show it:
+
+    config.sqlite/main> cd localhost
+    config.sqlite/main/localhost> ls
+
+	-- Host [localhost]
+    
+	ID: 1
+	Matching Rule: /(.*).deveiate.org/
+	Maintenance Mode: no
+
+    -- Routes
+    dir     /          -> /public
+    dir     .png       -> /images (reverse)
+    dir     .css       -> /css (reverse)
+    dir     .js        -> /js (reverse)
+    proxy   /proxy     -> google.com:80
+    handler /admin     -> D613E7EE-E2EB-4699-A200-5C8ECAB45D5E
+              tcp://127.0.0.1:9998 - tcp://127.0.0.1:9997
+    handler @directory -> B7EFA46D-FEE4-432B-B80F-E8A9A2CC6FDB
+              tcp://127.0.0.1:9996 - tcp://127.0.0.1:9995
+    handler /directory -> B7EFA46D-FEE4-432B-B80F-E8A9A2CC6FDB
+              tcp://127.0.0.1:9996 - tcp://127.0.0.1:9995
+
+...etc...
+
+
+h3. Setting Up A Mongrel2 Cluster
+
+Leash also comes with subcommands for interacting with Mongrel2. You can start
+a new cluster using the 'setup' subcommand:
+
+	server1$ leash setup 
+	Creating bootstrap config...
+	Starting mongrel2...
+	Starting up control app...
+	Okay, point a browser at http://localhost:37772/
+
+At this point, you can either use further leash commands, or use the web
+interface:
+
+    server1$ open http://localhost:37772/
+
+
+
+h3. Join a Mongrel2 Cluster
+
+Once you have the first node set up, you need only point 'leash' to the admin
+server running on the first host to set up and automatically configure
+additional Mongrel2 front-ends:
+
+	server2$ leash join server1
+
+This uses a 0MQ service running from the admin server that publishes the
+config using Mongrel2's "config from anything" protocol, so when Mongrel2
+itself supports the 'zmq.so' plugin, you won't even need a local SQLite
+database.
+
+
+h2. Strelka Applications
+
+Strelka applications may be written in one of three styles: App, Process, or Service. Each of these can be mapped to one or more Mongrel2 'handler' routes, and may have one or more Filters applied to it to provide pre- and post-processing for requests and responses.
+
+An App is a stateless handler that contains routes that are matched against a requests's HTTP verb and URL, and an appropriate routine invoked.
+
+A Process is a stateful handler intended to make stateful processes with a lot of user interaction easy to write.
+
+A Service is an easy way of creating a REST-style service for one or more resources.
+
+
+h3. Routes
+
+Routed methods are given a Strelka::Request object, and are expected to return
+either a Strelka::Response or something that can be made into one.
+
+	class HelloWorld < Strelka::App
+		get do |req|
+			return req.response << 'Hello, World!'
+		end
+	end # class HelloWorld
+
+h3. Parameters
+
+Routes can accept parameters in two ways: via the URI path, and via the query
+string.
+
+_We may add other ways later, e.g., via structured entity bodies
+like JSON, XML, YAML, etc_.
+
+The application can declare parameters globally, and then override them on a
+per-route basis:
+
+	class UserManager < Strelka::App
+
+		param :username, /\w+/, :required, :untaint
+		param :id, /\d+/
+
+		# :username gets validated and merged into query args; URI parameters
+		# clobber query params
+		get '/info/:username', :params => { :id => /[XRT]\d{4}-\d{8}/ } do |req|
+			req.params_okay?
+			req[:username]
+			req.values_at( :id, :username )
+			req.params.username
+			req.matchdata[ :username ] # => MatchData object
+
+			req.validation_errors
+		end
+
+	end # class UserManager
+
+
+
+h3. Content-negotiation
+
+Application responses are set to be of @Content-type@ 'application/octet-stream'
+and no @Content-encoding@ by default. You can change this default via
+declaratives:
+
+    class BrowserApp < Strelka::App
+        content_type 'text/html'
+        content_encoding 'UTF-8'
+
+        ...
+    end
+

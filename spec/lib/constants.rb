@@ -12,6 +12,13 @@ module Strelka::TestConstants # :nodoc:all
 
 		TEST_HOST = 'localhost'
 
+		# App id for testing
+		TEST_APPID = 'BD17D85C-4730-4BF2-999D-9D2B2E0FCCF9'
+
+		# 0mq socket specifications for Handlers
+		TEST_SEND_SPEC = 'tcp://127.0.0.1:9998'
+		TEST_RECV_SPEC = 'tcp://127.0.0.1:9997'
+
 
 
 		# Freeze all testing constants

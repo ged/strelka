@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+require 'inversion'
+require 'strelka'
+
+# The Strelka admin web console.
+class Strelka::AdminConsole < Strelka::App
+	plugins :templating, :routing
+
+	default_content_type 'text/html'
+
+	layout 'layout.tmpl',
+	templates \
+		:console => 'admin/console.tmpl'
+
+
+	### Initialize some application data.
+	def initialize( * )
+		super
+		@control = Mongrel2::Control.new
+	end
+
+
+	# GET / -- console view
+	get do |req|
+		tmpl = self.template( :console )
+		tmpl.control = @control
+		tmpl.servers = Mongrel2::Config.servers
+
+		return tmpl
+	end
+
+end # class Strelka::AdminConsole
+
+
+Strelka::AdminConsole.run( 'admin-console' )
+
