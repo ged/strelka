@@ -18,7 +18,7 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'mongrel2',        '~> 0.2.3'
+	self.dependency 'mongrel2',        '~> 0.3.1'
 	self.dependency 'configurability', '~> 1.0'
 	self.dependency 'inversion',       '~> 0.1'
 
@@ -26,7 +26,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'rspec',           '~> 2.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
-	self.require_ruby_version( '>=1.8.7' )
+	self.require_ruby_version( '>=1.9.2' )
 
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
@@ -54,4 +54,11 @@ desc "Build a coverage report"
 task :coverage do
 	ENV["COVERAGE"] = 'yes'
 	Rake::Task[:spec].invoke
+end
+
+if Rake::Task.task_defined?( '.gemtest' )
+	Rake::Task['.gemtest'].clear
+	task '.gemtest' do
+		$stderr.puts "Not including a .gemtest until I'm confident the test suite is idempotent."
+	end
 end
