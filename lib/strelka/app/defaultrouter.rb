@@ -16,9 +16,12 @@ class Strelka::App::DefaultRouter
 	###     <action>,       # A #to_proc-able object to invoke when the route is matched
 	###     <options_hash>, # The hash of route config options
 	###   ]
-	def initialize( *routes )
+	def initialize( routes=[] )
 		@routes = Hash.new {|routes, verb| routes[verb] = {} }
-		routes.each {|tuple| self.add_route(*tuple) }
+		routes.each do |tuple|
+			self.log.debug "  adding route: %p" % [ tuple ]
+			self.add_route( *tuple )
+		end 
 	end
 
 

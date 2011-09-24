@@ -1,5 +1,403 @@
 #!/usr/bin/env ruby
 
 require 'mongrel2'
+require 'mongrel2/config'
 require 'strelka'
+
+require 'pp'
+require 'fileutils'
+require 'shellwords'
+require 'tnetstring'
+
+require 'trollop'
+require 'highline'
+
+# Have to do it this way to avoid the vendored 'sysexits' under OSX.
+gem 'sysexits'
+require 'sysexits'
+
+
+# A tool for setting up and controlling a Mongrel2 cluster.
+class Strelka::LeashCommand
+	extend ::Sysexits
+	include Sysexits,
+	        Strelka::Loggable,
+	        Strelka::Constants
+
+	# Make a HighLine color scheme
+	COLOR_SCHEME = HighLine::ColorScheme.new do |scheme|
+		scheme[:header]	   = [ :bold, :yellow ]
+		scheme[:subheader] = [ :bold, :white ]
+		scheme[:key]	   = [ :white ]
+		scheme[:value]	   = [ :bold, :white ]
+		scheme[:error]	   = [ :red ]
+		scheme[:warning]   = [ :yellow ]
+		scheme[:message]   = [ :reset ]
+	end
+
+
+	# Path to the default history file for 'shell' mode
+	HISTORY_FILE = Pathname( "~/.leash.history" )
+
+	# Number of items to store in history by default
+	DEFAULT_HISTORY_SIZE = 100
+
+	# The prompt the 'shell' mode should show
+	PROMPT = 'leash> '
+
+	# The data directory in the project if that exists, otherwise the gem datadir
+	DATADIR = if File.directory?( 'data/strelka' )
+		Pathname( 'data/strelka' )
+	elsif path = Gem.datadir('strelka')
+		Pathname( path )
+	else
+		raise ScriptError, "can't find the data directory!"
+	end
+
+
+	# Class instance variables
+	@command_help = Hash.new {|h,k| h[k] = { :desc => nil, :usage => ''} }
+	@prompt = @option_parser = nil
+
+
+	### Add a help string for the given +command+.
+	def self::help( command, helpstring=nil )
+		if helpstring
+			@command_help[ command.to_sym ][:desc] = helpstring
+		end
+
+		return @command_help[ command.to_sym ][:desc]
+	end
+
+
+	### Add/fetch the +usagestring+ for +command+.
+	def self::usage( command, usagestring=nil )
+		if usagestring
+			prefix = usagestring[ /\A(\s+)/, 1 ]
+			usagestring.gsub!( /^#{prefix}/m, '' ) if prefix
+
+			@command_help[ command.to_sym ][:usage] = usagestring
+		end
+
+		return @command_help[ command.to_sym ][:usage]
+	end
+
+
+	### Return the global Highline prompt object, creating it if necessary.
+	def self::prompt
+		unless @prompt
+			@prompt = HighLine.new
+			@prompt.wrap_at = @prompt.output_cols - 10
+		end
+
+		return @prompt
+	end
+
+
+	### Run the utility with the given +args+.
+	def self::run( args )
+		HighLine.color_scheme = COLOR_SCHEME
+
+		oparser = self.make_option_parser
+		opts = Trollop.with_standard_exception_handling( oparser ) do
+			oparser.parse( args )
+		end
+
+		command = oparser.leftovers.shift
+		self.new( opts ).run( command, *oparser.leftovers )
+		exit :ok
+
+	rescue => err
+		Strelka.logger.fatal "Oops: %s: %s" % [ err.class.name, err.message ]
+		Strelka.logger.debug { '  ' + err.backtrace.join("\n  ") }
+
+		exit :software_error
+	end
+
+
+	### Return a String that describes the available commands, e.g., for the 'help'
+	### command.
+	def self::make_command_table
+		commands = self.available_commands
+
+		# Build the command table
+		col1len = commands.map( &:length ).max
+		return commands.collect do |cmd|
+			helptext = self.help( cmd.to_sym ) or next # no help == invisible command
+			"%s  %s" % [
+				self.prompt.color(cmd.rjust(col1len), :key),
+				self.prompt.color(helptext, :value)
+			]
+		end.compact
+	end
+
+
+	### Return an Array of the available commands.
+	def self::available_commands
+		return self.public_instance_methods( false ).
+			map( &:to_s ).
+			grep( /_command$/ ).
+			map {|methodname| methodname.sub(/_command$/, '') }.
+			sort
+	end
+
+
+	### Create and configure a command-line option parser for the command.
+	### Returns a Trollop::Parser.
+	def self::make_option_parser
+		unless @option_parser
+			progname = File.basename( $0 )
+			default_configdb = Mongrel2::DEFAULT_CONFIG_URI
+
+			# Make a list of the log level names and the available commands
+			loglevels = Strelka::Logging::LOG_LEVELS.
+				sort_by {|name,lvl| lvl }.
+				collect {|name,lvl| name.to_s }.
+				join( ', ' )
+			command_table = self.make_command_table
+
+			@option_parser = Trollop::Parser.new do
+				banner "Take your Mongrel(2) for a walk:"
+
+				text ''
+				command_table.each {|line| text(line) }
+				text ''
+
+				text 'Global Options'
+				opt :config, "Specify the configfile to use.",
+					:default => DEFAULT_CONFIG_URI
+				text ''
+
+				text 'Other Options:'
+				opt :debug, "Turn debugging on. Also sets the --loglevel to 'debug'."
+				opt :loglevel, "Set the logging level. Must be one of: #{loglevels}",
+					:default => Strelka::Logging::LOG_LEVEL_NAMES[ Strelka.logger.level ]
+			end
+		end
+
+		return @option_parser
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	### Create a new instance of the command and set it up with the given
+	### +options+.
+	def initialize( options )
+		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger )
+		@options = options
+		@shellmode = false
+
+		if @options.debug
+			$DEBUG = true
+			$VERBOSE = true
+			Strelka.logger.level = Logger::DEBUG
+		elsif @options.loglevel
+			Strelka.logger.level = Strelka::Logging::LOG_LEVELS[ @options.loglevel ]
+		end
+
+		Mongrel2::Config.configure( :configdb => @options.config )
+	end
+
+
+	######
+	public
+	######
+
+	# The Trollop options hash the command will read its configuration from
+	attr_reader :options
+
+	# True if running in shell mode
+	attr_reader :shellmode
+
+
+	# Delegate the instance #prompt method to the class method instead
+	define_method( :prompt, &self.method(:prompt) )
+
+
+	### Run the command with the specified +command+ and +args+.
+	def run( command, *args )
+		command ||= 'shell'
+		cmd_method = nil
+
+		begin
+			cmd_method = self.method( "#{command}_command" )
+		rescue NoMethodError => err
+			error "No such command"
+			exit :usage
+		end
+
+		cmd_method.call( *args )
+	end
+
+
+	#
+	# Commands
+	#
+
+	### The 'help' command
+	def help_command( *args )
+
+		# Subcommand help
+		if !args.empty?
+			command = args.shift
+
+			if self.class.available_commands.include?( command )
+				header( self.class.help(command) )
+				desc = "\n" + 'Usage: ' + command + ' ' + self.class.usage(command) + "\n"
+				message( desc )
+			else
+				error "No such command %p" % [ command ]
+			end
+
+		# Help by itself show the table of available commands
+		else
+			command_table = self.class.make_command_table
+			header "Available Commands"
+			message( *command_table )
+		end
+
+	end
+	help :help, "Show help for a single COMMAND if given, or list available commands if not"
+	usage :help, "[COMMAND]"
+
+
+	### The 'setup' command
+	def setup_command( *args )
+		port = args.shift || DEFAULT_ADMIN_PORT
+		self.setup_bootstrap_config( port )
+		m2pid = self.start_admin_mongrel2
+		apppid = self.start_admin_app
+
+		header "Okay, point a browser at http://localhost:#{port}/"
+
+	rescue
+		message "Killing admin mongrel2..."
+		Process.kill( :TERM, m2pid ) if m2pid
+
+		message "Killing admin app..."
+		Process.kill( apppid, :TERM ) if apppid
+
+	ensure
+		results = Process.waitall
+		message "Done: %p" % [ results ]
+	end
+	help :setup, "Set up a new Strelka environment and start the admin server."
+	usage :setup, "[PORT]"
+
+
+	### Install a bootstrap config database for the admin server, which will run
+	### on localhost at the specified +port+.
+	def setup_bootstrap_config( port )
+		configfile = DATADIR + 'bootstrap-config.rb'
+		runspace = Module.new do
+			extend Mongrel2::Config::DSL, FileUtils::Verbose
+		end
+
+		header "Loading config from #{configfile}"
+		source = configfile.read
+		Mongrel2::Config.init_database!
+		runspace.module_eval( source, configfile.to_s, 0 )
+	end
+
+
+	### Start the Mongrel2 instance that serves as the front end of the admin server.
+	def start_admin_mongrel2
+		server = Mongrel2::Config.servers.find {|s| s.name == 'adminserver' } or
+			raise ScriptError, "Ack! No server named 'adminserver' in #{Mongrel2::Config.pathname}"
+
+		message "Starting mongrel2..."
+		cmd = [ 'mongrel2', 'mongrel2 (Strelka Admin)' ]
+		args = [ Mongrel2::Config.pathname.to_s, server.uuid ]
+
+		return spawn( cmd, *args )
+	end
+
+
+	### Start the admin app.
+	def start_admin_app
+		message "Starting up control app..."
+
+		pid = fork do
+			appsdir       = DATADIR + 'apps'
+			templatedir   = DATADIR + 'templates'
+			strelka_admin = appsdir + 'strelka-admin'
+
+			Kernel.load( strelka_admin )
+
+			Inversion::Template.configure( :template_paths => [templatedir] )
+			Strelka::AdminConsole.run( 'admin-console' )
+
+			exit!
+		end
+
+		return pid
+	end
+
+
+	### The 'version' command
+	def version_command( *args )
+		message( "<%= color 'Version:', :header %> " + Mongrel2.version_string(true) )
+	end
+	help :version, "Prints the Ruby-Mongrel2 version."
+
+
+	#
+	# Utility methods
+	#
+
+	### Output normal output
+	def message( *parts )
+		self.prompt.say( parts.map(&:to_s).join($/) )
+	end
+
+
+	### Output the given +text+ highlighted as a header.
+	def header( text )
+		message( self.prompt.color(text, :header) )
+	end
+
+
+	### Output the given +text+ highlighted as an error.
+	def error( text )
+		message( self.prompt.color(text, :error) )
+	end
+
+
+	### Read command line history from HISTORY_FILE
+	def read_history
+		histfile = HISTORY_FILE.expand_path
+
+		if histfile.exist?
+			lines = histfile.readlines.collect {|line| line.chomp }
+			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
+			Readline::HISTORY.push( *lines )
+		else
+			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
+		end
+	end
+
+
+	### Save command line history to HISTORY_FILE
+	def save_history
+		histfile = HISTORY_FILE.expand_path
+
+		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
+		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
+			lines.length > DEFAULT_HISTORY_SIZE
+
+		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
+
+		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
+			ofh.puts( *lines )
+		end
+	end
+
+
+end # class Strelka::LeashCommand
+
+
+Strelka::LeashCommand.run( ARGV.dup )
 

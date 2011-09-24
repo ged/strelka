@@ -118,8 +118,12 @@ module Strelka::App::Routing
 	### Create a new router object for each class with Routing.
 	def initialize( * )
 		super
-		@router ||= self.class.routerclass.new( self, self.class.routes )
+		@router ||= self.class.routerclass.new( self.class.routes )
 	end
+
+
+	# The App's router object
+	attr_reader :router
 
 
 	### Dispatch the request using the Router.

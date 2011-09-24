@@ -10,6 +10,7 @@ require 'strelka/app/plugins'
 
 # Templating plugin for Strelka::Apps.
 module Strelka::App::Templating
+	include Strelka::Constants
 	extend Strelka::App::Plugin
 
 	run_before :routing, :filters
@@ -69,7 +70,8 @@ module Strelka::App::Templating
 	def template( name )
 		template = self.template_map[ name ] or
 			raise ArgumentError, "no %p template registered!" % [ name ]
-		return template
+		template.reload if template.changed?
+		return template.dup
 	end
 
 
@@ -86,8 +88,8 @@ module Strelka::App::Templating
 	### Load an Inversion::Template for the layout template and return it if one was declared.
 	### If none was declared, returns +nil+.
 	def load_layout_template
-		return nil unless self.class.layout_template
-		return Inversion::Template.load( self.class.layout_template )
+		return nil unless ( lt_path = self.class.layout_template )
+		return Inversion::Template.load( lt_path )
 	end
 
 
@@ -136,7 +138,8 @@ module Strelka::App::Templating
 		end
 
 		# Wrap the template in a layout if there is one
-		if (( l_template = self.layout ))
+		if self.layout
+			l_template = self.layout.dup
 			self.log.debug "  wrapping response in layout %p" % [ l_template ]
 			l_template.body = template
 			template = l_template

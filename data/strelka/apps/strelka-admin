@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'pathname'
 require 'inversion'
 require 'strelka'
 
@@ -9,7 +10,7 @@ class Strelka::AdminConsole < Strelka::App
 
 	default_content_type 'text/html'
 
-	layout 'layout.tmpl',
+	layout 'layout.tmpl'
 	templates \
 		:console => 'admin/console.tmpl'
 
@@ -17,6 +18,11 @@ class Strelka::AdminConsole < Strelka::App
 	### Initialize some application data.
 	def initialize( * )
 		super
+
+		Mongrel2.logger = Strelka.logger
+		Inversion.logger = Strelka.logger
+		Configurability.logger = Strelka.logger
+
 		@control = Mongrel2::Control.new
 	end
 
@@ -27,11 +33,33 @@ class Strelka::AdminConsole < Strelka::App
 		tmpl.control = @control
 		tmpl.servers = Mongrel2::Config.servers
 
+		tmpl.strelka_version = Strelka.version_string( true )
+		tmpl.mongrel2_version = Mongrel2.version_string( true )
+		tmpl.inversion_version = Inversion.version_string( true )
+
 		return tmpl
 	end
 
 end # class Strelka::AdminConsole
 
+if __FILE__ == $0
+	datadir = Pathname( __FILE__ ).dirname.parent
+	templatedir = datadir + 'templates'
 
-Strelka::AdminConsole.run( 'admin-console' )
+	# Log to the screen if STDERR is opened to one
+	if $stderr.tty?
+		Strelka.logger = Logger.new( $stderr )
+	else
+		Strelka.logger = Logger.new( 'admin-console.log' )
+	end
+
+	Strelka.logger.level = $VERBOSE ? Logger::DEBUG : Logger::INFO
+
+	Inversion::Template.configure( :template_paths => [templatedir] )
+	Mongrel2::Config.configure( :configdb => Strelka::Constants::DEFAULT_CONFIG_URI )
+
+	Strelka::AdminConsole.run( 'admin-console' )
+end
+
+
 
