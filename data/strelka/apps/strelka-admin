@@ -23,7 +23,7 @@ class Strelka::AdminConsole < Strelka::App
 		Inversion.logger = Strelka.logger
 		Configurability.logger = Strelka.logger
 
-		@control = Mongrel2::Control.new
+		@control = Mongrel2::Control.new( 'ipc://run/admin-control' )
 	end
 
 

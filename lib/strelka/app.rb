@@ -32,6 +32,15 @@ class Strelka::App < Mongrel2::Handler
 	public
 	######
 
+	### Run the app -- overriden to set the process name to something interesting.
+	def run
+		procname = "%p %s" % [ self.class, self.conn ]
+		$0 = procname
+
+		super
+	end
+
+
 	### The main Mongrel2 entrypoint -- accept Strelka::Requests and return
 	### Strelka::Responses.
 	def handle( request )

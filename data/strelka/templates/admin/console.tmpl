@@ -1,21 +1,74 @@
 <?publish title ?>Admin Console<?end publish ?>
 
-<p>The admin console. Is you is, or is you isn't?</p>
+<section id="versions">
+	<p>The admin console. Is you is, or is you isn't?</p>
 
-<ul>
-	<li>Strelka: <?attr strelka_version ?></li>
-	<li>Mongrel2: <?attr mongrel2_version ?></li>
-	<li>Inversion: <?attr inversion_version ?></li>
-</ul>
+	<ul>
+		<li>Strelka: <?attr strelka_version ?></li>
+		<li>Mongrel2: <?attr mongrel2_version ?></li>
+		<li>Inversion: <?attr inversion_version ?></li>
+	</ul>
+</section>
 
-
-<section id="mongrel2-status">
+<section id="tasklist">
 	<header>
-		<h1>Mongrel Status</h1>
+		<h1>Mongrel Tasks</h1>
 	</header>
 
 	<table>
-		
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>State</th>
+				<th>Status</th>
+			</tr>
+		</thead>
+		<tbody>
+		<?for task in control.tasklist ?>
+			<tr class="task[?if task[:system] ?] system-task[?end?]">
+				<td class="id"><?call task[:id] ?></td>
+				<td class="name"><?call task[:name] ?></td>
+				<td class="state"><?call task[:state] ?></td>
+				<td class="status"><?call task[:status] ?></td>
+			</tr>
+		<?end for ?>
+		</tbody>
 	</table>
 </section>
 
+
+<section id="connections">
+	<header>
+		<h1>Mongrel Connections</h1>
+	</header>
+
+	<table>
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>FD</th>
+				<th>Type</th>
+				<th>Last Ping</th>
+				<th>Last Read</th>
+				<th>Last Write</th>
+				<th>Bytes Read</th>
+				<th>Bytes Written</th>
+			</tr>
+		</thead>
+		<tbody>
+		<?for conn in control.conn_status ?>
+			<tr class="connection">
+				<td class="id"><?call conn[:id] ?></td>
+				<td class="fd"><?call conn[:fd] ?></td>
+				<td class="type"><?call conn[:type] ?></td>
+				<td class="last-ping"><?call conn[:last_ping] ?></td>
+				<td class="last-read"><?call conn[:last_read] ?></td>
+				<td class="last-write"><?call conn[:last_write] ?></td>
+				<td class="bytes-read"><?call conn[:bytes_read] ?></td>
+				<td class="bytes-written"><?call conn[:bytes_written] ?></td>
+			</tr>
+		<?end for ?>
+		</tbody>
+	</table>
+</section>

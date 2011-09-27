@@ -321,6 +321,7 @@ class Strelka::LeashCommand
 		message "Starting up control app..."
 
 		pid = fork do
+			$0 = 'admin-console'
 			appsdir       = DATADIR + 'apps'
 			templatedir   = DATADIR + 'templates'
 			strelka_admin = appsdir + 'strelka-admin'
