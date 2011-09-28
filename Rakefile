@@ -23,6 +23,8 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'mongrel2',        '~> 0.4'
 	self.dependency 'configurability', '~> 1.0'
 	self.dependency 'inversion',       '~> 0.2'
+	self.dependency 'trollop',         '~> 1.16'
+	self.dependency 'highline',        '~> 1.6'
 
 	self.dependency 'rspec',           '~> 2.6', :developer
 

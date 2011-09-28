@@ -1,22 +1,90 @@
-= strelka
+= Стрелке (Strelka)
 
 * http://deveiate.org/projects/Strelka
 
 == Description
 
 Strelka is a framework for creating and deploying Mongrel2 web applications
-in Ruby. It's still pre-alpha.
+in Ruby. It's still pretty new.
 
-Strelka is named after a Russian dog who was one of the first space travelers
+It's named after the Russian dog who was one of the first space travelers
 to orbit the Earth and return alive.
+
+
+== Prerequisites
+
+* Mongrel2 [http://mongrel2.org/]
+* Ruby 1.9.2 or better
 
 
 == Installation
 
-    gem install strelka
+    $ gem install strelka
 
 
 == Usage
+
+Strelka consists of two parts: a runtime environment that you can use to set
+up a Mongrel2 cluster, and an application framework for developing Mongrel2
+applications. 
+
+
+=== The Runtime Environment
+
+The Strelka runtime environment provides a convenient way to set up a Mongrel2
+server, configure it, install Ruby applications that talk to it, and then
+replicate that configuration and application setup over multiple front-end and
+back-end servers (if you want).
+
+You aren't required to use it, of course, but the documentation may assume
+that you are at some points.
+
+If you'd rather just use the application-framework part by itself, skip on
+down to the 'The Application Framework' section.
+
+Strelka comes with a command-line tool called 'leash' that you can use to
+bootstrap the Strelka runtime environment. 
+
+Make a directory for the server to run in, then run 'setup':
+
+    $ mkdir strelka
+    $ leash setup
+	Loading config from [...]/strelka-0.0.1pre9/data/strelka/bootstrap-config.rb
+	W, [2011-09-27T17:06:20.093620 #26013]  WARN -- : Installing config schema.
+	Setting up chroot environment...
+	  copying static assets...
+	  creating directories...
+	Starting mongrel2...
+	Starting up control app...
+	Okay, point a browser at http://localhost:7337/
+
+This will start mongrel2 and the Strelka admin application, and from there,
+you can use a browser for mostly everything else.
+
+[to be continued]
+
+
+=== The Application Framework
+
+The application framework is primarily geared towards developing web
+applications at the moment, but the intention is to make Strelka useful for
+developing applications that use the other protocols supported by Mongrel2
+at some point as well.
+
+The framework is centered around the Strelka::App class, which is the class
+you'll subclass when creating your own applications. It doesn't do much by
+default; you can decide what facilities you'll need and add them to your
+application via a plugin system.
+
+=== Standard Plugins
+
+ - routing::
+ - parameters::
+ - filters::
+ - templating::
+
+
+=== Writing Your Own Plugins
 
 
 
