@@ -18,6 +18,18 @@ module Strelka::Constants
 	# The admin server port
 	DEFAULT_ADMIN_PORT = 7337
 
+	# The data directory in the project if that exists, otherwise the gem datadir
+	DATADIR = if File.directory?( 'data/strelka' )
+		Pathname( 'data/strelka' )
+	elsif path = Gem.datadir('strelka')
+		Pathname( path )
+	else
+		raise ScriptError, "can't find the data directory!"
+	end
+
+	# The ID of the adminserver in the mongrel2 config
+	ADMINSERVER_ID = 'admin'
+
 
 	# Extend Mongrel2's HTTP constants collection
 	module HTTP

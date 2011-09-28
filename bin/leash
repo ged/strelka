@@ -45,15 +45,6 @@ class Strelka::LeashCommand
 	# The prompt the 'shell' mode should show
 	PROMPT = 'leash> '
 
-	# The data directory in the project if that exists, otherwise the gem datadir
-	DATADIR = if File.directory?( 'data/strelka' )
-		Pathname( 'data/strelka' )
-	elsif path = Gem.datadir('strelka')
-		Pathname( path )
-	else
-		raise ScriptError, "can't find the data directory!"
-	end
-
 
 	# Class instance variables
 	@command_help = Hash.new {|h,k| h[k] = { :desc => nil, :usage => ''} }
@@ -268,21 +259,27 @@ class Strelka::LeashCommand
 	def setup_command( *args )
 		port = args.shift || DEFAULT_ADMIN_PORT
 		self.setup_bootstrap_config( port )
-		m2pid = self.start_admin_mongrel2
-		apppid = self.start_admin_app
+		self.setup_adminserver_directory
 
-		header "Okay, point a browser at http://localhost:#{port}/"
+		m2pid = apppid = nil
+		begin
+			m2pid = self.start_admin_mongrel2
+			apppid = self.start_admin_app
 
-	rescue
-		message "Killing admin mongrel2..."
-		Process.kill( :TERM, m2pid ) if m2pid
+			header "Okay, point a browser at http://localhost:#{port}/"
 
-		message "Killing admin app..."
-		Process.kill( apppid, :TERM ) if apppid
+		rescue => err
+			message "Killing admin mongrel2..."
+			Process.kill( :TERM, m2pid ) if m2pid
 
-	ensure
-		results = Process.waitall
-		message "Done: %p" % [ results ]
+			message "Killing admin app..."
+			Process.kill( apppid, :TERM ) if apppid
+
+			raise unless err.is_a?( Signal )
+		ensure
+			results = Process.waitall
+			message "Done: %p" % [ results ]
+		end
 	end
 	help :setup, "Set up a new Strelka environment and start the admin server."
 	usage :setup, "[PORT]"
@@ -290,7 +287,7 @@ class Strelka::LeashCommand
 
 	### Install a bootstrap config database for the admin server, which will run
 	### on localhost at the specified +port+.
-	def setup_bootstrap_config( port )
+	def setup_bootstrap_config( adminport )
 		configfile = DATADIR + 'bootstrap-config.rb'
 		runspace = Module.new do
 			extend Mongrel2::Config::DSL, FileUtils::Verbose
@@ -299,14 +296,38 @@ class Strelka::LeashCommand
 		header "Loading config from #{configfile}"
 		source = configfile.read
 		Mongrel2::Config.init_database!
-		runspace.module_eval( source, configfile.to_s, 0 )
+		runspace.instance_variable_set( :@adminport, adminport )
+		runspace.module_eval( source, configfile.to_s, 1 )
+	end
+
+
+	### Set up the mongrel2 chroot directory for Strelka's adminserver by copying static 
+	### files, and creating the necessary directories. This depends on the configuration
+	### being installed.
+	def setup_adminserver_directory
+		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+			raise "No server %p configured!" % [ ADMINSERVER_ID ]
+		basedir = Pathname.pwd
+
+		header "Setting up chroot environment..."
+
+		message "  copying static assets..."
+		FileUtils.cp_r( DATADIR + 'static', basedir, :verbose => true )
+
+		message "  creating directories..."
+		directories = server.values.values_at( :access_log, :error_log, :pid_file ).collect do |path|
+			path.slice!( 0, 1 ) if path.start_with?( '/' )
+			file = basedir + path
+			file.cleanpath.dirname
+		end
+		FileUtils.mkdir_p( directories, :verbose => true )
 	end
 
 
 	### Start the Mongrel2 instance that serves as the front end of the admin server.
 	def start_admin_mongrel2
-		server = Mongrel2::Config.servers.find {|s| s.name == 'adminserver' } or
-			raise ScriptError, "Ack! No server named 'adminserver' in #{Mongrel2::Config.pathname}"
+		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+			raise ScriptError, "Ack! No server named '#{ADMINSERVER_ID}' in #{Mongrel2::Config.pathname}"
 
 		message "Starting mongrel2..."
 		cmd = [ 'mongrel2', 'mongrel2 (Strelka Admin)' ]
