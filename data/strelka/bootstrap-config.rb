@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'pathname'
+
 require 'mongrel2/config'
 include Mongrel2::Config::DSL
 
@@ -9,8 +11,8 @@ include Strelka::Constants
 # This is the config that's loaded by 'leash setup' to get the admin server
 # up and running.
 
-server 'admin' do
-    name 'adminserver'
+server ADMINSERVER_ID do
+    name 'Strelka Admin Server'
 	port DEFAULT_ADMIN_PORT
 	access_log '/logs/admin-access.log'
 	error_log '/logs/admin-error.log'
@@ -21,14 +23,12 @@ server 'admin' do
     host 'localhost' do
         route '/', handler( 'tcp://127.0.0.1:19999', 'admin-console' )
 
-		route '/css',    directory( 'data/strelka/static/css/', 'base.css', 'text/css' )
-		route '/images', directory( 'data/strelka/static/images/' )
-		route '/fonts',  directory( 'data/strelka/static/fonts/' )
-		route '/js',     directory( 'data/strelka/static/js/', 'index.js', 'text/javascript' )
+		route '/css',    directory( 'static/css/', 'base.css', 'text/css' )
+		route '/images', directory( 'static/images/' )
+		route '/fonts',  directory( 'static/fonts/' )
+		route '/js',     directory( 'static/js/', 'index.js', 'text/javascript' )
     end
 end
 
 setting "control_port", 'ipc://run/admin-control'
 
-mkdir_p 'logs'
-mkdir_p 'run'
