@@ -1,3 +1,4 @@
+.gemtest
 History.rdoc
 IDEAS.textile
 Manifest.txt
@@ -7,6 +8,13 @@ bin/leash
 data/strelka/apps/strelka-admin
 data/strelka/apps/strelka-setup
 data/strelka/bootstrap-config.rb
+data/strelka/static/css/master.css
+data/strelka/static/css/reset.css
+data/strelka/static/fonts/IstokWeb-Bold.ttf
+data/strelka/static/fonts/IstokWeb-BoldItalic.ttf
+data/strelka/static/fonts/IstokWeb-Italic.ttf
+data/strelka/static/fonts/IstokWeb-Regular.ttf
+data/strelka/static/fonts/OFL.txt
 data/strelka/templates/admin/console.tmpl
 data/strelka/templates/layout.tmpl
 lib/strelka.rb
