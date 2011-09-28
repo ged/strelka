@@ -5,6 +5,11 @@ require 'strelka'
 
 # The Strelka setup web application.
 class Strelka::SetupProcess < Strelka::App
+
+	# NOTE:
+	# This is currently just a sketch for an idea of how Strelka could support stateful
+	# 'process' applications ala Tir's coroutine-based "natural" handlers. It's not
+	# implemented yet, so this will error:
 	plugins :process
 
 	layout 'setup/layout.tmpl'
@@ -17,7 +22,7 @@ class Strelka::SetupProcess < Strelka::App
 	def main( req )
 		params = show( :step1 )
 		params = show( :step2, params )
-		
+
 	end
 
 end # class Strelka::AdminConsole
