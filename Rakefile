@@ -1,5 +1,7 @@
 #!/usr/bin/env rake
 
+require 'rake/clean'
+
 begin
 	require 'hoe'
 rescue LoadError
@@ -18,11 +20,10 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'mongrel2',        '~> 0.3.1'
+	self.dependency 'mongrel2',        '~> 0.4'
 	self.dependency 'configurability', '~> 1.0'
-	self.dependency 'inversion',       '~> 0.1'
+	self.dependency 'inversion',       '~> 0.2'
 
-	self.dependency 'tilt',            '~> 1.3', :developer
 	self.dependency 'rspec',           '~> 2.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
@@ -62,3 +63,9 @@ if Rake::Task.task_defined?( '.gemtest' )
 		$stderr.puts "Not including a .gemtest until I'm confident the test suite is idempotent."
 	end
 end
+
+
+# Add admin app testing directories to the clobber list
+CLOBBER.include( 'static', 'run', 'log', 'strelka.sqlite' )
+
+
