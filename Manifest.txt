@@ -6,7 +6,6 @@ README.rdoc
 Rakefile
 bin/leash
 data/strelka/apps/strelka-admin
-data/strelka/apps/strelka-setup
 data/strelka/bootstrap-config.rb
 data/strelka/static/css/master.css
 data/strelka/static/css/reset.css
@@ -30,7 +29,6 @@ lib/strelka/constants.rb
 lib/strelka/httprequest.rb
 lib/strelka/logging.rb
 lib/strelka/mixins.rb
-lib/strelka/process.rb
 spec/data/layout.tmpl
 spec/data/main.tmpl
 spec/lib/constants.rb

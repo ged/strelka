@@ -4,7 +4,8 @@ require 'inversion'
 require 'strelka'
 
 # The Strelka setup web application.
-class Strelka::SetupProcess < Strelka::Process
+class Strelka::SetupProcess < Strelka::App
+	plugins :process
 
 	layout 'setup/layout.tmpl'
 
