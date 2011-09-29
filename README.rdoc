@@ -42,6 +42,8 @@ that you are at some points.
 If you'd rather just use the application-framework part by itself, skip on
 down to the 'The Application Framework' section.
 
+=== Leash
+
 Strelka comes with a command-line tool called 'leash' that you can use to
 bootstrap the Strelka runtime environment. 
 

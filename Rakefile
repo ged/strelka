@@ -16,8 +16,7 @@ Hoe.plugins.delete :rubyforge
 hoespec = Hoe.spec 'strelka' do
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
-	self.extra_rdoc_files << 'README.rdoc' << 
-		'History.rdoc' << 'IDEAS.textile'
+	self.extra_rdoc_files = FileList[ '*.rdoc' ]
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 

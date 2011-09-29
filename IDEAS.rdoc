@@ -8,23 +8,6 @@ up-to-date if it does.
 
 == Leash
 
-=== Setting Up A Mongrel2 Cluster
-
-Leash also comes with subcommands for interacting with Mongrel2. You can start
-a new cluster using the 'setup' subcommand:
-
-	server1$ leash setup 
-	Creating bootstrap config...
-	Starting mongrel2...
-	Starting up control app...
-	Okay, point a browser at http://localhost:37772/
-
-At this point, you can either use further leash commands, or use the web
-interface:
-
-    server1$ open http://localhost:37772/
-
-
 === Adding Strelka to an Existing Mongrel2 Instance
 
 If you already have an existing Mongrel2 environment, leash can also add 
