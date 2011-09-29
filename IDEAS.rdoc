@@ -1,0 +1,69 @@
+= Strelka Ideas
+
+This is in-progress documentation for stuff that doesn't yet work, but is
+planned for a future release.
+
+Everything here is subject to change, but we'll try to keep this document
+up-to-date if it does.
+
+== Leash
+
+=== Setting Up A Mongrel2 Cluster
+
+Leash also comes with subcommands for interacting with Mongrel2. You can start
+a new cluster using the 'setup' subcommand:
+
+	server1$ leash setup 
+	Creating bootstrap config...
+	Starting mongrel2...
+	Starting up control app...
+	Okay, point a browser at http://localhost:37772/
+
+At this point, you can either use further leash commands, or use the web
+interface:
+
+    server1$ open http://localhost:37772/
+
+
+=== Adding Strelka to an Existing Mongrel2 Instance
+
+If you already have an existing Mongrel2 environment, leash can also add 
+itself alongside it:
+
+    server1$ leash setup existing.sqlite
+    Adding Strelka to existing config...
+    Starting mongrel2...
+    Start up control app...
+	Okay, point a browser at http://localhost:37772/
+
+The admin app will then let you examine and edit the configuration for your
+existing mongrel2 server, just as you would with a new server.
+
+
+=== Join a Mongrel2 Cluster
+
+Once you have the first node set up, you need only point 'leash' to the admin
+server running on the first host to set up and automatically configure
+additional Mongrel2 front-ends:
+
+	server2$ leash join server1
+
+This uses a 0MQ service running from the admin server that publishes the
+config using Mongrel2's "config from anything" protocol, so when Mongrel2
+itself supports the 'zmq.so' plugin, you won't even need a local SQLite
+database.
+
+
+== Strelka Applications
+
+* Apps have an appid constant (the mongrel2 UUID)
+* Apps are distributed in gems
+* A larger app can be split across multiple applets within a gem
+  - The gem can suggest a set of routes
+  - The Strelka admin interface can display the gem with its suggested routes
+* The framework provides convenience methods for looking up the route to
+  another app via its appid.
+
+For example, a CMS called "Snipper" might come in a gem called 'snipper'
+
+
