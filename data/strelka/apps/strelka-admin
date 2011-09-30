@@ -12,7 +12,8 @@ class Strelka::AdminConsole < Strelka::App
 
 	layout 'layout.tmpl'
 	templates \
-		:console => 'admin/console.tmpl'
+		:console => 'admin/console.tmpl',
+		:message => 'admin/message.tmpl'
 
 
 	### Initialize some application data.
@@ -20,8 +21,9 @@ class Strelka::AdminConsole < Strelka::App
 		super
 
 		Mongrel2.logger = Strelka.logger
-		Inversion.logger = Strelka.logger
 		Configurability.logger = Strelka.logger
+
+		Inversion.logger.level = Logger::INFO
 
 		@control = Mongrel2::Control.new( 'ipc://run/admin-control' )
 	end
@@ -29,6 +31,8 @@ class Strelka::AdminConsole < Strelka::App
 
 	# GET / -- console view
 	get do |req|
+		Inversion.logger.level = Logger::INFO
+
 		tmpl = self.template( :console )
 		tmpl.control = @control
 		tmpl.servers = Mongrel2::Config.servers
@@ -36,6 +40,13 @@ class Strelka::AdminConsole < Strelka::App
 		tmpl.strelka_version = Strelka.version_string( true )
 		tmpl.mongrel2_version = Mongrel2.version_string( true )
 		tmpl.inversion_version = Inversion.version_string( true )
+
+		return tmpl
+	end
+
+	post "/upload" do |req|
+		tmpl = self.template( :message )
+		tmpl.message = "Upload!"
 
 		return tmpl
 	end

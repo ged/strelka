@@ -142,8 +142,6 @@ describe Strelka::App do
 	end
 
 
-
-
 	describe "plugin hooks" do
 
 		it "provides a plugin hook for plugins to manipulate the request before handling it" do

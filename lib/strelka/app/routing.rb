@@ -6,7 +6,42 @@ require 'strelka/app/defaultrouter' unless defined?( Strelka::App::DefaultRouter
 
 require 'strelka/app/plugins'
 
-# Default routing logic for Strelka::Apps
+# Sinatra-ish routing logic for Strelka::Apps
+#
+# This plugin adds the ability to declare hooks for requests based on their
+# attributes. The default router (Strelka::App::DefaultRouter) uses only the
+# HTTP verb and the path, but you can also define your own router class if
+# you want to include other attributes. 
+#
+# You declare a hook using the HTTP verb, followed by the path, followed by
+# a Hash of options and a block that will be called when a matching request
+# is handled.
+#
+# When two or more hooks match the same request, the most-specific match
+# wins. The mongrel2 route part of the path is stripped before comparing.
+#
+# The hooks are given a Strelka::Request object, and are expected to
+# return either a Strelka::Response or something that can be made
+# into one.
+#
+# == Examples
+# 
+# 	class HelloWorld < Strelka::App
+#
+#       # match any GET request
+# 		get do |req|
+# 			return req.response << 'Hello, World!'
+# 		end
+#
+#       # match any GET request whose path starts with '/goodbye' 		
+# 		get '/goodbye' do |req|
+# 			return req.response << "Goodbye, cruel World!"
+# 		end
+#
+#
+# 	end # class HelloWorld
+# 
+# 
 module Strelka::App::Routing
 	extend Strelka::App::Plugin
 	include Strelka::Loggable,

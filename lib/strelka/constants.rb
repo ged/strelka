@@ -28,7 +28,7 @@ module Strelka::Constants
 	end
 
 	# The ID of the adminserver in the mongrel2 config
-	ADMINSERVER_ID = 'admin'
+	ADMINSERVER_ID = 'strelka-admin'
 
 
 	# Extend Mongrel2's HTTP constants collection

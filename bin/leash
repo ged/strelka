@@ -257,8 +257,7 @@ class Strelka::LeashCommand
 
 	### The 'setup' command
 	def setup_command( *args )
-		port = args.shift || DEFAULT_ADMIN_PORT
-		self.setup_bootstrap_config( port )
+		self.setup_bootstrap_config
 		self.setup_adminserver_directory
 
 		m2pid = apppid = nil
@@ -266,38 +265,41 @@ class Strelka::LeashCommand
 			m2pid = self.start_admin_mongrel2
 			apppid = self.start_admin_app
 
-			header "Okay, point a browser at http://localhost:#{port}/"
+			header "Okay, point a browser at http://localhost:#{DEFAULT_ADMIN_PORT}/"
 
 		rescue => err
-			message "Killing admin mongrel2..."
+			error "%p while starting: %s: %s" % [ err.class, err.message, err.backtrace.first ]
+			message "Killing admin mongrel2 at pid #{m2pid}..."
 			Process.kill( :TERM, m2pid ) if m2pid
 
-			message "Killing admin app..."
-			Process.kill( apppid, :TERM ) if apppid
+			message "Killing admin app at pid #{apppid}..."
+			Process.kill( :TERM, apppid ) if apppid
 
-			raise unless err.is_a?( Signal )
 		ensure
 			results = Process.waitall
 			message "Done: %p" % [ results ]
 		end
+
 	end
 	help :setup, "Set up a new Strelka environment and start the admin server."
-	usage :setup, "[PORT]"
 
 
-	### Install a bootstrap config database for the admin server, which will run
-	### on localhost at the specified +port+.
-	def setup_bootstrap_config( adminport )
-		configfile = DATADIR + 'bootstrap-config.rb'
-		runspace = Module.new do
-			extend Mongrel2::Config::DSL, FileUtils::Verbose
+	### Install a bootstrap config database for the admin server.
+	def setup_bootstrap_config
+		Mongrel2::Config.init_database
+
+		if Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID )
+			message "Admin server is already configured"
+		else
+			configfile = DATADIR + 'bootstrap-config.rb'
+			runspace = Module.new do
+				extend Mongrel2::Config::DSL, FileUtils::Verbose
+			end
+
+			header "Installing admin server config from #{configfile}"
+			source = configfile.read
+			runspace.module_eval( source, configfile.to_s, 1 )
 		end
-
-		header "Loading config from #{configfile}"
-		source = configfile.read
-		Mongrel2::Config.init_database!
-		runspace.instance_variable_set( :@adminport, adminport )
-		runspace.module_eval( source, configfile.to_s, 1 )
 	end
 
 
@@ -312,7 +314,7 @@ class Strelka::LeashCommand
 		header "Setting up chroot environment..."
 
 		message "  copying static assets..."
-		FileUtils.cp_r( DATADIR + 'static', basedir, :verbose => true )
+		FileUtils.cp_r( DATADIR + 'static', basedir, :verbose => $VERBOSE )
 
 		message "  creating directories..."
 		directories = server.values.values_at( :access_log, :error_log, :pid_file ).collect do |path|
@@ -320,7 +322,7 @@ class Strelka::LeashCommand
 			file = basedir + path
 			file.cleanpath.dirname
 		end
-		FileUtils.mkdir_p( directories, :verbose => true )
+		FileUtils.mkdir_p( directories, :verbose => $VERBOSE )
 	end
 
 
