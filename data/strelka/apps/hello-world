@@ -13,7 +13,7 @@ class HelloWorldApp < Strelka::App
 	plugins :routing
 
 	# Set responses to plaintext if they don't specify differently
-	default_content_type 'text/plain'
+	default_type 'text/plain'
 
 	# Handle all GET requests the same way
 	get do |req|

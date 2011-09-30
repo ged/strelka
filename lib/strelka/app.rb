@@ -14,13 +14,13 @@ class Strelka::App < Mongrel2::Handler
 	include Strelka::App::Plugins
 
 
-	@default_content_type = nil
+	@default_type = nil
 
 	### Get/set the Content-type of requests that don't set one. Leaving this unset will
 	### leave the Content-type unset.
-	def self::default_content_type( newtype=nil )
-		@default_content_type = newtype if newtype
-		return @default_content_type
+	def self::default_type( newtype=nil )
+		@default_type = newtype if newtype
+		return @default_type
 	end
 
 
@@ -148,12 +148,12 @@ class Strelka::App < Mongrel2::Handler
 
 
 	### If the +response+ doesn't yet have a Content-type header, and the app has
-	### defined a default (via App.default_content_type), set it to the default.
+	### defined a default (via App.default_type), set it to the default.
 	def fixup_response_content_type( response )
 		restype = response.content_type
 
 		if !restype
-			if (( default = self.class.default_content_type ))
+			if (( default = self.class.default_type ))
 				self.log.debug "Setting default content type"
 				response.content_type = default
 			else

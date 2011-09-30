@@ -100,7 +100,7 @@ describe Strelka::App do
 
 	it "provides a declarative for setting the default content type of responses" do
 		@app.class_eval do
-			default_content_type 'text/css'
+			default_type 'text/css'
 			def handle_request( r )
 				r.response.puts( "body { font-family: monospace }" )
 				r.response

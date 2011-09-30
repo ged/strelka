@@ -8,7 +8,7 @@ require 'strelka'
 class Strelka::AdminConsole < Strelka::App
 	plugins :templating, :routing
 
-	default_content_type 'text/html'
+	default_type 'text/html'
 
 	layout 'layout.tmpl'
 	templates \
@@ -60,6 +60,3 @@ if __FILE__ == $0
 
 	Strelka::AdminConsole.run( 'admin-console' )
 end
-
-
-
