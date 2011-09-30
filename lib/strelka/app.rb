@@ -24,6 +24,29 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Overridden from Mongrel2::Handler -- default the appid to the value of the ID constant
+	### of the class being run if it has one, or the class name with non-alphanumeric
+	### characters collapsed into hyphens if not. Also 
+	def self::run( appid=nil )
+		if appid.nil?
+			if self.const_defined?( :ID )
+				appid = self.const_get( :ID )
+			else
+				appid = ( self.name || "anonymous#{self.object_id}" ).downcase
+				appid.gsub!( /[^[:alnum:]]+/, '-' )
+			end
+		end
+
+		# Configure the Mongrel2 config database classes if they haven't been already
+		Mongrel2::Config.configure( :configdb => Strelka::Constants::DEFAULT_CONFIG_URI ) unless
+			Mongrel2::Config.database_initialized?
+
+		Strelka.logger.level = $VERBOSE ? Logger::DEBUG : Logger::INFO
+		super( appid )
+
+	end
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################

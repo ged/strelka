@@ -40,7 +40,10 @@ module Strelka::Logging
 		end
 
 		mod.default_logger = mod.logger = Logger.new( $stderr )
-		mod.default_logger.level = $DEBUG ? Logger::DEBUG : Logger::WARN
+		mod.default_logger.level = case
+			when $DEBUG then Logger::DEBUG
+			when $VERBOSE then Logger::INFO
+			else Logger::WARN end
 		mod.default_log_formatter = Strelka::Logging::Formatter.new( mod.default_logger )
 	end
 

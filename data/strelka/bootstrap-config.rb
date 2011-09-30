@@ -22,6 +22,7 @@ server ADMINSERVER_ID do
 
     host 'localhost' do
         route '/', handler( 'tcp://127.0.0.1:19999', 'admin-console' )
+        route '/hello', handler( 'tcp://127.0.0.1:19995', 'hello-world' )
 
 		route '/css',    directory( 'static/css/', 'base.css', 'text/css' )
 		route '/images', directory( 'static/images/' )
