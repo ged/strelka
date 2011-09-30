@@ -5,15 +5,15 @@
 == Description
 
 Strelka is a framework for creating and deploying Mongrel2 web applications
-in Ruby. It's still pretty new.
+in Ruby, and for managing a Mongrel2 cluster.
 
 It's named after the Russian dog who was one of the first space travelers
-to orbit the Earth and return alive.
+to orbit the Earth and return alive. 
 
 
 == Prerequisites
 
-* Mongrel2 [http://mongrel2.org/]
+* Mongrel2[http://mongrel2.org/]
 * Ruby 1.9.2 or better
 
 
@@ -24,7 +24,7 @@ to orbit the Earth and return alive.
 
 == Usage
 
-Strelka consists of two parts: a runtime environment that you can use to set
+Strelka has two major parts: a runtime environment that you can use to set
 up a Mongrel2 cluster, and an application framework for developing Mongrel2
 applications. 
 
@@ -40,17 +40,19 @@ You aren't required to use it, of course, but the documentation may assume
 that you are at some points.
 
 If you'd rather just use the application-framework part by itself, skip on
-down to the 'The Application Framework' section.
+down to the 'Application Framework' section.
 
 === Leash
 
 Strelka comes with a command-line tool called 'leash' that you can use to
-bootstrap the Strelka runtime environment. 
+interact with the Strelka runtime environment.
 
-Make a directory for the server to run in, then run 'setup':
+To set up a new server, make a directory for the server to run in, change into
+it, then run 'leash setup':
 
-    $ mkdir strelka
-    $ leash setup
+	$ mkdir strelka
+	$ cd strelka
+	$ leash setup
 	Loading config from [...]/strelka-0.0.1pre9/data/strelka/bootstrap-config.rb
 	W, [2011-09-27T17:06:20.093620 #26013]  WARN -- : Installing config schema.
 	Setting up chroot environment...
@@ -63,31 +65,77 @@ Make a directory for the server to run in, then run 'setup':
 This will start mongrel2 and the Strelka admin application, and from there,
 you can use a browser for mostly everything else.
 
-[to be continued]
-
 
 === The Application Framework
 
-The application framework is primarily geared towards developing web
+The application framework is primarily geared towards developing web (HTTP)
 applications at the moment, but the intention is to make Strelka useful for
 developing applications that use the other protocols supported by Mongrel2
 at some point as well.
 
-The framework is centered around the Strelka::App class, which is the class
-you'll subclass when creating your own applications. It doesn't do much by
-default; you can decide what facilities you'll need and add them to your
-application via a plugin system.
+The framework is centered around the Strelka::App class, which is what you'll
+subclass when creating your own applications. It's pretty minimal by itself;
+Strelka applications are composed out of plugins that mix in the specific
+framework parts you specify, so you get exactly what you need and nothing
+more.
 
-=== Standard Plugins
+The plugins system itself is contained in the Strelka::App::Plugins mixin,
+which is included in Strelka::App already. This adds the +plugins+
+declarative, which you use from your app to load the plugins you want to use.
 
- - routing::
- - parameters::
- - filters::
- - templating::
+A very basic application might look like this:
+
+    #!/usr/bin/env ruby
+
+    require 'strelka'
+
+    # The Strelka admin web console.
+    class HelloWorldApp < Strelka::App
+
+        # The route appid that will configure this app's 
+        # connection to Mongrel2 if no appid is given
+        # to App.run
+        ID = 'hello-world'
+
+        # Use Sinatra-like routing
+        plugins :routing
+
+        # Set responses to plaintext if they don't specify differently
+        default_content_type 'text/plain'
+
+        # Handle all GET requests the same way
+        get do |req|
+            res = req.response
+            res.status = HTTP::OK
+            res << 'Hello, world!'
+            return res
+        end
+
+    end # class HelloWorldApp
 
 
-=== Writing Your Own Plugins
+    # Run the app
+    HelloWorldApp.run if __FILE__ == $0
 
+This app uses the 'routing' plugin, which adds Sinatra-like hooks for matching
+callbacks to requests. The example app above responds only to 'GET' requests,
+and ignores the path of the request altogether.
+
+Strelka comes with a few default plugins, but you can define your own fairly
+easily.
+
+
+=== Default Plugins
+
+[routing[rdoc-ref:Strelka::App::Routing]]
+    Sinatra-ish request routing.
+[parameters[rdoc-ref:Strelka::App::Parameters]]
+    Query and URI path-parameter validation and untainting.
+[filters[rdoc-ref:Strelka::App::Filters]]
+    Request/response filters, for doing things like compression, content-type
+    negotiation, or other things that somehow modify every request or response.
+[templating[rdoc-ref:Strelka::App::Templating]]
+    Templating via the Inversion template engine.
 
 
 == Contributing
