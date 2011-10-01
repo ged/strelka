@@ -25,6 +25,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'inversion',       '~> 0.2'
 	self.dependency 'trollop',         '~> 1.16'
 	self.dependency 'highline',        '~> 1.6'
+	self.dependency 'formvalidator',   '~> 0.1.5'
 
 	self.dependency 'rspec',           '~> 2.6', :developer
 
