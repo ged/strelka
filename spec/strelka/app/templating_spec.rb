@@ -87,12 +87,11 @@ describe Strelka::App::Templating do
 				@app.class_eval do
 					templates :main => 'main.tmpl'
 				end
-				@instance = @app.new( 'template-test', 'tcp://127.0.0.1:9999', 'tcp://127.0.0.1:9998' )
 			end
 
 
 			it "can load declared templates by mentioning the symbol" do
-				@instance.template( :main ).should be_a( Inversion::Template )
+				@app.new.template( :main ).should be_a( Inversion::Template )
 			end
 
 			it "can respond with just a template name" do
