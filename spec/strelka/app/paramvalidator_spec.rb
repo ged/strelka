@@ -25,14 +25,16 @@ describe Strelka::App::ParamValidator do
 		:required		=> [ :required ],
 		:optional		=> %w{
 			optional number int_constraint bool_constraint email_constraint
-	        host_constraint regexp_w_captures regexp_w_one_capture
-	        alpha_constraint alphanumeric_constraint printable_constraint
-			proc_constraint uri_constraint
+			host_constraint regexp_w_captures regexp_w_one_capture
+			regexp_w_named_captures
+			alpha_constraint alphanumeric_constraint printable_constraint
+			proc_constraint uri_constraint word_constraint
 		},
 		:constraints	=> {
 			:number                  => /^\d+$/,
 			:regexp_w_captures       => /(\w+)(\S+)?/,
 			:regexp_w_one_capture    => /(\w+)/,
+			:regexp_w_named_captures => /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/,
 			:int_constraint          => :integer,
 			:bool_constraint         => :boolean,
 			:email_constraint        => :email,
@@ -41,7 +43,8 @@ describe Strelka::App::ParamValidator do
 			:alpha_constraint        => :alpha,
 			:alphanumeric_constraint => :alphanumeric,
 			:printable_constraint    => :printable,
-			:proc_constraint         => Proc.new {|d| Date.parse(d) rescue nil },
+			:word_constraint         => :word,
+			:proc_constraint         => Date.method( :parse ),
 		},
 	}
 
@@ -61,7 +64,7 @@ describe Strelka::App::ParamValidator do
 
 
 	# Test index operator interface
-	it "should provide read and write access to valid args via the index operator" do
+	it "provides read and write access to valid args via the index operator" do
 		rval = nil
 
 		@validator.validate( {'required' => "1"} )
@@ -72,7 +75,7 @@ describe Strelka::App::ParamValidator do
 	end
 
 
-	it "should untaint valid args if told to do so" do
+	it "untaints valid args if told to do so" do
 		rval = nil
 		tainted_one = "1"
 		tainted_one.taint
@@ -87,7 +90,7 @@ describe Strelka::App::ParamValidator do
 	end
 
 
-	it "should untaint field names" do
+	it "untaints field names" do
 		rval = nil
 		tainted_one = "1"
 		tainted_one.taint
@@ -102,7 +105,7 @@ describe Strelka::App::ParamValidator do
 	end
 
 
-	it "should return the capture from a regexp constraint if it has only one" do
+	it "returns the capture from a regexp constraint if it has only one" do
 		rval = nil
 		params = { 'required' => 1, 'regexp_w_one_capture' => "   ygdrassil   " }
 
@@ -113,7 +116,7 @@ describe Strelka::App::ParamValidator do
 		@validator[:regexp_w_one_capture].should == 'ygdrassil'
 	end
 
-	it "should return the captures from a regexp constraint as an array if it has more than one" do
+	it "returns the captures from a regexp constraint as an array if it has more than one" do
 		rval = nil
 		params = { 'required' => 1, 'regexp_w_captures' => "   the1tree(!)   " }
 
@@ -124,7 +127,20 @@ describe Strelka::App::ParamValidator do
 		@validator[:regexp_w_captures].should == ['the1tree', '(!)']
 	end
 
-	it "should return the captures from a regexp constraint as an array " +
+	it "returns the captures from a regexp constraint with named captures as a Hash" do
+		rval = nil
+		params = { 'required' => 1, 'regexp_w_named_captures' => "   JVV-886451300133   ".taint }
+
+		@validator.validate( params, :untaint_all_constraints => true )
+
+		Strelka.log.debug "Validator: %p" % [@validator]
+
+		@validator[:regexp_w_named_captures].should == {:category => 'JVV', :sku => '886451300133'}
+		@validator[:regexp_w_named_captures][:category].should_not be_tainted()
+		@validator[:regexp_w_named_captures][:sku].should_not be_tainted()
+	end
+
+	it "returns the captures from a regexp constraint as an array " +
 		"even if an optional capture doesn't match anything" do
 		rval = nil
 		params = { 'required' => 1, 'regexp_w_captures' => "   the1tree   " }
@@ -220,13 +236,13 @@ describe Strelka::App::ParamValidator do
 		@validator.get_description( "castle[baron_id]" ).should == 'Baron Id'
 	end
 
-	it "should be able to coalesce simple hash fields into a hash of validated values" do
+	it "coalesces simple hash fields into a hash of validated values" do
 		@validator.validate( {'rodent[size]' => 'unusual'}, :optional => ['rodent[size]'] )
 
 		@validator.valid.should == {'rodent' => {'size' => 'unusual'}}
 	end
 
-	it "should be able to coalesce complex hash fields into a nested hash of validated values" do
+	it "coalesces complex hash fields into a nested hash of validated values" do
 		profile = {
 			:optional => [
 				'recipe[ingredient][name]',
@@ -249,7 +265,7 @@ describe Strelka::App::ParamValidator do
 		}
 	end
 
-	it "should untaint both keys and values in complex hash fields if untainting is turned on" do
+	it "untaints both keys and values in complex hash fields if untainting is turned on" do
 		profile = {
 			:required => [
 				'recipe[ingredient][rarity]',
@@ -723,9 +739,7 @@ describe Strelka::App::ParamValidator do
 
 		@validator.validate( params )
 
-		@validator.should_not have_errors()
 		@validator.should be_okay()
-
 		@validator[:printable_constraint].should == test_content
 	end
 
@@ -741,8 +755,21 @@ describe Strelka::App::ParamValidator do
 	end
 
 
-	it "accepts parameters for fields with Proc constraints if the Proc " +
-		"returns a true value" do
+	it "accepts any word characters for fields with 'word' constraints" do
+		params = {
+			'required' => '1',
+			'word_constraint' => "Собака"
+		}
+
+		@validator.validate( params )
+
+		@validator.should_not have_errors()
+		@validator.should be_okay()
+
+		@validator[:word_constraint].should == params['word_constraint']
+	end
+
+	it "accepts parameters for fields with Proc constraints if the Proc returns a true value" do
 		test_date = '2007-07-17'
 		params = {'required' => '1', 'proc_constraint' => test_date}
 
@@ -754,9 +781,7 @@ describe Strelka::App::ParamValidator do
 		@validator[:proc_constraint].should == Date.parse( test_date )
 	end
 
-	it "rejects parameters for fields with Proc constraints if the Proc " +
-		"returns a false value" do
-
+	it "rejects parameters for fields with Proc constraints if the Proc returns a false value" do
 		params = {'required' => '1', 'proc_constraint' => %{::::}}
 
 		@validator.validate( params )

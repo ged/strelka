@@ -51,42 +51,6 @@ require 'strelka/app' unless defined?( Strelka::App )
 #		return failure_template
 #	end
 #
-# == Authors
-# 
-# * Michael Granger <ged@FaerieMUD.org>
-# 
-# Please see the file LICENSE in the top-level directory for licensing details.
-#
-#
-# Portions of this file are from Ruby on Rails' CGIMethods class from the
-# action_controller:
-#   
-#   Copyright (c) 2004 David Heinemeier Hansson
-#   
-#   Permission is hereby granted, free of charge, to any person obtaining
-#   a copy of this software and associated documentation files (the
-#   "Software"), to deal in the Software without restriction, including
-#   without limitation the rights to use, copy, modify, merge, publish,
-#   distribute, sublicense, and/or sell copies of the Software, and to
-#   permit persons to whom the Software is furnished to do so, subject to
-#   the following conditions:
-#   
-#   The above copyright notice and this permission notice shall be
-#   included in all copies or substantial portions of the Software.
-#   
-#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-#   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-#   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-#   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-#   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-#   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#   
-# 
-#--
-#
-# Please see the file COPYRIGHT in the 'docs' directory for licensing details.
-#
 class Strelka::App::ParamValidator < ::FormValidator
 	extend Forwardable
 	include Strelka::Loggable
@@ -144,9 +108,11 @@ class Strelka::App::ParamValidator < ::FormValidator
 
 	### Create a new Strelka::App::ParamValidator object.
 	def initialize( profile, params=nil )
-		@form     = {}
-		@raw_form = {}
-		@profile  = DEFAULT_PROFILE.merge( profile )
+		@form           = {}
+		@raw_form       = {}
+		@profile        = DEFAULT_PROFILE.merge( profile )
+		@invalid_fields = []
+		@missing_fields = []
 
 		self.validate( params ) if params
 	end
@@ -248,14 +214,24 @@ class Strelka::App::ParamValidator < ::FormValidator
 	### Returns +true+ if the given +field+ is one that should be untainted.
 	def untaint?( field )
 		self.log.debug "Checking to see if %p should be untainted." % [field]
-		rval = ( @untaint_all || @untaint_fields.include?(field) )
+		rval = ( @untaint_all || 
+			@untaint_fields.include?(field) || 
+			@untaint_fields.include?(field.to_sym) )
+
 		if rval
 			self.log.debug "  ...yep it should."
 		else
-			self.log.debug "  ...nope."
+			self.log.debug "  ...nope; untaint fields is: %p" % [ @untaint_fields ]
 		end
 
 		return rval
+	end
+
+
+	### Overridden so that the presence of :untaint_constraint_fields doesn't
+	### disable the :untaint_all_constraints flag.
+	def untaint_all_constraints
+		@untaint_all = @profile[:untaint_all_constraints] ? true : false
 	end
 
 
@@ -337,18 +313,15 @@ class Strelka::App::ParamValidator < ::FormValidator
 	end
 
 
-	### Constraint methods
+	#
+	# :section: Constraint methods
+	#
 
 	### Constrain a value to +true+ (or +yes+) and +false+ (or +no+).
 	def match_boolean( val )
-		rval = nil
-		if ( val =~ /^(t(?:rue)?|y(?:es)?)|1$/i )
-			rval = true
-		elsif ( val =~ /^(no?|f(?:alse)?)|0$/i )
-			rval = false
-		end
-
-		return rval
+		return true if val =~ /^(?:t(?:rue)?|y(?:es)?|1)$/i
+		return false if val =~ /^(?:no?|f(?:alse)?|0)$/i
+		return nil
 	end
 
 
@@ -372,48 +345,38 @@ class Strelka::App::ParamValidator < ::FormValidator
 
 	### Constrain a value to alpha characters (a-z, case-insensitive)
 	def match_alpha( val )
-		if val =~ /^([[:alpha:]]+)$/i
-			return $1
-		else
-			return nil
-		end
+		return val[ /^([[:alpha:]]+)$/, 1 ]
 	end
 
 
 	### Constrain a value to alpha characters (a-z, case-insensitive and 0-9)
 	def match_alphanumeric( val )
-		if val =~ /^([[:alnum:]]+)$/i
-			return $1
-		else
-			return nil
-		end
+		return val[ /^([[:alnum:]]+)$/, 1 ]
 	end
 
 
-	### Constrain a value to any printable characters
+	### Constrain a value to any printable characters + whitespace, newline, and CR.
 	def match_printable( val )
-		if val =~ /^([[:print:]]+)$/
-			return val
-		else
-			return nil
-		end
+		return val[ /\A([[:print:][:blank:]\r\n]+)\z/, 1 ]
+	end
+
+
+	### Constrain a value to any UTF-8 word characters.
+	def match_word( val )
+		return val[ /^([[:word:]]+)$/, 1 ]
 	end
 
 
 	### Override the parent class's definition to (not-sloppily) match email 
 	### addresses.
 	def match_email( val )
-		match = RFC822_EMAIL_ADDRESS.match( val )
-		self.log.debug "Validating an email address %p: %p" %
-			[ val, match ]
-		return match ? match[0] : nil
+		return val[ RFC822_EMAIL_ADDRESS ]
 	end
 
 
 	### Match valid hostnames according to the rules of the URL RFC.
 	def match_hostname( val )
-		match = RFC1738_HOSTNAME.match( val )
-		return match ? match[0] : nil
+		return val[ RFC1738_HOSTNAME ]
 	end
 
 
@@ -438,7 +401,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 				apply_string_constraint( key, constraint )
 			when Hash
 				apply_hash_constraint( key, constraint )
-			when Proc
+			when Proc, Method
 				apply_proc_constraint( key, constraint )
 			when Regexp
 				apply_regexp_constraint( key, constraint ) 
@@ -502,18 +465,22 @@ class Strelka::App::ParamValidator < ::FormValidator
 		value = nil
 
 		unless params.empty?
-			value = constraint.call( *params )
+			value = constraint.to_proc.call( *params )
 		else
-			value = constraint.call( @form[key] )
+			value = constraint.to_proc.call( @form[key] )
 		end
 
 		self.set_form_value( key, value, constraint )
+	rescue => err
+		self.log.error "%p while validating %p using %p: %s (from %s)" %
+			[ err.class, key, constraint, err.message, err.backtrace.first ]
+		self.set_form_value( key, nil, constraint )
 	end
 
 
 	### Applies regexp constraint to form[key]
 	def apply_regexp_constraint( key, constraint )
-		self.log.debug "Validating '%p' via regexp %p" % [@form[key], constraint]
+		self.log.debug "Validating %p via regexp %p" % [ @form[key], constraint ]
 
 		if match = constraint.match( @form[key].to_s )
 			self.log.debug "  matched %p" % [match[0]]
@@ -521,6 +488,14 @@ class Strelka::App::ParamValidator < ::FormValidator
 			if match.captures.empty?
 				self.log.debug "  no captures, using whole match: %p" % [match[0]]
 				self.set_form_value( key, match[0], constraint )
+			elsif match.names.length > 1
+				self.log.debug "  extracting hash of named captures: %p" % [ match.names ]
+				hash = match.names.inject( {} ) do |accum,name|
+					accum[ name.to_sym ] = match[ name ]
+					accum
+				end
+
+				self.set_form_value( key, hash, constraint )
 			elsif match.captures.length == 1
 				self.log.debug "  extracting one capture: %p" % [match.captures.first]
 				self.set_form_value( key, match.captures.first, constraint )
@@ -540,11 +515,21 @@ class Strelka::App::ParamValidator < ::FormValidator
 	def set_form_value( key, value, constraint )
 		key.untaint
 
+		# Have to test for nil because valid values might be false.
 		if !value.nil? 
 			self.log.debug "Setting form value for %p to %p (constraint was %p)" %
 				[ key, value, constraint ]
+			if self.untaint?( key )
+				if value.respond_to?( :each_value )
+					value.each_value( &:untaint )
+				elsif value.is_a?( Array )
+					value.each( &:untaint )
+				else
+					value.untaint
+				end
+			end
+
 			@form[key] = value
-			@form[key].untaint if self.untaint?( key )
 			return true
 
 		else

@@ -17,8 +17,8 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	### Initialize some additional stuff for Strelka requests.
 	def initialize( * ) # :notnew:
 		super
-		@uri = nil
-		@verb = self.headers[:method].to_sym
+		@uri    = nil
+		@verb   = self.headers[:method].to_sym
 		@params = nil
 	end
 
@@ -29,6 +29,9 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	# The HTTP verb of the request (as a Symbol)
 	attr_accessor :verb
+
+	# The parameters hash parsed from the request
+	attr_writer :params
 
 
 	### Return a URI object parsed from the URI of the request.
