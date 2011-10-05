@@ -313,6 +313,32 @@ class Strelka::App::ParamValidator < ::FormValidator
 	end
 
 
+	### Return a new ParamValidator with the additional +params+ merged into
+	### its values and re-validated.
+	def merge( params )
+		copy = self.dup
+		copy.merge!( params )
+		return copy
+	end
+
+
+	### Merge the specified +params+ into the receiving ParamValidator and
+	### re-validate the resulting values.
+	def merge!( params )
+	    @missing_fields.clear
+	    @unknown_fields.clear
+	    @required_fields.clear
+	    @invalid_fields.clear
+	    @untaint_fields.clear
+	    @require_some_fields.clear
+	    @optional_fields.clear
+		@form.clear
+
+		newparams = @raw_form.merge( params )
+		self.validate( newparams )
+	end
+
+
 	#
 	# :section: Constraint methods
 	#

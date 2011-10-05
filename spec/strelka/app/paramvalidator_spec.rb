@@ -792,5 +792,37 @@ describe Strelka::App::ParamValidator do
 		@validator[:proc_constraint].should be_nil()
 	end
 
+	it "can have required parameters merged into it after the initial validation" do
+		params = {}
+		@validator.validate( params )
+		@validator.merge!( 'required' => '1' )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:required].should == '1'
+	end
+
+	it "can have optional parameters merged into it after the initial validation" do
+		params = { 'required' => '1' }
+		@validator.validate( params )
+		@validator.merge!( 'optional' => 'yep.' )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:optional].should == 'yep.'
+	end
+
+	it "rejects invalid parameters when they're merged after initial validation" do
+		params = { 'required' => '1', 'number' => '88' }
+		@validator.validate( params )
+		@validator.merge!( 'number' => 'buckwheat noodles' )
+
+		@validator.should_not be_okay()
+		@validator.should have_errors()
+
+		@validator[:number].should be_nil()
+	end
 end
 
