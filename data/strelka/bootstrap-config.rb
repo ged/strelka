@@ -17,11 +17,12 @@ server ADMINSERVER_ID do
 	access_log '/logs/admin-access.log'
 	error_log '/logs/admin-error.log'
 	pid_file '/run/admin.pid'
+	bind_addr '127.0.0.1'
 
 	default_host 'localhost'
 
     host 'localhost' do
-        route '/', handler( 'tcp://127.0.0.1:19999', 'admin-console' )
+        route '/', handler( 'tcp://127.0.0.1:19999', ADMINCONSOLE_ID )
         route '/hello', handler( 'tcp://127.0.0.1:19995', 'hello-world' )
 
 		route '/css',    directory( 'static/css/', 'base.css', 'text/css' )

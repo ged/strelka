@@ -29,11 +29,14 @@ class Strelka::App < Mongrel2::Handler
 	### characters collapsed into hyphens if not. Also 
 	def self::run( appid=nil )
 		if appid.nil?
+			Strelka.log.info "Looking up appid for %p" % [ self.class ]
 			if self.const_defined?( :ID )
 				appid = self.const_get( :ID )
+				Strelka.log.info "  app has an ID: %p" % [ appid ]
 			else
 				appid = ( self.name || "anonymous#{self.object_id}" ).downcase
 				appid.gsub!( /[^[:alnum:]]+/, '-' )
+				Strelka.log.info "  deriving one from the class name: %p" % [ appid ]
 			end
 		end
 

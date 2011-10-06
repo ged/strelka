@@ -1,7 +1,4 @@
-/* @override
-	http://localhost:7337/css/master.css
-	http://gont.bennett.laika.com:7337/css/master.css
-*/
+/* @override http://localhost:7337/css/master.css */
 
 @import url(reset.css);
 
@@ -51,8 +48,12 @@ body {
 	min-width: 800px;
 }
 
+
+body > header,
+body > section {
+    background: #cbcfd5 url(../images/noise.png) repeat;
+}
 body > header {
-    background: #cbcfd5; /* old browsers */
 	padding: 40px 40px 20px;
 	font-weight: bold;
 	font-size: 60px;
@@ -62,8 +63,20 @@ body > header h1 {
 	margin: 0;
 	color: white;
 }
+
+body > nav {
+    background: #b5b9be;
+    padding: 0.5em 50px;
+}
+body > nav ol li {
+	display: inline;
+}
+body > nav ol li + li:before {
+	content: "> ";
+	color: whitesmoke;
+}
+
 body > section {
-    background: #cbcfd5; /* old browsers */
 	padding: 0 40px 1em;
 }
 
@@ -72,6 +85,8 @@ body > section > section {
 }
 
 body > footer {
+	color: #777;
+	font-size: 0.9em;
 	padding: 1em;
 	background: -moz-linear-gradient(top, 
 		rgba(0,0,0,0.85) 0%, 
@@ -117,6 +132,11 @@ section > header {
 	font-size: 1.2em;
 }
 
+section + section,
+table + section,
+section + table {
+	margin-top: 2em;
+}
 
 table {}
 td, th {
@@ -130,9 +150,47 @@ th {
 	border-bottom: 2px solid;
 }
 
+table.horizontal th {
+	border-bottom: 1px dotted #999;
+	text-align: right;
+}
+
+a {
+	color: #911;
+	text-decoration: none;
+	background: rgba( 255,255,255, 0.15 );
+}
+
+section#body {
+	min-height: 600px;
+}
 section#versions ul {
 	font-family: Inconsolata, fixed;
 }
 section#tasklist tr.system-task {
 	font-style: italic;
+}
+
+section#routes td.target {
+	background: rgba( 255,255,255, 0.15 );
+}
+section#routes span.send-ident {
+	font-weight: bold;
+}
+section#routes span.send-spec,
+section#routes span.recv-spec {
+	background-color: rgba( 255,255,255, 0.5 );
+	padding: 0 4px;
+	border-radius: 0.25em;
+}
+section#routes span.index-file {
+	color: #999;
+}
+section#routes span.default-ctype {
+	font-family: Inconsolata, monospace;
+	font-size: 0.8em;
+}
+
+footer span.copyright {
+	float: right;
 }

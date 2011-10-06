@@ -66,12 +66,12 @@ describe Strelka::App::Parameters do
 
 		it "can declare a parameter with an Array validation" do
 			@app.class_eval do
-				param :username, ['johnny5', 'ariel', 'hotah']
+				param :username, [:printable, lambda {|str| str.length <= 16 }]
 			end
 
 			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].
-				should include( :constraint => ['johnny5', 'ariel', 'hotah'] )
+			@app.parameters[:username][:constraint][0].should == :printable
+			@app.parameters[:username][:constraint][1].should be_an_instance_of( Proc )
 		end
 
 		it "can declare a parameter with a Hash validation" do

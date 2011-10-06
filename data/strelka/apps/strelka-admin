@@ -1,73 +1,102 @@
 #!/usr/bin/env ruby
 
 require 'pathname'
-require 'inversion'
 require 'strelka'
 
 # The Strelka admin web console.
 class Strelka::AdminConsole < Strelka::App
-	plugins :templating, :routing
 
+	# The 'appid' of the route to point the application at
+	ID = Strelka::ADMINCONSOLE_ID
+
+	# Load some plugins
+	plugins :templating, :routing, :parameters
+
+	# By default, responses are HTML
 	default_type 'text/html'
 
+	# Templating -- wrap everything in the layout
 	layout 'layout.tmpl'
 	templates \
 		:console => 'admin/console.tmpl',
+		:server  => 'admin/server.tmpl',
+		:host    => 'admin/host.tmpl',
 		:message => 'admin/message.tmpl'
+
+	# Request parameter validation
+	param :uuid, /^[a-z][\-\w]+$/i, :untaint
+	param :id, :integer, :untaint
 
 
 	### Initialize some application data.
 	def initialize( * )
-		super
 
+		# Use the templates in the same data directory as this app
+		templatedir = Strelka::DATADIR + 'templates'
+		Inversion::Template.configure( :template_paths => [templatedir] )
+
+		# Commonalize all the loggers
 		Mongrel2.logger = Strelka.logger
 		Configurability.logger = Strelka.logger
-
-		Inversion.logger.level = Logger::INFO
+		Inversion.logger.level = Logger::WARN
 
 		@control = Mongrel2::Control.new( 'ipc://run/admin-control' )
+
+		Mongrel2::Config.configure( :configdb => Strelka::DEFAULT_CONFIG_URI )
+
+		super
 	end
 
 
 	# GET / -- console view
 	get do |req|
-		Inversion.logger.level = Logger::INFO
-
 		tmpl = self.template( :console )
+		tmpl.request = req
 		tmpl.control = @control
 		tmpl.servers = Mongrel2::Config.servers
-
-		tmpl.strelka_version = Strelka.version_string( true )
-		tmpl.mongrel2_version = Mongrel2.version_string( true )
-		tmpl.inversion_version = Inversion.version_string( true )
 
 		return tmpl
 	end
 
-	post "/upload" do |req|
-		tmpl = self.template( :message )
-		tmpl.message = "Upload!"
+
+	# GET /server/«uuid»
+	get "/server/:uuid" do |req|
+		self.log.debug "Fetching server record for %p" % [ req.params[:uuid] ]
+		server = Mongrel2::Config::Server.by_uuid( req.params[:uuid] ) or
+			finish_with( HTTP::NOT_FOUND, "No such server" )
+
+		tmpl = self.template( :server )
+		tmpl.server = server
+		tmpl.request = req
+		tmpl.control = @control
+
+		return tmpl
+	end
+
+
+	# Create a new server
+	post "/server" do |req|
+		
+	end
+
+
+	# GET /server/«uuid»/host/«id»
+	get "/server/:uuid/host/:id" do |req|
+		id, uuid = req.params.values_at( :id, :uuid )
+		self.log.debug "Fetching host record for host %d under the %p server" % [ id, uuid ]
+		host = Mongrel2::Config::Host[ id ] or
+			finish_with( HTTP::NOT_FOUND, "No such host" )
+
+		tmpl = self.template( :host )
+		tmpl.host = host
+		tmpl.request = req
+		tmpl.control = @control
 
 		return tmpl
 	end
 
 end # class Strelka::AdminConsole
 
-if __FILE__ == $0
-	datadir = Pathname( __FILE__ ).dirname.parent
-	templatedir = datadir + 'templates'
 
-	# Log to the screen if STDERR is opened to one
-	if $stderr.tty?
-		Strelka.logger = Logger.new( $stderr )
-	else
-		Strelka.logger = Logger.new( 'admin-console.log' )
-	end
+Strelka::AdminConsole.run if __FILE__ == $0
 
-	Strelka.logger.level = $VERBOSE ? Logger::DEBUG : Logger::INFO
-
-	Inversion::Template.configure( :template_paths => [templatedir] )
-	Mongrel2::Config.configure( :configdb => Strelka::Constants::DEFAULT_CONFIG_URI )
-
-	Strelka::AdminConsole.run( 'admin-console' )
-end

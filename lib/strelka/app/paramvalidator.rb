@@ -105,6 +105,33 @@ class Strelka::App::ParamValidator < ::FormValidator
 	# Pattern for countint the number of hash levels in a parameter key
 	PARAMS_HASH_RE = /^([^\[]+)(\[.*\])?(.)?.*$/
 
+	# The Hash of builtin constraints that are validated against a regular
+	# expression.
+	BUILTIN_CONSTRAINT_PATTERNS = {
+		:boolean      => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
+		:integer      => /^(?<integer>[\-\+]?\d+)$/,
+		:float        => /^(?<float>[\-\+]?(?:\d*\.\d+|\d+)(?:e[\-\=]\d+))$/,
+		:alpha        => /^(?<alpha>[[:alpha:]]+)$/,
+		:alphanumeric => /^(?<alphanumeric>[[:alnum:]]+)$/,
+		:printable    => /\A(?<printable>[[:print:][:blank:]\r\n]+)\z/,
+		:word         => /^(?<word>[[:word:]]+)$/,
+		:email        => /^(?<email>#{RFC822_EMAIL_ADDRESS})$/,
+		:hostname     => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
+		:uri          => /^(?<uri>#{URI::URI_REF})$/,
+	}
+
+
+	### Return a Regex for the built-in constraint associated with the given +name+. If
+	### the builtin constraint is not pattern-based, or there is no such constraint,
+	### returns +nil+.
+	def self::pattern_for_constraint( name )
+		return BUILTIN_CONSTRAINT_PATTERNS[ name.to_sym ]
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 
 	### Create a new Strelka::App::ParamValidator object.
 	def initialize( profile, params=nil )
@@ -341,20 +368,17 @@ class Strelka::App::ParamValidator < ::FormValidator
 	end
 
 
+	### Returns an array containing valid parameters in the validator corresponding to the
+	### given +selector+(s).
+	def values_at( *selector )
+		selector.map!( &:to_s )
+		return @form.values_at( *selector )
+	end
+
+
 	#
 	# :section: Constraint methods
 	#
-
-	BUILTIN_CONSTRAINT_PATTERNS = {
-		:boolean => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
-		:integer => /^(?<integer>[\-\+]?\d+)$/,
-	}
-
-	### Return a Regex for the built-in constraint associated with the given +name+.
-	def pattern_for_constraint( name )
-		return BUILTIN_CONSTRAINT_PATTERNS[ name.to_sym ]
-	end
-
 
 	### Try to match the specified +val+ using the built-in constraint pattern
 	### associated with +name+, returning the matched value upon success, and +nil+
@@ -362,34 +386,44 @@ class Strelka::App::ParamValidator < ::FormValidator
 	### associated MatchData on success, and its return value is returned instead of
 	### the matching String.
 	def match_builtin_constraint( val, name )
-		re = self.pattern_for_constraint( name.to_sym )
+		self.log.debug "Validating %p using built-in constraint %p" % [ val, name ]
+		re = self.class.pattern_for_constraint( name.to_sym )
 		match = re.match( val ) or return nil
+		self.log.debug "  matched: %p" % [ match ]
 
 		if block_given?
-			return yield( match )
+			begin
+				return yield( match )
+			rescue ArgumentError
+				return nil
+			end
 		else
-			return match[0]
+			return match.to_s
 		end
 	end
 
 
 	### Constrain a value to +true+ (or +yes+) and +false+ (or +no+).
 	def match_boolean( val )
-		val = self.match_builtin_constraint( val, :boolean ) do |m|
-			%w[y t 1].include?( m )
-		return false
+		return self.match_builtin_constraint( val, :boolean ) do |m|
+			m.to_s.start_with?( 'y', 't', '1' )
+		end
 	end
 
 
 	### Constrain a value to an integer
 	def match_integer( val )
-		val = 
+		return self.match_builtin_constraint( val, :integer ) do |m|
+			Integer( m.to_s )
+		end
 	end
 
 
 	### Contrain a value to a Float
 	def match_float( val )
-		return Float( val ) rescue nil
+		return self.match_builtin_constraint( val, :float ) do |m|
+			Float( m.to_s )
+		end
 	end
 
 
@@ -401,44 +435,46 @@ class Strelka::App::ParamValidator < ::FormValidator
 
 	### Constrain a value to alpha characters (a-z, case-insensitive)
 	def match_alpha( val )
-		return val[ /^([[:alpha:]]+)$/, 1 ]
+		return self.match_builtin_constraint( val, :alpha )
 	end
 
 
 	### Constrain a value to alpha characters (a-z, case-insensitive and 0-9)
 	def match_alphanumeric( val )
-		return val[ /^([[:alnum:]]+)$/, 1 ]
+		return self.match_builtin_constraint( val, :alphanumeric )
 	end
 
 
 	### Constrain a value to any printable characters + whitespace, newline, and CR.
 	def match_printable( val )
-		return val[ /\A([[:print:][:blank:]\r\n]+)\z/, 1 ]
+		return self.match_builtin_constraint( val, :printable )
 	end
 
 
 	### Constrain a value to any UTF-8 word characters.
 	def match_word( val )
-		return val[ /^([[:word:]]+)$/, 1 ]
+		return self.match_builtin_constraint( val, :word )
 	end
 
 
 	### Override the parent class's definition to (not-sloppily) match email 
 	### addresses.
 	def match_email( val )
-		return val[ RFC822_EMAIL_ADDRESS ]
+		return self.match_builtin_constraint( val, :email )
 	end
 
 
 	### Match valid hostnames according to the rules of the URL RFC.
 	def match_hostname( val )
-		return val[ RFC1738_HOSTNAME ]
+		return self.match_builtin_constraint( val, :hostname )
 	end
 
 
 	### Match valid URIs
 	def match_uri( val )
-		return URI.parse( val )
+		return self.match_builtin_constraint( val, :uri ) do |m|
+			URI.parse( m.to_s )
+		end
 	rescue URI::InvalidURIError => err
 		self.log.error "Error trying to parse URI %p: %s" % [ val, err.message ]
 		return nil
@@ -508,7 +544,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 		# If the validation failed, and there's a name for this constraint, replace
 		# the name in @invalid_fields with the name
 		if !rval && constraint["name"]
-			@invalid_fields[key] = constraint["name"]
+			@invalid_fields[ key ] = constraint["name"]
 		end
 
 		return rval

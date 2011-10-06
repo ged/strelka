@@ -1,8 +1,8 @@
-doc/
+^doc/
 \.sublime-.*$
-coverage/
+^coverage/
 \.pid$
 \.sqlite$
-pkg/
-static/
+^pkg/
+^static/
 \.DS_Store

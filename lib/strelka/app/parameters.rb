@@ -60,6 +60,10 @@ module Strelka::App::Parameters
 			:description => nil,
 		}
 
+		# Pattern to use to strip binding operators from parameter patterns so they
+		# can be used in the middle of routing Regexps.
+		PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\a', '\\z', '\\Z' )
+
 		# Options that are passed as Symbols to .param
 		FLAGS = [ :required, :untaint ]
 
@@ -123,19 +127,37 @@ module Strelka::App::Parameters
 		end
 
 
-		### Turn the given +constraint+ into a routing component.
-		def extract_route_from_constraint( constraint )
-			Strelka.log.debug "  searching for a param for %p" % [ component ]
-			param = self.parameters[ component[1..-1].to_sym ] or
-				raise ScriptError, "no parameter %p defined" % [ component ]
+		### Turn the constraint associated with +name+ into a routing component.
+		def extract_route_from_constraint( name )
+			name.slice!( 0, 1 ) if name.start_with?( ':' )
+			Strelka.log.debug "  searching for a param for %p" % [ name ]
+			param = self.parameters[ name.to_sym ] or
+				raise ScriptError, "no parameter %p defined" % [ name ]
+
+			# Munge the constraint into a Regexp
+			constraint = param[ :constraint ]
+			re = case constraint
+				when Regexp
+					constraint
+				when Array
+					sub_res = constraint.map( &self.method(:extract_route_from_constraint) )
+					Regexp.union( sub_res )
+				when Symbol
+					re = Strelka::App::ParamValidator.pattern_for_constraint( constraint ) or
+						raise ScriptError, "no pattern for %p constraint" % [ constraint ]
+					/(?<#{name}>#{re})/
+				else
+					raise ScriptError,
+						"can't route on a parameter with a %p constraint %p" % [ constraint.class ]
+				end
 
 			# Unbind the pattern from beginning or end of line.
 			# :TODO: This is pretty ugly. Find a better way of modifying the regex.
-			re = param[ :constraint ]
 			re_str = re.to_s.
 				sub( %r{\(\?[\-mix]+:(.*)\)}, '\\1' ).
 				gsub( PARAMETER_PATTERN_STRIP_RE, '' )
-			Regexp.new( re_str, re.options )
+
+			return Regexp.new( re_str, re.options )
 		end
 
 

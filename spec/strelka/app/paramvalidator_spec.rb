@@ -824,5 +824,12 @@ describe Strelka::App::ParamValidator do
 
 		@validator[:number].should be_nil()
 	end
+
+	it "allows valid parameters to be fetched en masse" do
+		params = { 'required' => '1', 'number' => '88' }
+		@validator.validate( params )
+		@validator.values_at( :required, :number ).should == [ '1', '88' ]
+	end
+
 end
 

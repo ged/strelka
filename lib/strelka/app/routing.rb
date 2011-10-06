@@ -54,11 +54,6 @@ module Strelka::App::Routing
 	# Class methods to add to classes with routing.
 	module ClassMethods
 
-		# Pattern to use to strip binding operators from parameter patterns so they
-		# can be used in the middle of routing Regexps.
-		PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\a', '\\z', '\\Z' )
-
-
 		# The list of routes to pass to the Router when the application is created
 		attr_reader :routes
 		@routes = []
@@ -74,6 +69,14 @@ module Strelka::App::Routing
 		end
 
 
+		# OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
+
+		### Define a route for the GET verb and the given +pattern+.
+		def options( pattern='', options={}, &block )
+			self.add_route( :GET, pattern, options, &block )
+		end
+
+
 		### Define a route for the GET verb and the given +pattern+.
 		def get( pattern='', options={}, &block )
 			self.add_route( :GET, pattern, options, &block )
@@ -83,6 +86,30 @@ module Strelka::App::Routing
 		### Define a route for the POST verb and the given +pattern+.
 		def post( pattern='', options={}, &block )
 			self.add_route( :POST, pattern, options, &block )
+		end
+
+
+		### Define a route for the PUT verb and the given +pattern+.
+		def put( pattern='', options={}, &block )
+			self.add_route( :PUT, pattern, options, &block )
+		end
+
+
+		### Define a route for the DELETE verb and the given +pattern+.
+		def delete( pattern='', options={}, &block )
+			self.add_route( :DELETE, pattern, options, &block )
+		end
+
+
+		### Define a route for the TRACE verb and the given +pattern+.
+		def trace( pattern='', options={}, &block )
+			self.add_route( :TRACE, pattern, options, &block )
+		end
+
+
+		### Define a route for the CONNECT verb.
+		def connect( options={}, &block )
+			self.add_route( :CONNECT, '', options, &block )
 		end
 
 

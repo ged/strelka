@@ -344,15 +344,11 @@ class Strelka::LeashCommand
 		message "Starting up control app..."
 
 		pid = fork do
-			$0 = 'admin-console'
-			appsdir       = DATADIR + 'apps'
-			templatedir   = DATADIR + 'templates'
-			strelka_admin = appsdir + 'strelka-admin'
+			$0 = Strelka::ADMINCONSOLE_ID
+			strelka_admin = DATADIR + 'apps/strelka-admin'
 
 			Kernel.load( strelka_admin )
-
-			Inversion::Template.configure( :template_paths => [templatedir] )
-			Strelka::AdminConsole.run( 'admin-console' )
+			Strelka::AdminConsole.run
 
 			exit!
 		end
