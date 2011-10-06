@@ -25,6 +25,7 @@ describe Strelka::App::Routing do
 
 	before( :all ) do
 		setup_logging( :fatal )
+		@request_factory = Mongrel2::RequestFactory.new( route: '' )
 	end
 
 	after( :all ) do
@@ -41,6 +42,9 @@ describe Strelka::App::Routing do
 			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :routing
+				def initialize( appid='params-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
+					super
+				end
 			end
 			Strelka.log.debug "  new instance is: %p, routes array: 0x%016x" %
 				[ @app, @app.routes.object_id * 2 ]
@@ -114,10 +118,60 @@ describe Strelka::App::Routing do
 					   @app.instance_method(:POST_userinfo__username), {} ]]
 			end
 
+			it "unbinds parameter patterns bound with ^ and $ for the route" do
+				@app.class_eval do
+					param :username, /^[a-z]\w+$/i
+					post '/userinfo/:username' do |req|
+					end
+				end
+
+				@app.routes.should == 
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
+					   @app.instance_method(:POST_userinfo__username), {} ]]
+			end
+
+			it "unbinds parameter patterns bound with \\a and \\z for the route" do
+				@app.class_eval do
+					param :username, /\a[a-z]\w+\z/i
+					post '/userinfo/:username' do |req|
+					end
+				end
+
+				@app.routes.should == 
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
+					   @app.instance_method(:POST_userinfo__username), {} ]]
+			end
+
+			it "unbinds parameter patterns bound with \\Z for the route" do
+				@app.class_eval do
+					param :username, /\a[a-z]\w+\Z/i
+					post '/userinfo/:username' do |req|
+					end
+				end
+
+				@app.routes.should == 
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
+					   @app.instance_method(:POST_userinfo__username), {} ]]
+			end
+
+			it "merges parameters from the route path into the request's param validator" do
+				@app.class_eval do
+					param :username, /\a[a-z]\w+\Z/i
+					get '/userinfo/:username' do |req|
+					end
+				end
+
+				req = @request_factory.get( '/userinfo/benthik' )
+				@app.new.handle( req )
+
+				req.params[:username].should == 'benthik'
+			end
+
 
 			it "raises a ScriptError if a route is defined with a param without it having first " +
 			   "been set up" do
-				# RSpec's expect {},to only rescues RuntimeErrors, so we have to do this ourselves.
+				# RSpec's "expect {}.to" construct only rescues RuntimeErrors, so we have to do 
+				# this ourselves.
 				begin
 					@app.get( '/userinfo/:username' ) {}
 				rescue ScriptError => err

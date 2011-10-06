@@ -44,18 +44,41 @@ class Strelka::App::DefaultRouter
 
 
 	### Determine the most-specific route for the specified +request+ and return
-	### the #to_proc-able object that handles it.
+	### the UnboundMethod object of the App that should handle it.
 	def route_request( request )
+		route = nil
 		verb = request.verb
 		path = request.app_path || ''
-		route = nil
+		path.slice!( 0, 1 ) if path.start_with?( '/' ) # Strip the leading '/'
 
-		# Strip the leading '/'
-		path.slice!( 0, 1 ) if path.start_with?( '/' )
-
+		self.log.debug "Looking for a route for: %p %p" % [ verb, path ]
 		verbroutes = @routes[ verb ] or return nil
-		longestmatch = verbroutes.keys.inject( nil ) do |longestmatch, pattern|
-			self.log.debug "Matching pattern %p; longest match so far: %p" %
+		match = self.find_longest_match( verbroutes.keys, path ) or return nil
+		self.log.debug "  longest match result: %p" % [ match ]
+
+		# The best route is the one with the key of the regexp of the 
+		# longest match
+		route = verbroutes[ match.regexp ].merge( :match => match )
+		route_params = match.names.inject({}) do |hash,name|
+			hash[ name ] = match[ name ]
+			hash
+		end
+
+		# Add routing information to the request, and merge parameters if there are any
+		request.notes[ :routing ][ :route ] = route
+		request.params.merge!( route_params ) unless route_params.empty?
+
+		# Return the UnboundMethod object for the route to call
+		return route[:action]
+	end
+
+
+	### Find the longest match in +patterns+ for the given +path+ and return the MatchData
+	### object for it. Returns +nil+ if no match was found.
+	def find_longest_match( patterns, path )
+
+		return patterns.inject( nil ) do |longestmatch, pattern|
+			self.log.debug "  trying pattern %p; longest match so far: %p" %
 				[ pattern, longestmatch ]
 
 			# If the pattern doesn't match, keep the longest match and move on to the next
@@ -71,15 +94,5 @@ class Strelka::App::DefaultRouter
 			longestmatch
 		end
 
-		# If there wasn't a match, abort
-		return nil unless longestmatch
-
-		# The best route is the one with the key of the regexp of the 
-		# longest match
-		route = verbroutes[ longestmatch.regexp ]
-
-		# Bind the method to the app and 
-		return route[:action]
 	end
-
 end # class Strelka::App::DefaultRouter

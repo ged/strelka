@@ -28,7 +28,7 @@ describe Strelka::HTTPRequest do
 		reset_logging()
 	end
 
-	context "a simple GET request" do
+	context "instance" do
 
 		before( :each ) do
 			@req = @request_factory.get( '/directory/userinfo/ged' )
@@ -50,6 +50,12 @@ describe Strelka::HTTPRequest do
 
 		it "knows what HTTP verb the request used" do
 			@req.verb.should == :GET
+		end
+
+		it "can get and set notes for communication between plugins" do
+			@req.notes.should be_a( Hash )
+			@req.notes[:routing].should be_a( Hash )
+			@req.notes[:routing][:route].should be_a( Hash )
 		end
 
 	end

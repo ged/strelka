@@ -148,7 +148,7 @@ describe Strelka::App::DefaultRouter do
 	end
 
 	# get '/foo/\w{3}'
-		# get '/foo/\d+'
+	# get '/foo/\d+'
 
 	context "a router with routes for: 'foo/\w{3}', then 'foo/\d+'" do
 

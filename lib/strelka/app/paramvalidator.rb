@@ -325,6 +325,8 @@ class Strelka::App::ParamValidator < ::FormValidator
 	### Merge the specified +params+ into the receiving ParamValidator and
 	### re-validate the resulting values.
 	def merge!( params )
+		return if params.empty?
+
 	    @missing_fields.clear
 	    @unknown_fields.clear
 	    @required_fields.clear
@@ -343,17 +345,45 @@ class Strelka::App::ParamValidator < ::FormValidator
 	# :section: Constraint methods
 	#
 
+	BUILTIN_CONSTRAINT_PATTERNS = {
+		:boolean => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
+		:integer => /^(?<integer>[\-\+]?\d+)$/,
+	}
+
+	### Return a Regex for the built-in constraint associated with the given +name+.
+	def pattern_for_constraint( name )
+		return BUILTIN_CONSTRAINT_PATTERNS[ name.to_sym ]
+	end
+
+
+	### Try to match the specified +val+ using the built-in constraint pattern
+	### associated with +name+, returning the matched value upon success, and +nil+
+	### if the +val+ didn't match. If a +block+ is given, it's called with the
+	### associated MatchData on success, and its return value is returned instead of
+	### the matching String.
+	def match_builtin_constraint( val, name )
+		re = self.pattern_for_constraint( name.to_sym )
+		match = re.match( val ) or return nil
+
+		if block_given?
+			return yield( match )
+		else
+			return match[0]
+		end
+	end
+
+
 	### Constrain a value to +true+ (or +yes+) and +false+ (or +no+).
 	def match_boolean( val )
-		return true if val =~ /^(?:t(?:rue)?|y(?:es)?|1)$/i
-		return false if val =~ /^(?:no?|f(?:alse)?|0)$/i
-		return nil
+		val = self.match_builtin_constraint( val, :boolean ) do |m|
+			%w[y t 1].include?( m )
+		return false
 	end
 
 
 	### Constrain a value to an integer
 	def match_integer( val )
-		return Integer( val ) rescue nil
+		val = 
 	end
 
 

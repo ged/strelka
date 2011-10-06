@@ -2,8 +2,9 @@
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
-require 'strelka/app/defaultrouter' unless defined?( Strelka::App::DefaultRouter )
 
+require 'strelka/app/defaultrouter'
+require 'strelka/exceptions'
 require 'strelka/app/plugins'
 
 # Sinatra-ish routing logic for Strelka::Apps
@@ -52,6 +53,11 @@ module Strelka::App::Routing
 
 	# Class methods to add to classes with routing.
 	module ClassMethods
+
+		# Pattern to use to strip binding operators from parameter patterns so they
+		# can be used in the middle of routing Regexps.
+		PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\a', '\\z', '\\Z' )
+
 
 		# The list of routes to pass to the Router when the application is created
 		attr_reader :routes
@@ -128,12 +134,12 @@ module Strelka::App::Routing
 			pattern.slice!( 0, 1 ) if pattern.start_with?( '/' )
 
 			return pattern.split( '/' ).collect do |component|
-				# Map patterns to their parameter constraint regex
+
 				if component.start_with?( ':' )
-					Strelka.log.debug "  searching for a param for %p" % [ component ]
-					param = self.parameters[ component[1..-1].to_sym ] or
-						raise ScriptError, "no parameter %p defined" % [ component ]
-					param[ :constraint ]
+					raise ScriptError,
+						"parameter-based routing not supported without a 'parameters' plugin" unless
+						self.respond_to?( :extract_route_from_constraint )
+					self.extract_route_from_constraint( component )
 				else
 					component
 				end
@@ -164,7 +170,7 @@ module Strelka::App::Routing
 	### Dispatch the request using the Router.
 	def handle_request( request, &block )
 		if handler = self.router.route_request( request )
-			return handler.bind( self ).call( request )
+			return handler.bind( self ).call( request, &block )
 		else
 			finish_with HTTP::NOT_FOUND, "The requested resource was not found on this server."
 		end

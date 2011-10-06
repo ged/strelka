@@ -123,6 +123,22 @@ module Strelka::App::Parameters
 		end
 
 
+		### Turn the given +constraint+ into a routing component.
+		def extract_route_from_constraint( constraint )
+			Strelka.log.debug "  searching for a param for %p" % [ component ]
+			param = self.parameters[ component[1..-1].to_sym ] or
+				raise ScriptError, "no parameter %p defined" % [ component ]
+
+			# Unbind the pattern from beginning or end of line.
+			# :TODO: This is pretty ugly. Find a better way of modifying the regex.
+			re = param[ :constraint ]
+			re_str = re.to_s.
+				sub( %r{\(\?[\-mix]+:(.*)\)}, '\\1' ).
+				gsub( PARAMETER_PATTERN_STRIP_RE, '' )
+			Regexp.new( re_str, re.options )
+		end
+
+
 		### Inheritance hook -- inheriting classes inherit their parents' parameter
 		### declarations, too.
 		def inherited( subclass )

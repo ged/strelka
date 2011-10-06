@@ -20,6 +20,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		@uri    = nil
 		@verb   = self.headers[:method].to_sym
 		@params = nil
+		@notes  = Hash.new( &method(:autovivify) )
 	end
 
 
@@ -32,6 +33,10 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	# The parameters hash parsed from the request
 	attr_writer :params
+
+	# A Hash that plugins can use to pass data amongst themselves. The missing-key
+	# callback is set to auto-create nested sub-hashes.
+	attr_reader :notes
 
 
 	### Return a URI object parsed from the URI of the request.
@@ -121,5 +126,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		end
 	end
 
+
+	### Create and return a Hash that will auto-vivify any values it is missing with
+	### another auto-vivifying Hash.
+	def autovivify( hash, key )
+		hash[ key ] = Hash.new( &method(:autovivify) )
+	end
 
 end # class Strelka::HTTPRequest
