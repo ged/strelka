@@ -260,6 +260,19 @@ class Strelka::LeashCommand
 		self.setup_bootstrap_config
 		self.setup_adminserver_directory
 
+		if self.prompt.agree( "Start mongrel2 and the admin app?", true )
+			self.start_command
+		else
+			message "Okay, well stuff is now set up."
+		end
+	end
+	help :setup, "Set up a new Strelka environment and start the admin server."
+
+
+	### The 'start' command
+	def start_command( *args )
+		message "Starting..."
+
 		m2pid = apppid = nil
 		begin
 			m2pid = self.start_admin_mongrel2
@@ -279,10 +292,71 @@ class Strelka::LeashCommand
 			results = Process.waitall
 			message "Done: %p" % [ results ]
 		end
-
 	end
-	help :setup, "Set up a new Strelka environment and start the admin server."
 
+
+	### The 'version' command
+	def version_command( *args )
+		message( "<%= color 'Version:', :header %> " + Mongrel2.version_string(true) )
+	end
+	help :version, "Prints the Ruby-Mongrel2 version."
+
+
+	#
+	# Utility methods
+	#
+
+	### Output normal output
+	def message( *parts )
+		self.prompt.say( parts.map(&:to_s).join($/) )
+	end
+
+
+	### Output the given +text+ highlighted as a header.
+	def header( text )
+		message( self.prompt.color(text, :header) )
+	end
+
+
+	### Output the given +text+ highlighted as an error.
+	def error( text )
+		message( self.prompt.color(text, :error) )
+	end
+
+
+	### Read command line history from HISTORY_FILE
+	def read_history
+		histfile = HISTORY_FILE.expand_path
+
+		if histfile.exist?
+			lines = histfile.readlines.collect {|line| line.chomp }
+			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
+			Readline::HISTORY.push( *lines )
+		else
+			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
+		end
+	end
+
+
+	### Save command line history to HISTORY_FILE
+	def save_history
+		histfile = HISTORY_FILE.expand_path
+
+		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
+		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
+			lines.length > DEFAULT_HISTORY_SIZE
+
+		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
+
+		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
+			ofh.puts( *lines )
+		end
+	end
+
+
+	#
+	# Mongrel2 functions
+	#
 
 	### Install a bootstrap config database for the admin server.
 	def setup_bootstrap_config
@@ -354,65 +428,6 @@ class Strelka::LeashCommand
 		end
 
 		return pid
-	end
-
-
-	### The 'version' command
-	def version_command( *args )
-		message( "<%= color 'Version:', :header %> " + Mongrel2.version_string(true) )
-	end
-	help :version, "Prints the Ruby-Mongrel2 version."
-
-
-	#
-	# Utility methods
-	#
-
-	### Output normal output
-	def message( *parts )
-		self.prompt.say( parts.map(&:to_s).join($/) )
-	end
-
-
-	### Output the given +text+ highlighted as a header.
-	def header( text )
-		message( self.prompt.color(text, :header) )
-	end
-
-
-	### Output the given +text+ highlighted as an error.
-	def error( text )
-		message( self.prompt.color(text, :error) )
-	end
-
-
-	### Read command line history from HISTORY_FILE
-	def read_history
-		histfile = HISTORY_FILE.expand_path
-
-		if histfile.exist?
-			lines = histfile.readlines.collect {|line| line.chomp }
-			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
-			Readline::HISTORY.push( *lines )
-		else
-			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
-		end
-	end
-
-
-	### Save command line history to HISTORY_FILE
-	def save_history
-		histfile = HISTORY_FILE.expand_path
-
-		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
-		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
-			lines.length > DEFAULT_HISTORY_SIZE
-
-		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
-
-		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
-			ofh.puts( *lines )
-		end
 	end
 
 
