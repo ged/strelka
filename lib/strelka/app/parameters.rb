@@ -62,7 +62,7 @@ module Strelka::App::Parameters
 
 		# Pattern to use to strip binding operators from parameter patterns so they
 		# can be used in the middle of routing Regexps.
-		PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\a', '\\z', '\\Z' )
+		PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\A', '\\z', '\\Z' )
 
 		# Options that are passed as Symbols to .param
 		FLAGS = [ :required, :untaint ]

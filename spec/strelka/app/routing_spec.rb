@@ -130,9 +130,9 @@ describe Strelka::App::Routing do
 					   @app.instance_method(:POST_userinfo__username), {} ]]
 			end
 
-			it "unbinds parameter patterns bound with \\a and \\z for the route" do
+			it "unbinds parameter patterns bound with \\A and \\z for the route" do
 				@app.class_eval do
-					param :username, /\a[a-z]\w+\z/i
+					param :username, /\A[a-z]\w+\z/i
 					post '/userinfo/:username' do |req|
 					end
 				end
@@ -144,7 +144,7 @@ describe Strelka::App::Routing do
 
 			it "unbinds parameter patterns bound with \\Z for the route" do
 				@app.class_eval do
-					param :username, /\a[a-z]\w+\Z/i
+					param :username, /\A[a-z]\w+\Z/i
 					post '/userinfo/:username' do |req|
 					end
 				end
@@ -156,7 +156,7 @@ describe Strelka::App::Routing do
 
 			it "merges parameters from the route path into the request's param validator" do
 				@app.class_eval do
-					param :username, /\a[a-z]\w+\Z/i
+					param :username, /\A[a-z]\w+\Z/i
 					get '/userinfo/:username' do |req|
 					end
 				end
