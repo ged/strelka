@@ -260,7 +260,7 @@ class Strelka::LeashCommand
 		self.setup_bootstrap_config
 		self.setup_adminserver_directory
 
-		if self.prompt.agree( "Start mongrel2 and the admin app?", true )
+		if self.prompt.agree( "Start mongrel2 and the admin app? ", true )
 			self.start_command
 		else
 			message "Okay, well stuff is now set up."

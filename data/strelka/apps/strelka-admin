@@ -2,6 +2,8 @@
 
 require 'pathname'
 require 'strelka'
+require 'uuidtools'
+
 
 # The Strelka admin web console.
 class Strelka::AdminConsole < Strelka::App
@@ -56,6 +58,16 @@ class Strelka::AdminConsole < Strelka::App
 		tmpl.servers = Mongrel2::Config.servers
 
 		return tmpl
+	end
+
+
+	get '/uuid' do |req|
+		res = req.response
+		res.content_type = 'text/plain'
+		res.status = HTTP::OK
+		res << UUIDTools::UUID.random_create
+
+		return res
 	end
 
 

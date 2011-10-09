@@ -6,7 +6,7 @@
 	</header>
 
 	<nav class="actions">
-		<button>Add a Server</button>
+		<button class="create">Add a Server</button>
 	</nav>
 
 <?if servers.empty? ?>
@@ -21,23 +21,49 @@
 				<th>Address</th>
 				<th>Port</th>
 				<th>SSL?</th>
+				<th class="controls">&nbsp;</th>
 			</tr>
 		</thead>
 		<tbody>
 		<?for server in servers ?>
 			<tr class="server">
-				<td class="uuid">
+				<td class="editable uuid">
 					<a href="[?call request.app_path ?]/server/[?call server.uuid ?]"><?call server.uuid ?></a>
 				</td>
-				<td class="name"><?call server.name ?></td>
-				<td class="default-host"><?call server.default_host ?></td>
-				<td class="bind-addr"><?call server.bind_addr ?></td>
-				<td class="port"><?call server.port ?></td>
-				<td class="ssl"><?if server.use_ssl.nonzero? ?>•<?end if ?></td>
+				<td class="editable name"><?call server.name ?></td>
+				<td class="editable default-host"><?call server.default_host ?></td>
+				<td class="editable bind-addr"><?call server.bind_addr ?></td>
+				<td class="editable port"><?call server.port ?></td>
+				<td class="toggle icon ssl[?if server.use_ssl.nonzero? ?] enabled[?end if ?]"><img 
+					src="/images/icons/tick-white.png" width="16" height="16" alt="" /></td>
+				<td class="controls">
+					<button class="save"><img src="/images/icons/tick-button.png" width="16" height="16" 
+						title="Save Changes" alt="Save" /></button>
+					<button class="cancel"><img src="/images/icons/cross-button.png" width="16" height="16" 
+						title="Discard Changes" alt="Cancel" /></button>
+				</td>
 			</tr>
 		<?end for ?>
 		</tbody>
 	</table>
 <?end if ?>
 </section>
+
+<script id="server-template" type="text/x-jquery-tmpl">
+<tr class="server unsaved">
+	<td class="editable uuid">${uuid}</td>
+	<td class="editable name">${name}</td>
+	<td class="editable default-host">${default_host}</td>
+	<td class="editable bind-addr">${bind_addr}</td>
+	<td class="editable port">${port}</td>
+	<td class="toggle icon ssl{{if use_ssl}} enabled{{/if}}"><img 
+		src="/images/icons/tick-white.png" width="16" height="16" alt="" /></td>
+	<td class="controls">
+		<button class="save"><img src="/images/icons/tick-button.png" width="16" height="16" 
+			title="Save Changes" alt="Save" /></button>
+		<button class="cancel"><img src="/images/icons/cross-button.png" width="16" height="16" 
+			title="Discard Changes" alt="Cancel" /></button>
+	</td>
+</tr>
+</script>
 

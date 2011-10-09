@@ -65,6 +65,7 @@ body > header h1 {
 }
 
 body > nav {
+	margin-top: -0.5em;
     background: #b5b9be;
     padding: 0.5em 50px;
 }
@@ -149,10 +150,48 @@ th {
 	font-weight: bold;
 	border-bottom: 2px solid;
 }
-
 table.horizontal th {
 	border-bottom: 1px dotted #999;
 	text-align: right;
+}
+td.icon {
+	text-align: center;
+	line-height: 8px;
+	vertical-align: bottom;
+}
+td.toggle span.target {
+	border: 1px dashed rgba( 0,0,0, 0.20 );
+	border-radius: 4px;
+	display: inline-block;
+	cursor: pointer;
+}
+td.toggle img {
+	visibility: hidden;
+}
+td.toggle.enabled img {
+	visibility: visible;
+}
+
+th.controls,
+td.controls {
+	border: none;
+}
+td.controls {
+	visibility: hidden;
+}
+td.controls button {
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: clear;
+	cursor: pointer;
+}
+
+tr.unsaved {
+	font-style: italic;
+}
+tr.unsaved td.controls {
+	visibility: visible;
 }
 
 a {

@@ -34,3 +34,6 @@ end
 
 setting "control_port", 'ipc://run/admin-control'
 
+mimetypes '.ttf' => 'application/x-font-truetype',
+          '.otf' => 'application/x-font-opentype'
+
