@@ -4,6 +4,7 @@ require 'uri'
 
 require 'mongrel2/httprequest'
 require 'strelka' unless defined?( Strelka )
+require 'strelka/httpresponse'
 
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
@@ -13,6 +14,16 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	# Set Mongrel2 to use Strelka's request class for HTTP requests
 	register_request_type( self, *HTTP::RFC2616_VERBS )
 
+
+	### Override the type of response returned by this request type.
+	def self::response_class
+		return Strelka::HTTPResponse
+	end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 
 	### Initialize some additional stuff for Strelka requests.
 	def initialize( * ) # :notnew:

@@ -9,6 +9,15 @@ module Strelka
 	# A base exception class.
 	class Error < ::RuntimeError; end
 
+	# An exception that's raised when there's a problem with a Request.
+	class RequestError < Error
+		### Create a new RequestError for the specified +request+ object.
+		def initialize( request, message, *args )
+			@request = request
+			super( message, *args )
+		end
+	end
+
 
 end # module Strelka
 

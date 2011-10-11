@@ -20,7 +20,6 @@ module Strelka::TestConstants # :nodoc:all
 		TEST_RECV_SPEC = 'tcp://127.0.0.1:9997'
 
 
-
 		# Freeze all testing constants
 		constants.each do |cname|
 			const_get(cname).freeze
