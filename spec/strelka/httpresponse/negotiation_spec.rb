@@ -59,3 +59,4 @@ describe Strelka::HTTPResponse::Negotiation do
 	end
 
 end
+

@@ -26,7 +26,29 @@ module Strelka::HTTPRequest::Negotiation
 	end
 
 
-		#
+	### Fetch the value of the given +header+, split apart the values, and parse
+	### each one using the specified +paramclass+. If no values are parsed from
+	### the header, and a block is given, the block is called and its return value
+	### is appended to the empty Array before returning it.
+	def parse_negotiation_header( header, paramclass )
+		rval = []
+		headerval = self.headers[ header ]
+
+		# Handle the case where there's more than one of the header in question by
+		# forcing everything to an Array
+		Array( headerval ).compact.flatten.each do |paramstr|
+			paramstr.split( /\s*,\s*/ ).each do |param|
+				rval << paramclass.parse( param )
+			end
+		end
+
+		rval << yield if rval.empty? && block_given?
+
+		return rval
+	end
+
+
+	#
 	# :section: Mediatype negotiation
 	#
 
@@ -51,7 +73,6 @@ module Strelka::HTTPRequest::Negotiation
 	### +content_type+, not including mime wildcards.
 	def explicitly_accepts?( content_type )
 		non_wildcard_types = self.accepted_types.reject {|param| param.subtype.nil? }
-		self.log.debug "Non-wildcard types: %p" % [ non_wildcard_types ]
 		return non_wildcard_types.find {|type| type =~ content_type } ? true : false
 	end
 	alias_method :explicitly_accept?, :explicitly_accepts?
@@ -60,19 +81,9 @@ module Strelka::HTTPRequest::Negotiation
 	### Parse the receiver's 'Accept' header and return it as an Array of
 	### Strelka::HTTPRequest::MediaType objects.
 	def parse_accept_header
-		rval = []
-		header = self.headers.accept
-
-		# Handle the case where there's more than one 'Accept:' header by
-		# forcing everything to an Array
-		Array( header ).compact.flatten.each do |headerval|
-			headerval.split( /\s*,\s*/ ).each do |param|
-				rval << Strelka::HTTPRequest::MediaType.parse( param )
-			end
+		return self.parse_negotiation_header( :accept, Strelka::HTTPRequest::MediaType ) do
+			Strelka::HTTPRequest::MediaType.new( '*', '*' )
 		end
-
-		rval << Strelka::HTTPRequest::MediaType.new( '*', '*' ) if rval.empty?
-		return rval
 	end
 
 
@@ -108,19 +119,9 @@ module Strelka::HTTPRequest::Negotiation
 	### Parse the receiver's 'Accept-Charset' header and return it as an Array of
 	### Strelka::HTTPRequest::Charset objects.
 	def parse_accept_charset_header
-		rval = []
-		header = self.headers.accept_charset
-
-		# Handle the case where there's more than one 'Accept-Charset:' header by
-		# forcing everything to an Array
-		Array( header ).compact.flatten.each do |headerval|
-			headerval.split( /\s*,\s*/ ).each do |param|
-				rval << Strelka::HTTPRequest::Charset.parse( param )
-			end
+		return self.parse_negotiation_header( :accept_charset, Strelka::HTTPRequest::Charset ) do
+			Strelka::HTTPRequest::Charset.new( '*' )
 		end
-
-		rval << Strelka::HTTPRequest::Charset.new( '*' ) if rval.empty?
-		return rval
 	end
 
 
@@ -165,26 +166,18 @@ module Strelka::HTTPRequest::Negotiation
 	### Parse the receiver's 'Accept-Encoding' header and return it as an Array of
 	### Strelka::HTTPRequest::Encoding objects.
 	def parse_accept_encoding_header
-		rval = []
-		header = self.headers.accept_encoding
-
-		# Handle the case where there's more than one 'Accept-Encoding:' header by
-		# forcing everything to an Array
-		Array( header ).compact.flatten.each do |headerval|
-			headerval.split( /\s*,\s*/ ).each do |param|
-				rval << Strelka::HTTPRequest::Encoding.parse( param )
-			end
-		end
-
-		if rval.empty?
+		return self.parse_negotiation_header( :accept_encoding, Strelka::HTTPRequest::Encoding ) do
+			# If the Accept-Encoding field-value is empty, then only the "identity"
+			# encoding is acceptable.
 			if self.headers.include?( :accept_encoding )
-				rval << Strelka::HTTPRequest::Encoding.new( 'identity' )
+				Strelka::HTTPRequest::Encoding.new( 'identity' )
+
+			# If no Accept-Encoding field is present in a request, the server MAY
+			# assume that the client will accept any content coding.
 			else
-				rval << Strelka::HTTPRequest::Encoding.new( '*' )
+				Strelka::HTTPRequest::Encoding.new( '*' )
 			end
 		end
-
-		return rval
 	end
 
 
@@ -224,19 +217,9 @@ module Strelka::HTTPRequest::Negotiation
 	### Parse the receiver's 'Accept-Language' header and return it as an Array of
 	### Strelka::HTTPRequest::Language objects.
 	def parse_accept_language_header
-		rval = []
-		header = self.headers.accept_language
-
-		# Handle the case where there's more than one 'Accept-Language:' header by
-		# forcing everything to an Array
-		Array( header ).compact.flatten.each do |headerval|
-			headerval.split( /\s*,\s*/ ).each do |param|
-				rval << Strelka::HTTPRequest::Language.parse( param )
-			end
+		return self.parse_negotiation_header( :accept_language, Strelka::HTTPRequest::Language ) do
+			Strelka::HTTPRequest::Language.new( '*' )
 		end
-
-		rval << Strelka::HTTPRequest::Language.new( '*' ) if rval.empty?
-		return rval
 	end
 
 
