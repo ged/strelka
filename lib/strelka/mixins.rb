@@ -137,6 +137,59 @@ module Strelka
 
 	end # module ANSIColorUtilities
 
+
+	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
+	# defining API methods. If subclasses of your class don't provide implementations of
+	# "pure_virtual" methods, NotImplementedErrors will be raised if they are called.
+	#
+	#   # AbstractClass
+	#   class MyBaseClass
+	#       include Strelka::AbstractClass
+	#
+	#       # Define a method that will raise a NotImplementedError if called
+	#       pure_virtual :api_method
+	#   end
+	#
+	module AbstractClass
+
+		### Methods to be added to including classes
+		module ClassMethods
+
+			### Define one or more "virtual" methods which will raise
+			### NotImplementedErrors when called via a concrete subclass.
+			def pure_virtual( *syms )
+				syms.each do |sym|
+					define_method( sym ) do |*args|
+						raise ::NotImplementedError,
+							"%p does not provide an implementation of #%s" % [ self.class, sym ],
+							caller(1)
+					end
+				end
+			end
+
+
+			### Turn subclasses' new methods back to public.
+			def inherited( subclass )
+				subclass.module_eval { public_class_method :new }
+				super
+			end
+
+		end # module ClassMethods
+
+
+		### Inclusion callback
+		def self::included( mod )
+			super
+			if mod.respond_to?( :new )
+				mod.extend( ClassMethods )
+				mod.module_eval { private_class_method :new }
+			end
+		end
+
+
+	end # module AbstractClass
+
+
 end # module Strelka
 
 # vim: set nosta noet ts=4 sw=4:
