@@ -38,8 +38,7 @@ require 'strelka/httpresponse/negotiation'
 module Strelka::App::Negotiation
 	extend Strelka::App::Plugin
 
-	run_before :routing
-	run_after :parameters, :filters, :templating
+	run_before :routing, :filters, :templating
 
 
 	### Class methods to add to classes with content-negotiation.
@@ -71,10 +70,17 @@ module Strelka::App::Negotiation
 	### conversion of the resulting response's entity body.
 	def handle_request( request, &block )
 		request.extend( Strelka::HTTPRequest::Negotiation )
-		response = request.response
-		response.extend( Strelka::HTTPResponse::Negotiation )
+		# The response object is extended by the request.
 
-		super
+		response = super
+
+		# Ensure the response is acceptable; if it isn't respond with the appropriate
+		# status.
+		unless response.acceptable?
+			
+		end
+
+		return response
 	end
 
 end # module Strelka::App::Negotiation

@@ -16,6 +16,7 @@ require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/httprequest/negotiation'
+require 'strelka/httpresponse/negotiation'
 
 
 #####################################################################
@@ -37,6 +38,11 @@ describe Strelka::HTTPRequest::Negotiation do
 	before( :each ) do
 		@req = @request_factory.get( '/service/user/estark' )
 		@req.extend( described_class )
+	end
+
+	it "causes responses to be extended with response negotiation" do
+		@req.response.singleton_class.included_modules.
+			should include( Strelka::HTTPResponse::Negotiation )
 	end
 
 	describe "mediatype negotiation" do

@@ -18,6 +18,8 @@ module Strelka
 		end
 	end
 
+	# An exception raised when there is a problem with an application plugin.
+	class PluginError < Error; end
 
 end # module Strelka
 
