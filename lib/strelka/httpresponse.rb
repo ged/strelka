@@ -9,6 +9,11 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	        Strelka::Constants
 
 
+	# Pattern for matching a 'charset' parameter in a media-type string, such as the
+	# Content-type header
+	CONTENT_TYPE_CHARSET_RE = /;\s*charset=(?<charset>\S+)\s*/i
+
+
 	### Add some instance variables to new HTTPResponses.
 	def initialize( * ) # :notnew:
 		super
@@ -63,25 +68,38 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add a charset to the content-type header in +headers+ if possible.
 	def add_content_type_charset( headers )
-		enc = self.charset
+		charset = self.find_header_charset
+		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset ]
 
-		# Explicitly-set character set; strip any existing charset from the content-type header
-		# and replace it with the explicit one unless it's ASCII-8BIT
-		if enc
-			enc = Encoding.find( enc ) unless enc.is_a?( Encoding )
-			self.log.debug "Adding explicit charset #{enc.name} to content-type header"
-			headers.content_type.slice!( /;\s*charset=\S+\s*/ ) # Remove an existing value
-			headers.content_type += "; charset=#{enc.name}" unless enc == Encoding::ASCII_8BIT
+		headers.content_type.slice!( CONTENT_TYPE_CHARSET_RE ) and
+			self.log.debug "  removed old charset parameter."
+		headers.content_type += "; charset=#{charset.name}" unless charset == Encoding::ASCII_8BIT
+	end
 
-		# Derived character set; if it doesn't already have one, add a charset based on the
-		# entity body's encoding.
-		elsif headers.content_type !~ /\bcharset=/i
-			enc = self.entity_body_charset
-			unless enc == Encoding::ASCII_8BIT
-				self.log.debug "Adding derived charset #{enc.name} to content-type header"
-				headers.content_type += "; charset=#{enc.name}"
-			end
-		end
+
+	### Try to find a character set for the request, using the #charset attribute first,
+	### then the 'charset' parameter from the content-type header, then the Encoding object
+	### associated with the entity body, then the default external encoding (if it's set). If
+	### none of those are found, this method returns ISO-8859-1.
+	def find_header_charset
+		return ( self.charset || 
+		         self.content_type_charset ||
+		         self.entity_body_charset || 
+		         Encoding.default_external ||
+		         Encoding::ISO_8859_1 )
+	end
+
+
+	### Return an Encoding object for the 'charset' parameter of the content-type
+	### header, if there is one.
+	def content_type_charset
+		return nil unless self.content_type
+		name = self.content_type[ CONTENT_TYPE_CHARSET_RE, :charset ] or return nil
+
+		enc = Encoding.find( name )
+		self.log.debug "Extracted content-type charset: %p" % [ enc ]
+
+		return enc
 	end
 
 

@@ -51,7 +51,20 @@ module Strelka::HTTPResponse::Negotiation
 	### was no originating request.
 	def acceptable_charset?
 		req = self.request or return true
-		return req.accepts_charset?( self.charset )
+		charset = self.find_header_charset
+
+		# Types other than text are binary, and so aren't subject to charset
+		# acceptability.
+		# For 'text/' subtypes:
+		#   When no explicit charset parameter is provided by the sender, media
+		#   subtypes of the "text" type are defined to have a default charset
+		#   value of "ISO-8859-1" when received via HTTP. [RFC2616 3.7.1]
+		if charset == Encoding::ASCII_8BIT
+			return true unless self.content_type.start_with?( 'text/' )
+			charset = Encoding::ISO8859_1 
+		end
+
+		return req.accepts_charset?( charset )
 	end
 	alias_method :has_acceptable_charset?, :acceptable_charset?
 
@@ -63,6 +76,12 @@ module Strelka::HTTPResponse::Negotiation
 	def acceptable_language?
 		req = self.request or return true
 		return true if self.languages.empty?
+
+		# :FIXME: I'm not sure this is how this should work. RFC2616 is somewhat
+		# vague about how the Language: tag with multiple values interacts with
+		# an Accept-Language: specification.
+		# If it should require that *all* languages be in the accept list,
+		# just change .any? to .all?
 		return self.languages.any? {|lang| req.accepts_language?(lang) }
 	end
 	alias_method :has_acceptable_language?, :acceptable_language?
@@ -73,8 +92,11 @@ module Strelka::HTTPResponse::Negotiation
 	### request, or if no #encodings have been set.
 	def acceptable_encoding?
 		req = self.request or return true
-		return true if self.encodings.empty?
-		return self.encodings.all? {|enc| req.accepts_encoding?(enc) }
+
+		encs = self.encodings.dup
+		encs << 'identity' if encs.empty?
+
+		return encs.all? {|enc| req.accepts_encoding?(enc) }
 	end
 	alias_method :has_acceptable_encoding?, :acceptable_encoding?
 
