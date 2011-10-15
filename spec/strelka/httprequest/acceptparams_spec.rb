@@ -198,7 +198,7 @@ describe Strelka::HTTPRequest, "accept params" do
 			param = Strelka::HTTPRequest::Charset.parse( hdr )
 
 			param.should be_an_instance_of( Strelka::HTTPRequest::Charset )
-			param.charset.should == 'iso-8859-1'
+			param.name.should == 'iso-8859-1'
 			param.subtype.should be_nil()
 			param.qvalue.should == 1.0
 			param.extensions.should be_empty()
@@ -209,7 +209,7 @@ describe Strelka::HTTPRequest, "accept params" do
 			param = Strelka::HTTPRequest::Charset.parse( hdr )
 
 			param.should be_an_instance_of( Strelka::HTTPRequest::Charset )
-			param.charset.should == 'iso-8859-15'
+			param.name.should == 'iso-8859-15'
 			param.subtype.should be_nil()
 			param.qvalue.should == 0.5
 			param.extensions.should be_empty()
@@ -217,7 +217,7 @@ describe Strelka::HTTPRequest, "accept params" do
 
 		it "can return the Ruby Encoding object associated with its character set" do
 			param = Strelka::HTTPRequest::Charset.parse( 'koi8-r' )
-			param.charset.should == 'koi8-r'
+			param.name.should == 'koi8-r'
 			param.encoding_object.should == Encoding::KOI8_R
 		end
 

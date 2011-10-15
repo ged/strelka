@@ -327,14 +327,14 @@ class Strelka::HTTPRequest
 		public
 		######
 
-		alias_method :charset, :type
+		alias_method :name, :type
 
 
 		### Return the parameter as a String suitable for inclusion in an 
 		### Accept-language header.
 		def to_s
 			return [
-				self.charset,
+				self.name,
 				self.qvaluestring,
 				self.extension_strings,
 			].compact.join( ';' )
@@ -343,10 +343,11 @@ class Strelka::HTTPRequest
 
 		### Return the Ruby Encoding object that is associated with the parameter's charset.
 		def encoding_object
-			return ::Encoding.find( self.charset )
+			return ::Encoding.find( self.name )
 		rescue ArgumentError => err
-			self.log.error( err.message )
-			self.log.debug( err.backtrace.join($/) )
+			self.log.warn( err.message )
+			# self.log.debug( err.backtrace.join($/) )
+			return nil
 		end
 
 
@@ -361,10 +362,10 @@ class Strelka::HTTPRequest
 			# The special value "*", if present in the Accept-Charset field,
 			# matches every character set (including ISO-8859-1) which is not
 			# mentioned elsewhere in the Accept-Charset field.
-			return true if other.charset.nil? || self.charset.nil?
+			return true if other.name.nil? || self.name.nil?
 
-			# Different names for the same encoding should match
-			return true if other.type == self.type ||
+			# Same downcased names or different names for the same encoding should match
+			return true if other.name.downcase == self.name.downcase ||
 			               other.encoding_object == self.encoding_object
 
 			return false

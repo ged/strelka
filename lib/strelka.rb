@@ -24,6 +24,8 @@ module Strelka
 	require 'strelka/constants'
 	include Strelka::Constants
 
+	require 'strelka/exceptions'
+
 
 	### Get the library version. If +include_buildnum+ is true, the version string will
 	### include the VCS rev ID.

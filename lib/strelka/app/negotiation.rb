@@ -66,21 +66,44 @@ module Strelka::App::Negotiation
 	end # module ClassMethods
 
 
+	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation 
+	### support when this plugin is loaded.
+	def self::included( object )
+		Strelka.log.debug "Extending Request and Response with Negotiation mixins"
+		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Negotiation }
+		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Negotiation }
+		super
+	end
+
+
 	### Add content-negotiation to incoming requests, then handle any necessary
 	### conversion of the resulting response's entity body.
 	def handle_request( request, &block )
-		request.extend( Strelka::HTTPRequest::Negotiation )
-		# The response object is extended by the request.
-
 		response = super
 
 		# Ensure the response is acceptable; if it isn't respond with the appropriate
 		# status.
 		unless response.acceptable?
-			
+			body = self.make_acceptable_body( response )
+			finish_with( HTTP::NOT_ACCEPTABLE, body ) # throw
 		end
 
 		return response
+	end
+
+
+	### Create an HTTP entity body describing the variants of the given response.
+	def make_acceptable_body( response )
+		# :TODO: Unless it was a HEAD request, the response SHOULD include
+		# an entity containing a list of available entity characteristics and
+		# location(s) from which the user or user agent can choose the one
+		# most appropriate. The entity format is specified by the media type
+		# given in the Content-Type header field. Depending upon the format
+		# and the capabilities of the user agent, selection of the most
+		# appropriate choice MAY be performed automatically. However, this
+		# specification does not define any standard for such automatic
+		# selection. [RFC2616]
+		return "No way to respond given the requested acceptance criteria."
 	end
 
 end # module Strelka::App::Negotiation

@@ -69,7 +69,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	### Add a charset to the content-type header in +headers+ if possible.
 	def add_content_type_charset( headers )
 		charset = self.find_header_charset
-		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset ]
+		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset.name ]
 
 		headers.content_type.slice!( CONTENT_TYPE_CHARSET_RE ) and
 			self.log.debug "  removed old charset parameter."
@@ -106,15 +106,17 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	### Get the body's charset, if possible. Returns +nil+ if the charset
 	### couldn't be determined.
 	def entity_body_charset
-		entity_body = self.body
 		self.log.debug "Deriving charset from the entity body..."
 
-		if entity_body.respond_to?( :encoding )
-			self.log.debug "  String-ish API. Encoding is: %p" % [ entity_body.encoding ]
-			return entity_body.encoding
-		elsif entity_body.respond_to?( :external_encoding )
-			self.log.debug "  IO-ish API. Encoding is: %p" % [ entity_body.external_encoding ]
-			return entity_body.external_encoding
+		# Have to use the instance variable instead of #body because plugins can
+		# override #body
+
+		if @body.respond_to?( :encoding )
+			self.log.debug "  String-ish API. Encoding is: %p" % [ @body.encoding ]
+			return @body.encoding
+		elsif @body.respond_to?( :external_encoding )
+			self.log.debug "  IO-ish API. Encoding is: %p" % [ @body.external_encoding ]
+			return @body.external_encoding
 		end
 
 		self.log.debug "  Body didn't respond to either #encoding or #external_encoding."

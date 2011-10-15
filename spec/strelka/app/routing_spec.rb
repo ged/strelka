@@ -55,6 +55,30 @@ describe Strelka::App::Routing do
 			@app.routes.should be_a( Array )
 		end
 
+		it "knows what its route methods are" do
+			@app.route_methods.should == []
+			@app.class_eval do
+				get() {}
+				post( '/clowns' ) {}
+				options( '/clowns' ) {}
+			end
+
+			@app.route_methods.should == [ :GET, :POST_clowns, :OPTIONS_clowns ]
+		end
+
+		# OPTIONS GET/HEAD POST PUT DELETE TRACE CONNECT
+
+		it "can declare a OPTIONS route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				options do |req|
+				end
+			end
+
+			@app.routes.should == [[ :OPTIONS, [], @app.instance_method(:OPTIONS), {} ]]
+		end
+
 		it "can declare a GET route" do
 			@app.routes.should be_empty()
 
@@ -65,6 +89,63 @@ describe Strelka::App::Routing do
 
 			@app.routes.should == [[ :GET, [], @app.instance_method(:GET), {} ]]
 		end
+
+		it "can declare a POST route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				post do |req|
+				end
+			end
+
+			@app.routes.should == [[ :POST, [], @app.instance_method(:POST), {} ]]
+		end
+
+		it "can declare a PUT route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				put do |req|
+				end
+			end
+
+			@app.routes.should == [[ :PUT, [], @app.instance_method(:PUT), {} ]]
+		end
+
+		it "can declare a DELETE route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				delete do |req|
+				end
+			end
+
+			@app.routes.should == [[ :DELETE, [], @app.instance_method(:DELETE), {} ]]
+		end
+
+		it "can declare a TRACE route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				trace do |req|
+				end
+			end
+
+			@app.routes.should == [[ :TRACE, [], @app.instance_method(:TRACE), {} ]]
+		end
+
+		it "can declare a CONNECT route" do
+			@app.routes.should be_empty()
+
+			@app.class_eval do
+				connect do |req|
+				end
+			end
+
+			@app.routes.should == [[ :CONNECT, [], @app.instance_method(:CONNECT), {} ]]
+		end
+
+
 
 		it "allows a route to specify a path" do
 			@app.routes.should be_empty()
@@ -99,6 +180,26 @@ describe Strelka::App::Routing do
 			@app.routerclass.should equal( MyRouter )
 		end
 
+
+		it "has its routes inherited by subclasses" do
+			@app.class_eval do
+				get( '/info' ) {}
+				get( '/about' ) {}
+				get( '/origami' ) {}
+			end
+			subclass = Class.new( @app ) do
+				get( '/origami' ) {}
+			end
+
+			subclass.routes.should have( 3 ).members
+
+			subclass.routes.
+				should include([ :GET, ['info'], @app.instance_method(:GET_info), {} ])
+			subclass.routes.
+				should include([ :GET, ['about'], @app.instance_method(:GET_about), {} ])
+			subclass.routes.
+				should include([ :GET, ['origami'], subclass.instance_method(:GET_origami), {} ])
+		end
 
 		describe "that also uses the :parameters plugin" do
 

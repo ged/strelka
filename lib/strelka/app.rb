@@ -44,7 +44,7 @@ class Strelka::App < Mongrel2::Handler
 		Mongrel2::Config.configure( :configdb => Strelka::Constants::DEFAULT_CONFIG_URI ) unless
 			Mongrel2::Config.database_initialized?
 
-		Strelka.logger.level = $VERBOSE ? Logger::DEBUG : Logger::INFO
+		Strelka.logger.level = Logger::DEBUG if $VERBOSE
 		super( appid )
 
 	end
@@ -94,9 +94,6 @@ class Strelka::App < Mongrel2::Handler
 		end
 
 	rescue => err
-		# Propagate Spec failures
-		raise if err.class.name =~ /^RSpec::/
-
 		msg = "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
 		self.log.error( msg )
 		err.backtrace[ 1..-1 ].each {|frame| self.log.debug('  ' + frame) }
@@ -157,7 +154,8 @@ class Strelka::App < Mongrel2::Handler
 
 		if !restype
 			if (( default = self.class.default_type ))
-				self.log.debug "Setting default content type"
+				self.log.debug "Setting content type of the response to the default: %p" %
+					[ default ]
 				response.content_type = default
 			else
 				self.log.debug "No default content type"

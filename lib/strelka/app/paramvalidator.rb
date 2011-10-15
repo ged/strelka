@@ -110,7 +110,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 	BUILTIN_CONSTRAINT_PATTERNS = {
 		:boolean      => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
 		:integer      => /^(?<integer>[\-\+]?\d+)$/,
-		:float        => /^(?<float>[\-\+]?(?:\d*\.\d+|\d+)(?:e[\-\=]\d+))$/,
+		:float        => /^(?<float>[\-\+]?(?:\d*\.\d+|\d+)(?:e[\-\+]?\d+)?)$/i,
 		:alpha        => /^(?<alpha>[[:alpha:]]+)$/,
 		:alphanumeric => /^(?<alphanumeric>[[:alnum:]]+)$/,
 		:printable    => /\A(?<printable>[[:print:][:blank:]\r\n]+)\z/,
@@ -135,14 +135,37 @@ class Strelka::App::ParamValidator < ::FormValidator
 
 	### Create a new Strelka::App::ParamValidator object.
 	def initialize( profile, params=nil )
-		@form           = {}
-		@raw_form       = {}
-		@profile        = DEFAULT_PROFILE.merge( profile )
-		@invalid_fields = []
-		@missing_fields = []
+		@form                = {}
+		@raw_form            = {}
+		@profile             = DEFAULT_PROFILE.merge( profile )
+		@invalid_fields      = []
+		@missing_fields      = []
+		@unknown_fields      = []
+		@required_fields     = []
+		@require_some_fields = []
+		@optional_fields     = []
+		@filters_array       = []
+		@parsed_params       = nil
 
 		self.validate( params ) if params
 	end
+
+
+	### Copy constructor.
+	def initialize_copy( original )
+		@form                = @form.clone
+		@raw_form            = @form.clone
+		@profile             = @profile.clone
+		@invalid_fields      = @invalid_fields.clone
+		@missing_fields      = @missing_fields.clone
+		@unknown_fields      = @unknown_fields.clone
+		@required_fields     = @required_fields.clone
+		@require_some_fields = @require_some_fields.clone
+		@optional_fields     = @optional_fields.clone
+		@filters_array       = @filters_array.clone
+		@parsed_params       = @parsed_params.clone if @parsed_params
+	end
+
 
 
 	######
@@ -222,6 +245,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 	def args?
 		return !@form.empty?
 	end
+	alias_method :has_args?, :args?
 
 
 	### Returns +true+ if any fields are missing or contain invalid values.
@@ -327,11 +351,11 @@ class Strelka::App::ParamValidator < ::FormValidator
 			valid = super()
 
 			for key, value in valid
-				value = [value] if key =~ /.*\[\]$/
-				unless key.include?( '[' )
-					@parsed_params[ key ] = value
-				else
+				value = [ value ] if key.end_with?( '[]' )
+				if key.include?( '[' )
 					build_deep_hash( value, @parsed_params, get_levels(key) )
+				else
+					@parsed_params[ key ] = value
 				end
 			end
 		end
@@ -354,16 +378,20 @@ class Strelka::App::ParamValidator < ::FormValidator
 	def merge!( params )
 		return if params.empty?
 
-	    @missing_fields.clear
-	    @unknown_fields.clear
-	    @required_fields.clear
-	    @invalid_fields.clear
-	    @untaint_fields.clear
-	    @require_some_fields.clear
-	    @optional_fields.clear
+		self.log.debug "Merging parameters for revalidation: %p" % [ params ]
+		@missing_fields.clear
+		@unknown_fields.clear
+		@required_fields.clear
+		@invalid_fields.clear
+		@untaint_fields.clear
+		@require_some_fields.clear
+		@optional_fields.clear
 		@form.clear
 
 		newparams = @raw_form.merge( params )
+		@raw_form.clear
+
+		self.log.debug "  merged raw form is: %p" % [ newparams ]
 		self.validate( newparams )
 	end
 

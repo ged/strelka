@@ -108,9 +108,9 @@ describe Strelka::HTTPRequest::Negotiation do
 			@req.headers.accept_charset = 'iso-8859-5, utf-8;q=0.8'
 
 			@req.accepted_charsets.should have(2).members
-			@req.accepted_charsets[0].charset.should == 'iso-8859-5'
+			@req.accepted_charsets[0].name.should == 'iso-8859-5'
 			@req.accepted_charsets[0].qvalue.should == 1.0
-			@req.accepted_charsets[1].charset.should == 'utf-8'
+			@req.accepted_charsets[1].name.should == 'utf-8'
 			@req.accepted_charsets[1].qvalue.should == 0.8
 		end
 

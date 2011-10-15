@@ -2,7 +2,6 @@
 
 require 'strelka/httprequest'
 require 'strelka/httprequest/acceptparams'
-require 'strelka/httpresponse/negotiation'
 
 
 # The mixin that adds methods to Strelka::HTTPRequest for content-negotiation.
@@ -19,18 +18,12 @@ require 'strelka/httpresponse/negotiation'
 module Strelka::HTTPRequest::Negotiation
 
 	### Extension callback -- add instance variables to extended objects. 
-	def self::extended( mod )
-		mod.instance_variable_set( :@accepted_mediatypes, nil )
-		mod.instance_variable_set( :@accepted_charsets, nil )
-		mod.instance_variable_set( :@accepted_encodings, nil )
-		mod.instance_variable_set( :@accepted_languages, nil )
-	end
-
-
-	### Overridden to extend the resulting response object with negotiation.
-	def response
-		rval = super
-		rval.extend( Strelka::HTTPResponse::Negotiation )
+	def initialize( * )
+		super
+		@accepted_mediatypes = nil
+		@accepted_charsets   = nil
+		@accepted_encodings  = nil
+		@accepted_languages  = nil
 	end
 
 

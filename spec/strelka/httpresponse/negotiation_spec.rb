@@ -36,14 +36,22 @@ describe Strelka::HTTPResponse::Negotiation do
 
 
 	before( :each ) do
+		@app = Class.new( Strelka::App ) { plugins :negotiation }
 		@req = @request_factory.get( '/service/user/estark' )
-		@req.extend( Strelka::HTTPRequest::Negotiation )
 		@res = @req.response
 	end
 
 
-	it "can provide blocks for bodies of several different mediatypes" do
-		pending "implementation" do
+	it "assumes the response has already been made acceptable if it's had its status set" do
+		@res.should_not be_acceptable()
+		@res.status = HTTP::OK
+		@res.should be_acceptable()
+	end
+
+
+	describe "content-alternative callback methods" do
+
+		it "can provide blocks for bodies of several different mediatypes" do
 			@req.headers.accept = 'application/x-yaml, application/json; q=0.7, text/xml; q=0.2'
 
 			@res.for( 'application/json' ) { %{["a JSON dump"]} }
@@ -51,18 +59,62 @@ describe Strelka::HTTPResponse::Negotiation do
 
 			@res.body.should == "---\na: YAML dump\n\n"
 			@res.content_type.should == "application/x-yaml"
+			@res.header_data.should =~ /accept(?!-)/i
 		end
+
+		it "can provide a single block for bodies of several different mediatypes" do
+			@req.headers.accept = 'application/x-yaml; q=0.7, application/json; q=0.9'
+
+			@res.for( 'application/json', 'application/x-yaml' ) do
+				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
+			end
+
+			@res.body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+				"\"name\":\"Harlot's Garden\"}"
+			@res.content_type.should == "application/json"
+			@res.header_data.should =~ /accept(?!-)/i
+		end
+
+		it "can provide a block for bodies of several different symbolic mediatypes" do
+			@req.headers.accept = 'application/x-yaml; q=0.7, application/json; q=0.9'
+
+			@res.for( :json, :yaml ) do
+				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
+			end
+
+			@res.body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+				"\"name\":\"Harlot's Garden\"}"
+			@res.content_type.should == "application/json"
+			@res.header_data.should =~ /accept(?!-)/i
+		end
+
 	end
 
-	it "raises an exception when calling negotiation methods if its originating request didn't " +
-	   "include Negotiation" do
-		req = @request_factory.get( '/service/user/athorne' )
-		res = req.response
-		res.extend( described_class )
 
-		expect {
-			res.acceptable?
-		}.to raise_error( Strelka::PluginError, /doesn't include negotiation/i )
+	describe "automatic content transcoding" do
+
+		it "transcodes String entity bodies if the charset is not acceptable" do
+			@req.headers.accept_charset = 'koi8-r, koi8-u;q=0.9, utf-8;q=0.8'
+
+			@res.body = File.read( __FILE__, encoding: 'iso-8859-5' )
+			@res.content_type = 'text/plain'
+
+			@res.body.encoding.should == Encoding::KOI8_R
+			@res.header_data.should =~ /accept-charset(?!-)/i
+		end
+
+		it "transcodes File entity bodies if the charset is not acceptable" do
+			pending "implementation of IO transcoding" do
+				@req.headers.accept_charset = 'koi8-r, koi8-u;q=0.9, utf-8;q=0.8'
+
+				@res.body = File.open( __FILE__, 'r:iso-8859-5' )
+				@res.content_type = 'text/plain'
+
+				@res.body.encoding.should == Encoding::KOI8_R
+				@res.header_data.should =~ /accept-charset(?!-)/i
+			end
+		end
+
 	end
 
 
@@ -120,7 +172,6 @@ describe Strelka::HTTPResponse::Negotiation do
 
 		it "knows that it is acceptable if it doesn't have an originating request" do
 			res = Strelka::HTTPResponse.new( 'appid', 88 )
-			res.extend( Strelka::HTTPResponse::Negotiation )
 			res.charset = 'iso8859-15'
 
 			res.should have_acceptable_charset()

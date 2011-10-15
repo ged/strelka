@@ -23,7 +23,7 @@ class Strelka::App
 
 		### Extension hook -- Extend the given object with methods for setting it 
 		### up as a plugin for Strelka::Apps.
-		def self::extend_object( object )
+		def self::extended( object )
 			Strelka.log.debug "Extending %p as a Strelka::App::Plugin" % [ object ]
 
 			super

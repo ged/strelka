@@ -24,11 +24,10 @@ describe Strelka::App::ParamValidator do
 	TEST_PROFILE = {
 		:required		=> [ :required ],
 		:optional		=> %w{
-			optional number int_constraint bool_constraint email_constraint
-			host_constraint regexp_w_captures regexp_w_one_capture
-			regexp_w_named_captures
-			alpha_constraint alphanumeric_constraint printable_constraint
-			proc_constraint uri_constraint word_constraint
+			optional number int_constraint float_constraint bool_constraint email_constraint
+            host_constraint regexp_w_captures regexp_w_one_capture regexp_w_named_captures
+            alpha_constraint alphanumeric_constraint printable_constraint proc_constraint
+            uri_constraint word_constraint date_constraint
 		},
 		:constraints	=> {
 			:number                  => /^\d+$/,
@@ -36,6 +35,7 @@ describe Strelka::App::ParamValidator do
 			:regexp_w_one_capture    => /(\w+)/,
 			:regexp_w_named_captures => /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/,
 			:int_constraint          => :integer,
+			:float_constraint        => :float,
 			:bool_constraint         => :boolean,
 			:email_constraint        => :email,
 			:uri_constraint          => :uri,
@@ -45,6 +45,7 @@ describe Strelka::App::ParamValidator do
 			:printable_constraint    => :printable,
 			:word_constraint         => :word,
 			:proc_constraint         => Date.method( :parse ),
+			:date_constraint         => :date,
 		},
 	}
 
@@ -62,6 +63,33 @@ describe Strelka::App::ParamValidator do
 	end
 
 
+	it "starts out empty" do
+		@validator.should be_empty()
+		@validator.should_not have_args()
+	end
+
+	it "is no longer empty if at least one set of parameters has been validated" do
+		@validator.validate( {'required' => "1"} )
+
+		@validator.should_not be_empty()
+		@validator.should have_args()
+	end
+
+	it "raises an exception on an unknown constraint type" do
+		pending "figure out why this isn't working" do
+			profile = {
+				required: [:required],
+				constraints: {
+					required: $stderr,
+				}
+			}
+			val = Strelka::App::ParamValidator.new( profile )
+
+			expect {
+				val.validate( required: '1' )
+			}.to raise_error( /unknown constraint type IO/ )
+		end
+	end
 
 	# Test index operator interface
 	it "provides read and write access to valid args via the index operator" do
@@ -219,6 +247,20 @@ describe Strelka::App::ParamValidator do
 		@validator.error_messages.should include("Invalid value for 'Numeral'")
 	end
 
+	it "can get and set the profile's descriptions directly" do
+		params = {'number' => 'rhinoceros', 'unknown' => "1"}
+
+		@validator.descriptions = {
+			number: 'Numeral',
+			required: 'Test Name'
+		}
+		@validator.validate( params )
+
+		@validator.descriptions.should have( 2 ).members
+		@validator.error_messages.should have( 2 ).members
+		@validator.error_messages.should include("Missing value for 'Test Name'")
+		@validator.error_messages.should include("Invalid value for 'Numeral'")
+	end
 
 	it "capitalizes the names of simple fields for descriptions" do
 		@validator.get_description( "required" ).should == 'Required'
@@ -481,6 +523,163 @@ describe Strelka::App::ParamValidator do
 
 		@validator[:int_constraint].should be_nil()
 	end
+
+	it "accepts simple floats for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '3.14'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 3.14
+	end
+
+	it "accepts negative floats for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '-3.14'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == -3.14
+	end
+
+	it "accepts positive floats for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '+3.14'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 3.14
+	end
+
+	it "accepts floats that begin with '.' for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '.1418'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 0.1418
+	end
+
+	it "accepts negative floats that begin with '.' for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '-.171'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == -0.171
+	end
+
+	it "accepts positive floats that begin with '.' for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '+.86668001'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 0.86668001
+	end
+
+	it "accepts floats in exponential notation for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '1756e-5'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 0.01756
+	end
+
+	it "accepts negative floats in exponential notation for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '-28e8'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == -28e8
+	end
+
+	it "accepts floats that start with '.' in exponential notation for fields with float " +
+	   "constraints" do
+		params = {'required' => '1', 'float_constraint' => '.5552e-10'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 0.5552e-10
+	end
+
+	it "accepts negative floats that start with '.' in exponential notation for fields with " +
+	   "float constraints" do
+		params = {'required' => '1', 'float_constraint' => '-.288088e18'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == -0.288088e18
+	end
+
+	it "accepts integers for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '288'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 288.0
+	end
+
+	it "accepts negative integers for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '-1606'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == -1606.0
+	end
+
+	it "accepts positive integers for fields with float constraints" do
+		params = {'required' => '1', 'float_constraint' => '+2600'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:float_constraint].should == 2600.0
+	end
+
+	it "accepts dates for fields with date constraints" do
+		params = {'required' => '1', 'date_constraint' => '2008-11-18'}
+
+		@validator.validate( params )
+
+		@validator.should be_okay()
+		@validator.should_not have_errors()
+
+		@validator[:date_constraint].should == Date.parse( '2008-11-18' )
+	end
+
 
 	VALID_URIS = %w{
 		http://127.0.0.1
@@ -792,6 +991,22 @@ describe Strelka::App::ParamValidator do
 		@validator[:proc_constraint].should be_nil()
 	end
 
+	it "can be merged with another set of parameters" do
+		params = {}
+		@validator.validate( params )
+		newval = @validator.merge( 'required' => '1' )
+
+		newval.should_not equal( @validator )
+
+		@validator.should_not be_okay()
+		@validator.should have_errors()
+		newval.should be_okay()
+		newval.should_not have_errors()
+
+		@validator[:required].should == nil
+		newval[:required].should == '1'
+	end
+
 	it "can have required parameters merged into it after the initial validation" do
 		params = {}
 		@validator.validate( params )
@@ -829,6 +1044,15 @@ describe Strelka::App::ParamValidator do
 		params = { 'required' => '1', 'number' => '88' }
 		@validator.validate( params )
 		@validator.values_at( :required, :number ).should == [ '1', '88' ]
+	end
+
+	it "treats ArgumentErrors in builtin constraints as validation failures" do
+		params = { 'required' => '1', 'number' => 'jalopy' }
+		@validator.validate( params )
+		@validator.should_not be_okay()
+		@validator.should have_errors()
+		@validator.error_messages.should == ["Invalid value for 'Number'"]
+		@validator[:number].should == nil
 	end
 
 end

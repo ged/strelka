@@ -65,15 +65,15 @@ module Strelka::App::Routing
 
 		### Return a Hash of the methods defined by routes.
 		def route_methods
-			return self.instance_methods.grep( /^#{HTTP::RFC2616_VERB_REGEX}\b/ )
+			return self.instance_methods.grep( /^#{HTTP::RFC2616_VERB_REGEX}(_|$)/ )
 		end
 
 
 		# OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
 
-		### Define a route for the GET verb and the given +pattern+.
+		### Define a route for the OPTIONS verb and the given +pattern+.
 		def options( pattern='', options={}, &block )
-			self.add_route( :GET, pattern, options, &block )
+			self.add_route( :OPTIONS, pattern, options, &block )
 		end
 
 
@@ -149,6 +149,12 @@ module Strelka::App::Routing
 			# Define the method using the block from the route as its body
 			Strelka.log.debug "  adding route method %p for %p route: %p" % [ methodname, verb, block ]
 			define_method( methodname, &block )
+
+			# Remove any existing route for the same verb, patternparts, and options
+			# (support for overriding inherited routes)
+			self.routes.delete_if do |r|
+				r[0] == verb && r[1] == patternparts && r[3] == options
+			end
 
 			# Now add all the parts to the routes array for the router created by 
 			# instances 

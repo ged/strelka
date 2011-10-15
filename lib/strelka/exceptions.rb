@@ -16,7 +16,11 @@ module Strelka
 			@request = request
 			super( message, *args )
 		end
-	end
+
+		# The request that caused the exception
+		attr_reader :request
+
+	end # class RequestError
 
 	# An exception raised when there is a problem with an application plugin.
 	class PluginError < Error; end

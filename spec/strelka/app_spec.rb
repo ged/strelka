@@ -34,7 +34,9 @@ describe Strelka::App do
 			def initialize( appid=TEST_APPID, sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 				super
 			end
-			def run; end # No-op so it doesn't ever really start up
+			def set_signal_handlers; end
+			def start_accepting_requests; end
+			def restore_signal_handlers; end
 		end
 		@req = @request_factory.get( '/mail/inbox' )
 	end
@@ -113,6 +115,41 @@ describe Strelka::App do
 		res.content_type.should == 'text/css'
 	end
 
+	it "doesn't override an explicitly-set content-type header with the default" do
+		@app.class_eval do
+			default_type 'text/css'
+			def handle_request( r )
+				r.response.puts( "I lied, I'm actually returning text." )
+				r.response.content_type = 'text/plain'
+				r.response
+			end
+		end
+
+		res = @app.new.handle( @req )
+
+		res.should be_a( Mongrel2::HTTPResponse )
+		res.content_type.should == 'text/plain'
+	end
+
+
+	it "automatically truncates HEAD responses" do
+		@app.class_eval do
+			default_type 'text/plain'
+			def handle_request( r )
+				r.response.puts( "Rendered output." )
+				r.response
+			end
+		end
+
+		req = @request_factory.head( '/mail/inbox' )
+		res = @app.new.handle( req )
+
+		res.should be_a( Mongrel2::HTTPResponse )
+		res.content_type.should == 'text/plain'
+		res.body.should be_empty()
+		res.headers.content_length.should == "Rendered output.\n".bytesize
+	end
+
 
 	it "uses the app's ID constant for the appid if .run is called without one" do
 		@app.const_set( :ID, 'testing-app' )
@@ -141,6 +178,41 @@ describe Strelka::App do
 		@app.run
 	end
 
+
+	it "handles uncaught exceptions with a SERVER_ERROR response" do
+		@app.class_eval do
+			def handle_request( r )
+				raise "Something went wrong."
+			end
+		end
+
+		res = @app.new.handle( @req )
+
+		res.should be_a( Mongrel2::HTTPResponse )
+		res.status.should == HTTP::SERVER_ERROR
+		res.content_type = 'text/plain'
+		res.body.should =~ /something went wrong/i
+	end
+
+
+	describe "process name" do
+
+		before( :all ) do
+			$old_0 = $0
+		end
+
+		after( :all ) do
+			$0 = $old_0
+		end
+
+		it "sets the process name to something more interesting than the command line" do
+			@app.new.run
+
+			$0.should =~ /#{@app.inspect}/
+			$0.should =~ %r|\{\S+\} tcp://\S+ <-> \S+|
+		end
+
+	end
 
 	describe "plugin hooks" do
 

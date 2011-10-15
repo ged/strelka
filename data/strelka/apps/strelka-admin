@@ -61,6 +61,11 @@ class Strelka::AdminConsole < Strelka::App
 	end
 
 
+	#
+	# Service API
+	#
+
+	# GET /uuid -- fetch a plain-text random UUID
 	get '/uuid' do |req|
 		res = req.response
 		res.content_type = 'text/plain'
@@ -71,8 +76,20 @@ class Strelka::AdminConsole < Strelka::App
 	end
 
 
+	# GET /servers -- fetch a list of the configured Server objects.
+	get 'servers' do |req|
+		res = req.response
+		servers = Mongrel2::Config::Server.dataset.naked
+
+		res.for( :text ) { servers.map(:name).join(', ') }
+		res.for( :json, :yaml ) { servers.to_hash(:uuid) }
+
+		return res
+	end
+
+
 	# GET /server/«uuid»
-	get "/server/:uuid" do |req|
+	get '/server/:uuid' do |req|
 		self.log.debug "Fetching server record for %p" % [ req.params[:uuid] ]
 		server = Mongrel2::Config::Server.by_uuid( req.params[:uuid] ) or
 			finish_with( HTTP::NOT_FOUND, "No such server" )
@@ -87,13 +104,13 @@ class Strelka::AdminConsole < Strelka::App
 
 
 	# Create a new server
-	post "/server" do |req|
+	post '/server' do |req|
 		
 	end
 
 
 	# GET /server/«uuid»/host/«id»
-	get "/server/:uuid/host/:id" do |req|
+	get '/server/:uuid/host/:id' do |req|
 		id, uuid = req.params.values_at( :id, :uuid )
 		self.log.debug "Fetching host record for host %d under the %p server" % [ id, uuid ]
 		host = Mongrel2::Config::Host[ id ] or
