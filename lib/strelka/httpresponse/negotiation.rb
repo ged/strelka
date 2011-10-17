@@ -93,10 +93,6 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	#
-	# :section: Content-alternative Callbacks
-	#
-
 	### Stringify the response -- overridden to use the negotiated body.
 	def to_s
 		return [
@@ -109,17 +105,18 @@ module Strelka::HTTPResponse::Negotiation
 
 	### Transform the entity body if it doesn't meet the criteria 
 	def negotiated_body
-		unless self.acceptable?
-			self.log.debug "Response is not acceptable as-is; looking for alternatives"
-			self.transform_content_type unless self.acceptable_content_type?
-			self.transform_language     unless self.acceptable_language?
-			self.transform_charset      unless self.acceptable_charset?
-			self.transform_encoding     unless self.acceptable_encoding?
-		end
+		self.transform_content_type
+		self.transform_language
+		self.transform_charset
+		self.transform_encoding
 
 		return self.body
 	end
 
+
+	#
+	# :section: Content-type Callbacks
+	#
 
 	### Register a callback that will be called during transparent content
 	### negotiation for the entity body if one or more of the specified
@@ -143,39 +140,79 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
+	### Returns Strelka::HTTPRequest::MediaType objects for mediatypes that have 
+	### a higher qvalue than the current response's entity body (if any).
+	def better_mediatypes
+		req = self.request or return []
+		return [] unless req.headers.accept
+
+		current_qvalue = 0.0
+		mediatypes = req.accepted_mediatypes.sort
+
+		# If the current mediatype exists in the Accept: header, reset the current qvalue
+		# to whatever its qvalue is
+		if self.content_type
+			mediatype = mediatypes.find {|mt| mt =~ self.content_type }
+			current_qvalue = mediatype.qvalue if mediatype
+		end
+
+		self.log.debug "Looking for better mediatypes than %p (%0.2f)" %
+			[ self.content_type, current_qvalue ]
+
+		return mediatypes.find_all do |mt|
+			mt.qvalue > current_qvalue
+		end
+	end
+
+
 	### Iterate over the originating request's acceptable content types in 
 	### qvalue+listed order, looking for a content negotiation callback for
 	### each mediatype. If any are found, they are tried in declared order
 	### until one returns a true-ish value, which becomes the new entity
 	### body. If the body object is not a String, 
 	def transform_content_type
-		self.log.debug "Trying to transform the entity body to one of the accepted types."
-		req = self.request or
-			raise Strelka::PluginError, "no originating request object"
+		return if self.mediatype_callbacks.empty?
 
-		self.request.accepted_mediatypes.sort.each do |acceptparam|
-			self.log.debug "  looking for transformations for %p" % [ acceptparam.mimetype ]
-			next unless pairs = self.mediatype_callbacks.find_all do |mimetype, callback|
-				acceptparam =~ mimetype
+		self.log.debug "Applying content-type transforms (if any)"
+ 		self.better_mediatypes.each do |mediatype|
+			callbacks = self.mediatype_callbacks.find_all do |mimetype, _|
+				mediatype =~ mimetype
 			end
 
-			pairs.each do |mimetype, callback|
-
-				self.log.debug "    trying %p (%p)" % [ callback, mimetype ]
-				if (( new_body = callback.call(mimetype) ))
-					self.log.debug "Successfully transformed. Setting up response."
-					new_body = STRINGIFIERS[ mimetype ].call( new_body ) unless new_body.is_a?( String )
-
-					self.body = new_body
-					self.content_type = mimetype
-					self.status = HTTP::OK
-
-					return
+			if callbacks.empty?
+				self.log.debug "  no transforms for %s" % [ mediatype ]
+			else
+				callbacks.each do |mimetype, callback|
+					return if self.try_content_type_callback( mimetype, callback )
 				end
 			end
 		end
 	end
 
+
+	### Attempt to apply the +callback+ for the specified +mediatype+ to the entity
+	### body, making the necessary changes to the request and returning +true+ if
+	### the callback returns a new entity body, or returning a false value if it doesn't.
+	def try_content_type_callback( mimetype, callback )
+		self.log.debug "  trying content-type callback %p (%s)" % [ callback, mimetype ]
+
+		new_body = callback.call( mimetype ) or return false
+
+		self.log.debug "  successfully transformed! Setting up response."
+		new_body = STRINGIFIERS[ mimetype ].call( new_body ) unless
+			new_body.is_a?( String )
+
+		self.body = new_body
+		self.content_type = mimetype
+		self.status = HTTP::OK
+
+		return true
+	end
+
+
+	#
+	# :section: Language negotiation callbacks
+	#
 
 	### Register a callback that will be called during transparent content
 	### negotiation for the entity body if one or more of the specified
@@ -196,14 +233,43 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Iterate over the originating request's acceptable languages in 
-	### qvalue+listed order, looking for a content negotiation callback for
-	### each language. If any are found, they are tried in declared order
-	### until one returns a true-ish value, which becomes the new entity
-	### body.
+	### Returns Strelka::HTTPRequest::Language objects for natural languages that have 
+	### a higher qvalue than the current response's entity body (if any).
+	def better_languages
+		req = self.request or return []
+		return [] unless req.headers.accept_language
+
+		current_qvalue = 0.0
+		accepted_languages = req.accepted_languages.sort
+
+		# If any of the current languages exists in the Accept-Language: header, reset
+		# the current qvalue to the highest one among them
+		unless self.languages.empty?
+			current_qvalue = self.languages.reduce( current_qvalue ) do |qval, lang|
+				accepted_lang = accepted_languages.find {|alang| alang =~ lang } or
+					next qval
+				qval > accepted_lang.qvalue ? qval : accepted_lang.qvalue
+			end
+		end
+
+		self.log.debug "Looking for better languages than %p (%0.2f)" %
+			[ self.languages.join(', '), current_qvalue ]
+
+		return accepted_languages.find_all do |lang|
+			lang.qvalue > current_qvalue
+		end
+	end
+
+
+	### If there are any languages that have a higher qvalue than the one/s in #languages, 
+	### look for a negotiation callback that provides that language. If any are found, they 
+	### are tried in declared order until one returns a true-ish value, which becomes the new
+	### entity body.
 	def transform_language
+		return if self.language_callbacks.empty?
+
 		self.log.debug "Looking for language transformations"
-		self.request.accepted_languages.sort.each do |lang|
+		self.better_languages.uniq.each do |lang|
 
 			self.log.debug "  looking for transformations for %p" % [ lang.primary_tag.to_sym ]
 			if (( callback = self.language_callbacks[ lang.primary_tag.to_sym ] ))
@@ -225,25 +291,60 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
+	#
+	# :section: Charset negotiation callbacks
+	#
+
+	### Returns Strelka::HTTPRequest::Charset objects for accepted character sets that have 
+	### a higher qvalue than the one used by the current response.
+	def better_charsets
+		req = self.request or return []
+		return [] unless self.content_type.start_with?( 'text/' )
+		return [] unless req.headers.accept_charset
+
+		current_qvalue = 0.0
+		charsets = req.accepted_charsets.sort
+		current_charset = self.find_header_charset
+
+		# If the current charset exists in the Accept-Charset: header, reset the current qvalue
+		# to whatever its qvalue is
+		if current_charset != Encoding::ASCII_8BIT
+			charset = charsets.find {|mt| mt =~ current_charset }
+			current_qvalue = charset.qvalue if charset
+		end
+
+		self.log.debug "Looking for better charsets than %p (%0.2f)" %
+			[ current_charset, current_qvalue ]
+
+		return charsets.sort.find_all do |charset|
+			charset.qvalue > current_qvalue
+		end
+	end
+
+
 	### Iterate over the originating request's acceptable charsets in 
 	### qvalue+listed order, attempting to transcode the current entity body
 	### if it
 	def transform_charset
-		self.log.debug "Trying to transcode the entity body to one of the accepted charsets."
+		self.log.debug "Looking for charset transformations."
+		self.better_charsets.each do |charset|
+			self.log.debug "  trying to transcode to: %s" % [ charset ]
 
-		# Access the instance variable directly, since #body checks for acceptability
-		if self.body.respond_to?( :encode )
-			self.log.debug "  body is a string; trying direct transcoding"
-			if self.transcode_body_string( self.request.accepted_charsets )
-				self.vary_fields.add( 'accept-charset' )
+			if self.body.respond_to?( :encode )
+				self.log.debug "  body is a string; trying direct transcoding"
+				if self.transcode_body_string( charset )
+					self.log.debug "  success; body is now %p" % [ self.body.encoding ]
+					self.vary_fields.add( 'accept-charset' )
+					break
+				end
+
+			# Can change the external_encoding if it's a File that has a #path
+			elsif self.body.respond_to?( :external_encoding )
+				raise NotImplementedError,
+					"Support for transcoding %p objects isn't done." % [ self.body.class ]
+			else
+				self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 			end
-
-		# Can change the external_encoding if it's a File that has a #path
-		elsif self.body.respond_to?( :external_encoding )
-			raise NotImplementedError,
-				"Support for transcoding %p objects isn't done." % [ self.body.class ]
-		else
-			self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 		end
 	end
 
@@ -251,30 +352,26 @@ module Strelka::HTTPResponse::Negotiation
 	### Try to transcode the entity body String to one of the specified +charsets+. Returns
 	### the succesful Encoding object if transcoding succeeded, or +nil+ if transcoding
 	### failed.
-	def transcode_body_string( charsets )
-		charsets.each do |charset|
-			self.log.debug "    attempting to transcode to: %s" % [ charset.name ]
-			unless enc = charset.encoding_object
-				self.log.warn "    unsupported charset: %s" % [ charset ]
-				next
-			end
-
-			succeeded = false
-			begin
-				succeeded = self.body.encode!( enc )
-			rescue Encoding::UndefinedConversionError => err
-				self.log.error "%p while transcoding: %s" % [ err.class, err.message ]
-			end
-
-			if succeeded
-				self.log.debug "  success; body is now %p" % [ self.body.encoding ]
-				return self.body.encoding
-			end
+	def transcode_body_string( charset )
+		unless enc = charset.encoding_object
+			self.log.warn "    unsupported charset: %s" % [ charset ]
+			return false
 		end
 
-		return nil
+		succeeded = false
+		begin
+			succeeded = self.body.encode!( enc )
+		rescue Encoding::UndefinedConversionError => err
+			self.log.error "%p while transcoding: %s" % [ err.class, err.message ]
+		end
+
+		return succeeded
 	end
 
+
+	#
+	# :section: Content-coding negotiation callbacks
+	#
 
 	### Register a callback that will be called during transparent content
 	### negotiation for the entity body if one or more of the specified
@@ -286,7 +383,7 @@ module Strelka::HTTPResponse::Negotiation
 	### value, and the coding name added to the appropriate headers.
 	def for_encoding( *codings, &callback )
 		codings.each do |coding|
-			self.content_codings[ coding ] = callback
+			self.encoding_callbacks[ coding ] = callback
 		end
 
 		# Include the 'Accept-Encoding:' header in the 'Vary:' header
@@ -294,18 +391,49 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
+	### Returns Strelka::HTTPRequest::Encoding objects for accepted encodings that have 
+	### a higher qvalue than the one used by the current response.
+	def better_encoding
+		req = self.request or return []
+		return [] unless req.headers.accept_encoding
+
+		current_qvalue = 0.0
+		encodings = req.accepted_encodings.sort
+		current_encodings = self.encodings.dup
+		current_encodings.unshift( 'identity' )
+
+		# Find the highest qvalue of the encodings that have been applied already
+		current_qvalue = current_encodings.inject( current_qvalue ) do |qval, current_enc|
+			qenc = encodings.find {|enc| enc =~ current_enc } or next qval
+			qenc.qvalue > qval ? qenc.qvalue : qval
+		end
+
+		self.log.debug "Looking for better encodings than %p (%0.2f)" %
+			[ current_encodings, current_qvalue ]
+
+		return encodings.find_all do |enc|
+			self.log.debug "  %s (%0.2f) > %0.2f?" % [ enc, enc.qvalue, current_qvalue ]
+			enc.qvalue > current_qvalue
+		end
+	end
+
+
 	### Iterate over the originating request's acceptable encodings and apply
 	### each one in the order they were requested if they're available.
-	def apply_encodings
+	def transform_encoding
+		return if self.encoding_callbacks.empty?
+
 		self.log.debug "Looking for acceptable content codings"
-		self.request.accepted_encodings.each do |enc|
-			if (( callback = self.content_codings[enc.content_coding] ))
+		self.better_encoding.each do |enc|
+			self.log.debug "  looking for a callback for %p" % [ enc ]
+
+			if (( callback = self.encoding_callbacks[enc.content_coding.to_sym] ))
 				self.log.debug "  trying callback %p for %p" %
 					[ callback, enc ]
 				if (( new_body = callback.call(enc.content_coding) ))
 					self.log.debug "    callback succeeded"
 					self.body = new_body
-					self.headers.append( :content_encoding, enc.content_coding )
+					self.encodings << enc.content_coding
 					break
 				end
 			elsif enc.content_coding == 'identity' && enc.qvalue.nonzero?
@@ -369,11 +497,20 @@ module Strelka::HTTPResponse::Negotiation
 	### Returns true if at least one of the receiver's #languages is set
 	### to a value that was designated as acceptable by the originating
 	### request, if there was no originating request, or if no #languages
-	### have been set.
+	### have been set for a non-empty entity body.
 	def acceptable_language?
 		req = self.request or return true
+
+		# Lack of an accept-language field means all languages are accepted
 		return true if req.accepted_languages.empty?
+
+		# If no language is given for an existing entity body, there's no way
+		# to know whether or not there's a better alternative
 		return true if self.languages.empty? && self.body && !self.body.empty?
+
+		# If any of the languages present for the body are accepted, the
+		# request is acceptable. Or at least that's what I got out of 
+		# reading RFC2616, Section 14.4.
 		return self.languages.any? {|lang| req.accepts_language?(lang) }
 	end
 	alias_method :has_acceptable_language?, :acceptable_language?

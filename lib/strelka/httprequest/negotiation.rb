@@ -45,7 +45,7 @@ module Strelka::HTTPRequest::Negotiation
 
 		rval << yield if rval.empty? && block_given?
 
-		return rval
+		return rval.flatten
 	end
 
 
@@ -179,12 +179,23 @@ module Strelka::HTTPRequest::Negotiation
 			# If the Accept-Encoding field-value is empty, then only the "identity"
 			# encoding is acceptable.
 			if self.headers.include?( :accept_encoding )
-				Strelka::HTTPRequest::Encoding.new( 'identity' )
+				self.log.debug "Empty accept-encoding header: identity-only"
+				[ Strelka::HTTPRequest::Encoding.new('identity') ]
 
-			# If no Accept-Encoding field is present in a request, the server MAY
-			# assume that the client will accept any content coding.
+			# I have no idea how this is different than an empty accept-encoding header
+			# for any practical case, but RFC2616 says:
+			#   If no Accept-Encoding field is present in a request, the server MAY
+			#   assume that the client will accept any content coding.  In this
+			#   case, if "identity" is one of the available content-codings, then
+			#   the server SHOULD use the "identity" content-coding, unless it has
+			#   additional information that a different content-coding is meaningful
+			#   to the client.
 			else
-				Strelka::HTTPRequest::Encoding.new( '*' )
+				self.log.debug "No accept-encoding header: identity + any encoding"
+				[
+					Strelka::HTTPRequest::Encoding.new( 'identity' ),
+					Strelka::HTTPRequest::Encoding.new( '*', nil, 0.9 )
+				]
 			end
 		end
 	end

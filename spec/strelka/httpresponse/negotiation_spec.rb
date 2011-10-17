@@ -173,6 +173,41 @@ describe Strelka::HTTPResponse::Negotiation do
 	end
 
 
+	describe "content coding alternative callback methods" do
+
+		it "can provide blocks for content coding" do
+			@req.headers.accept = 'text/plain'
+			@req.headers.accept_encoding = 'gzip'
+
+			@res << "the text body"
+			@res.content_type = 'text/plain'
+			@res.for_encoding( :deflate ) { @res.body + " (deflated)" }
+			@res.for_encoding( :gzip ) { @res.body + " (gzipped)" }
+
+			@res.negotiated_body.should == "the text body (gzipped)"
+			@res.encodings.should include( "gzip" )
+			@res.header_data.should =~ /accept-encoding/i
+			@res.header_data.should_not =~ /identity/i
+		end
+
+		it "chooses the content coding with the highest qvalue" do
+			@req.headers.accept = 'text/plain'
+			@req.headers.accept_encoding = 'gzip;q=0.7, deflate'
+
+			@res << "the text body"
+			@res.content_type = 'text/plain'
+			@res.for_encoding( :deflate ) { @res.body + " (deflated)" }
+			@res.for_encoding( :gzip ) { @res.body + " (gzipped)" }
+
+			@res.negotiated_body.should == "the text body (deflated)"
+			@res.encodings.should include( "deflate" )
+			@res.header_data.should =~ /accept-encoding/i
+			@res.header_data.should_not =~ /identity/i
+		end
+
+	end
+
+
 	describe "content-type acceptance predicates" do
 
 		it "knows that it is acceptable if its content_type is in the list of accepted types " +

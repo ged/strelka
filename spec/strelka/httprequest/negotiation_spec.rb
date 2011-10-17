@@ -40,10 +40,6 @@ describe Strelka::HTTPRequest::Negotiation do
 		@req.extend( described_class )
 	end
 
-	it "causes responses to be extended with response negotiation" do
-		@req.response.singleton_class.included_modules.
-			should include( Strelka::HTTPResponse::Negotiation )
-	end
 
 	describe "mediatype negotiation" do
 
