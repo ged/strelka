@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+#encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -57,7 +58,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.for( 'application/json' ) { %{["a JSON dump"]} }
 			@res.for( 'application/x-yaml' ) { "---\na: YAML dump\n\n" }
 
-			@res.body.should == "---\na: YAML dump\n\n"
+			@res.negotiated_body.should == "---\na: YAML dump\n\n"
 			@res.content_type.should == "application/x-yaml"
 			@res.header_data.should =~ /accept(?!-)/i
 		end
@@ -69,7 +70,7 @@ describe Strelka::HTTPResponse::Negotiation do
 				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
 			end
 
-			@res.body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+			@res.negotiated_body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
 				"\"name\":\"Harlot's Garden\"}"
 			@res.content_type.should == "application/json"
 			@res.header_data.should =~ /accept(?!-)/i
@@ -82,7 +83,7 @@ describe Strelka::HTTPResponse::Negotiation do
 				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
 			end
 
-			@res.body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+			@res.negotiated_body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
 				"\"name\":\"Harlot's Garden\"}"
 			@res.content_type.should == "application/json"
 			@res.header_data.should =~ /accept(?!-)/i
@@ -99,7 +100,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.body = File.read( __FILE__, encoding: 'iso-8859-5' )
 			@res.content_type = 'text/plain'
 
-			@res.body.encoding.should == Encoding::KOI8_R
+			@res.negotiated_body.encoding.should == Encoding::KOI8_R
 			@res.header_data.should =~ /accept-charset(?!-)/i
 		end
 
@@ -110,9 +111,63 @@ describe Strelka::HTTPResponse::Negotiation do
 				@res.body = File.open( __FILE__, 'r:iso-8859-5' )
 				@res.content_type = 'text/plain'
 
-				@res.body.encoding.should == Encoding::KOI8_R
+				@res.negotiated_body.encoding.should == Encoding::KOI8_R
 				@res.header_data.should =~ /accept-charset(?!-)/i
 			end
+		end
+
+	end
+
+
+	describe "language alternative callback methods" do
+
+		it "can provide blocks for alternative bodies of several different languages" do
+			@req.headers.accept = 'text/plain'
+			@req.headers.accept_language = 'de'
+
+			@res.puts( "the English body" )
+			@res.languages << :en
+			@res.content_type = 'text/plain'
+			@res.for_language( :de ) { "German translation" }
+			@res.for_language( :sl ) { "Slovenian translation" }
+
+			@res.negotiated_body.should == "German translation"
+			@res.languages.should == ["de"]
+			@res.header_data.should =~ /accept-language/i
+		end
+
+		it "can provide blocks for bodies of several different languages without setting a " +
+		   "default entity body" do
+			@req.headers.accept = 'text/plain'
+			@req.headers.accept_language = 'de, en-gb;q=0.9, en;q=0.7'
+
+			@res.content_type = 'text/plain'
+			@res.for_language( :en ) { "English translation" }
+			@res.for_language( :de ) { "German translation" }
+			@res.for_language( :sl ) { "Slovenian translation" }
+
+			@res.negotiated_body.should == "German translation"
+			@res.languages.should == ["de"]
+			@res.header_data.should =~ /accept-language/i
+		end
+
+		it "can provide a single block for bodies of several different languages" do
+			@req.headers.accept_language = 'fr;q=0.9, de;q=0.7, en;q=0.7, pt'
+			translations = {
+				:pt => "Portuguese translation",
+				:fr => "French translation",
+				:de => "German translation",
+				:en => "English translation",
+			}
+
+			@res.content_type = 'text/plain'
+			@res.for_language( translations.keys ) do |lang|
+				translations[ lang.to_sym ]
+			end
+
+			@res.negotiated_body.should == "Portuguese translation"
+			@res.languages.should == ["pt"]
+			@res.header_data.should =~ /accept-language/i
 		end
 
 	end
@@ -259,11 +314,19 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.should have_acceptable_language()
 		end
 
-		it "knows that it is acceptable if it doesn't have a language set" do
+		it "knows that it is acceptable if it has a body but doesn't have a language set" do
+			@req.headers.accept_language = 'en-gb, en; q=0.7, ja;q=0.2'
+			@res.languages.clear
+			@res.puts( "Some content in an unspecified language." )
+
+			@res.should have_acceptable_language()
+		end
+
+		it "knows that it is not acceptable if it has no body yet" do
 			@req.headers.accept_language = 'en-gb, en; q=0.7, ja;q=0.2'
 			@res.languages.clear
 
-			@res.should have_acceptable_language()
+			@res.should_not have_acceptable_language()
 		end
 
 		it "knows that it is acceptable if it doesn't have an originating request" do

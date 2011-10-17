@@ -84,7 +84,7 @@ module Strelka::App::Negotiation
 		# Ensure the response is acceptable; if it isn't respond with the appropriate
 		# status.
 		unless response.acceptable?
-			body = self.make_acceptable_body( response )
+			body = self.make_not_acceptable_body( response )
 			finish_with( HTTP::NOT_ACCEPTABLE, body ) # throw
 		end
 
@@ -93,7 +93,7 @@ module Strelka::App::Negotiation
 
 
 	### Create an HTTP entity body describing the variants of the given response.
-	def make_acceptable_body( response )
+	def make_not_acceptable_body( response )
 		# :TODO: Unless it was a HEAD request, the response SHOULD include
 		# an entity containing a list of available entity characteristics and
 		# location(s) from which the user or user agent can choose the one

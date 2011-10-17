@@ -65,7 +65,10 @@ module Strelka::HTTPRequest::Negotiation
 	### Returns boolean true/false if the requestor can handle the given
 	### +content_type+.
 	def accepts?( content_type )
-		return self.accepted_types.find {|type| type =~ content_type } ? true : false
+		self.log.debug "Checking to see if request accepts %p" % [ content_type ]
+		atype = self.accepted_types.find {|type| type =~ content_type }
+		self.log.debug "  find returned: %p" % [ atype ]
+		return atype ? true : false
 	end
 	alias_method :accept?, :accepts?
 
@@ -103,7 +106,10 @@ module Strelka::HTTPRequest::Negotiation
 	### Returns boolean true/false if the requestor can handle the given
 	### +charset+.
 	def accepts_charset?( charset )
-		return self.accepted_charsets.find {|cs| cs =~ charset } ? true : false
+		self.log.debug "Checking to see if request accepts charset: %p" % [ charset ]
+		aset = self.accepted_charsets.find {|cs| cs =~ charset }
+		self.log.debug "  find returned: %p" % [ aset ]
+		return aset ? true : false
 	end
 	alias_method :accept_charset?, :accepts_charset?
 
@@ -141,8 +147,10 @@ module Strelka::HTTPRequest::Negotiation
 	### Returns boolean true/false if the requestor can handle the given
 	### +encoding+.
 	def accepts_encoding?( encoding )
+		self.log.debug "Checking to see if request accepts encoding: %p" % [ encoding ]
 		return true if self.accepted_encodings.empty?
 		found_encoding = self.accepted_encodings.find {|enc| enc =~ encoding }
+		self.log.debug "  find returned: %p" % [ found_encoding ]
 
 		# If there was no match, then it's not accepted, unless it's the 'identity'
 		# encoding, which is accepted unless it's disabled.
@@ -198,9 +206,10 @@ module Strelka::HTTPRequest::Negotiation
 	### Returns boolean true/false if the requestor can handle the given
 	### +language+.
 	def accepts_language?( language )
-		found_language = self.accepted_languages.find {|enc| enc =~ language } or
-			return false
-		return found_language.qvalue.nonzero?
+		self.log.debug "Checking to see if request accepts language: %p" % [ language ]
+		found_language = self.accepted_languages.find {|langcode| langcode =~ language }
+		self.log.debug "  find returned: %p" % [ found_language ]
+		return found_language && found_language.qvalue.nonzero?
 	end
 	alias_method :accept_language?, :accepts_language?
 

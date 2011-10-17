@@ -51,6 +51,8 @@ module Strelka::HTTPResponse::Negotiation
 	def initialize( * )
 		@mediatype_callbacks = {}
 		@language_callbacks  = {}
+		@encoding_callbacks  = {}
+
 		@vary_fields         = Set.new
 
 		super
@@ -61,8 +63,17 @@ module Strelka::HTTPResponse::Negotiation
 	public
 	######
 
-	# The Hash of mediatype alternative callbacks for content negotiation, keyed by mimetype.
+	# The Hash of mediatype alternative callbacks for content negotiation,
+	# keyed by mimetype.
 	attr_reader :mediatype_callbacks
+
+	# The Hash of language alternative callbacks for content negotiation,
+	# keyed by language tag String.
+	attr_reader :language_callbacks
+
+	# The Hash of document coding alternative callbacks for content
+	# negotiation, keyed by coding name.
+	attr_reader :encoding_callbacks
 
 	# A Set of header fields to add to the 'Vary:' response header.
 	attr_reader :vary_fields
@@ -86,6 +97,30 @@ module Strelka::HTTPResponse::Negotiation
 	# :section: Content-alternative Callbacks
 	#
 
+	### Stringify the response -- overridden to use the negotiated body.
+	def to_s
+		return [
+			self.status_line,
+			self.header_data,
+			self.negotiated_body
+		].join( "\r\n" )
+	end
+
+
+	### Transform the entity body if it doesn't meet the criteria 
+	def negotiated_body
+		unless self.acceptable?
+			self.log.debug "Response is not acceptable as-is; looking for alternatives"
+			self.transform_content_type unless self.acceptable_content_type?
+			self.transform_language     unless self.acceptable_language?
+			self.transform_charset      unless self.acceptable_charset?
+			self.transform_encoding     unless self.acceptable_encoding?
+		end
+
+		return self.body
+	end
+
+
 	### Register a callback that will be called during transparent content
 	### negotiation for the entity body if one or more of the specified
 	### +mediatypes+ is among the requested alternatives. The +mediatypes+
@@ -108,21 +143,6 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Overridden to call one of the content-alternative callbacks if the response isn't
-	### acceptable.
-	def body
-		unless self.acceptable?
-			self.log.debug "Response is not acceptable as-is; looking for alternatives"
-			self.transform_content_type unless self.acceptable_content_type?
-			self.transform_language     unless self.acceptable_language?
-			self.transform_charset      unless self.acceptable_charset?
-			self.transform_encoding     unless self.acceptable_encoding?
-		end
-
-		return super
-	end
-
-
 	### Iterate over the originating request's acceptable content types in 
 	### qvalue+listed order, looking for a content negotiation callback for
 	### each mediatype. If any are found, they are tried in declared order
@@ -133,32 +153,46 @@ module Strelka::HTTPResponse::Negotiation
 		req = self.request or
 			raise Strelka::PluginError, "no originating request object"
 
-		mimetype, new_body = catch( :transformed ) do
-			self.request.accepted_mediatypes.sort.each do |acceptparam|
-				self.log.debug "  looking for transformations for %p" % [ acceptparam.mimetype ]
-				callbacks = self.mediatype_callbacks.find_all do |mimetype, callback|
-					acceptparam =~ mimetype
-				end
-
-				self.log.debug "    found %d callback/s to try" % [ callbacks.length ]
-				callbacks.each do |mimetype, callback|
-					self.log.debug "    trying: %p" % [ callback ]
-					rval = callback.call( mimetype )
-					throw :transformed, [mimetype, rval] if rval
-				end
+		self.request.accepted_mediatypes.sort.each do |acceptparam|
+			self.log.debug "  looking for transformations for %p" % [ acceptparam.mimetype ]
+			next unless pairs = self.mediatype_callbacks.find_all do |mimetype, callback|
+				acceptparam =~ mimetype
 			end
 
-			nil # No transforms succeeded
+			pairs.each do |mimetype, callback|
+
+				self.log.debug "    trying %p (%p)" % [ callback, mimetype ]
+				if (( new_body = callback.call(mimetype) ))
+					self.log.debug "Successfully transformed. Setting up response."
+					new_body = STRINGIFIERS[ mimetype ].call( new_body ) unless new_body.is_a?( String )
+
+					self.body = new_body
+					self.content_type = mimetype
+					self.status = HTTP::OK
+
+					return
+				end
+			end
+		end
+	end
+
+
+	### Register a callback that will be called during transparent content
+	### negotiation for the entity body if one or more of the specified
+	### +language_tags+ is among the requested alternatives. The +language_tags+
+	### are Strings in the form described by RFC2616, section 3.10. The
+	### +callback+ will be called with the desired language code, and should
+	### return the new value for the entity body if it has value for the
+	### body, or a false value if the next alternative should be tried
+	### instead.  If successful, the response's body will be set to the new
+	### value, and its status changed to HTTP::OK.
+	def for_language( *language_tags, &callback )
+		language_tags.flatten.each do |lang|
+			self.language_callbacks[ lang.to_sym ] = callback
 		end
 
-		if new_body
-			self.log.debug "Successfully transformed. Setting up response."
-			new_body = STRINGIFIERS[ mimetype ].call( new_body ) unless new_body.is_a?( String )
-
-			self.body = new_body
-			self.content_type = mimetype
-			self.status = HTTP::OK
-		end
+		# Include the 'Accept-Language:' header in the 'Vary:' header
+		self.vary_fields.add( 'accept-language' )
 	end
 
 
@@ -167,7 +201,28 @@ module Strelka::HTTPResponse::Negotiation
 	### each language. If any are found, they are tried in declared order
 	### until one returns a true-ish value, which becomes the new entity
 	### body.
-	def transform_language; end
+	def transform_language
+		self.log.debug "Looking for language transformations"
+		self.request.accepted_languages.sort.each do |lang|
+
+			self.log.debug "  looking for transformations for %p" % [ lang.primary_tag.to_sym ]
+			if (( callback = self.language_callbacks[ lang.primary_tag.to_sym ] ))
+
+				self.log.debug "  found a callback for %s: %p" % [ lang, callback ]
+				if (( new_body = callback.call(lang.primary_tag) ))
+					self.body = new_body
+					self.languages.replace([ lang.primary_tag ])
+					self.log.debug "    success."
+					break
+				end
+
+			else
+				self.log.debug "  no transformation for %p in %p" %
+					[ lang.primary_tag.to_sym, self.language_callbacks.keys ]
+			end
+
+		end
+	end
 
 
 	### Iterate over the originating request's acceptable charsets in 
@@ -177,18 +232,18 @@ module Strelka::HTTPResponse::Negotiation
 		self.log.debug "Trying to transcode the entity body to one of the accepted charsets."
 
 		# Access the instance variable directly, since #body checks for acceptability
-		if @body.respond_to?( :encode )
+		if self.body.respond_to?( :encode )
 			self.log.debug "  body is a string; trying direct transcoding"
 			if self.transcode_body_string( self.request.accepted_charsets )
 				self.vary_fields.add( 'accept-charset' )
 			end
 
 		# Can change the external_encoding if it's a File that has a #path
-		elsif @body.respond_to?( :external_encoding )
+		elsif self.body.respond_to?( :external_encoding )
 			raise NotImplementedError,
-				"Support for transcoding %p objects isn't done." % [ @body.class ]
+				"Support for transcoding %p objects isn't done." % [ self.body.class ]
 		else
-			self.log.warn "Don't know how to transcode a %p" % [ @body.class ]
+			self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 		end
 	end
 
@@ -206,14 +261,14 @@ module Strelka::HTTPResponse::Negotiation
 
 			succeeded = false
 			begin
-				succeeded = @body.encode!( enc )
+				succeeded = self.body.encode!( enc )
 			rescue Encoding::UndefinedConversionError => err
 				self.log.error "%p while transcoding: %s" % [ err.class, err.message ]
 			end
 
 			if succeeded
-				self.log.debug "  success; body is now %p" % [ @body.encoding ]
-				return @body.encoding
+				self.log.debug "  success; body is now %p" % [ self.body.encoding ]
+				return self.body.encoding
 			end
 		end
 
@@ -221,12 +276,44 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Iterate over the originating request's acceptable content types in 
-	### qvalue+listed order, looking for a content negotiation callback for
-	### each mediatype. If any are found, they are tried in declared order
-	### until one returns a true-ish value, which becomes the new entity
-	### body.
-	def transform_encoding; end
+	### Register a callback that will be called during transparent content
+	### negotiation for the entity body if one or more of the specified
+	### +codings+ is among the requested alternatives. The +codings+
+	### are Strings in the form described by RFC2616, section 3.5. The
+	### +callback+ will be called with the coding name, and should
+	### return the new value for the entity body if it has transformed the
+	### bod.  If successful, the response's body will be set to the new
+	### value, and the coding name added to the appropriate headers.
+	def for_encoding( *codings, &callback )
+		codings.each do |coding|
+			self.content_codings[ coding ] = callback
+		end
+
+		# Include the 'Accept-Encoding:' header in the 'Vary:' header
+		self.vary_fields.add( 'accept-encoding' )
+	end
+
+
+	### Iterate over the originating request's acceptable encodings and apply
+	### each one in the order they were requested if they're available.
+	def apply_encodings
+		self.log.debug "Looking for acceptable content codings"
+		self.request.accepted_encodings.each do |enc|
+			if (( callback = self.content_codings[enc.content_coding] ))
+				self.log.debug "  trying callback %p for %p" %
+					[ callback, enc ]
+				if (( new_body = callback.call(enc.content_coding) ))
+					self.log.debug "    callback succeeded"
+					self.body = new_body
+					self.headers.append( :content_encoding, enc.content_coding )
+					break
+				end
+			elsif enc.content_coding == 'identity' && enc.qvalue.nonzero?
+				self.log.debug "  identity coding, no callback"
+				break
+			end
+		end
+	end
 
 
 	#
@@ -285,13 +372,8 @@ module Strelka::HTTPResponse::Negotiation
 	### have been set.
 	def acceptable_language?
 		req = self.request or return true
-		return true if self.languages.empty?
-
-		# :FIXME: I'm not sure this is how this should work. RFC2616 is somewhat
-		# vague about how the Language: tag with multiple values interacts with
-		# an Accept-Language: specification.
-		# If it should require that *all* languages be in the accept list,
-		# just change .any? to .all?
+		return true if req.accepted_languages.empty?
+		return true if self.languages.empty? && self.body && !self.body.empty?
 		return self.languages.any? {|lang| req.accepts_language?(lang) }
 	end
 	alias_method :has_acceptable_language?, :acceptable_language?
