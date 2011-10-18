@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
-require 'strelka/httprequest'
+require 'strelka/constants'
+require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )
 require 'strelka/httprequest/acceptparams'
 
 
@@ -16,6 +17,7 @@ require 'strelka/httprequest/acceptparams'
 #   request.explicitly_accepts_language?( 'en-gb' )
 #
 module Strelka::HTTPRequest::Negotiation
+	include Strelka::Constants
 
 	### Extension callback -- add instance variables to extended objects. 
 	def initialize( * )
@@ -32,18 +34,24 @@ module Strelka::HTTPRequest::Negotiation
 	### the header, and a block is given, the block is called and its return value
 	### is appended to the empty Array before returning it.
 	def parse_negotiation_header( header, paramclass )
+		self.log.debug "Parsing %s header into %p objects" % [ header, paramclass ]
 		rval = []
 		headerval = self.headers[ header ]
+		self.log.debug "  raw header value: %p" % [ headerval ]
 
 		# Handle the case where there's more than one of the header in question by
 		# forcing everything to an Array
 		Array( headerval ).compact.flatten.each do |paramstr|
 			paramstr.split( /\s*,\s*/ ).each do |param|
+				self.log.debug "    parsing param: %p" % [ param ]
 				rval << paramclass.parse( param )
 			end
 		end
 
-		rval << yield if rval.empty? && block_given?
+		if rval.empty? && block_given?
+			self.log.debug "  no parsed values; calling the fallback block"
+			rval << yield
+		end
 
 		return rval.flatten
 	end

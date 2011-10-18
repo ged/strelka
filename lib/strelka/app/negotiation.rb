@@ -3,6 +3,7 @@
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
+require 'strelka/constants'
 require 'strelka/httprequest/negotiation'
 require 'strelka/httpresponse/negotiation'
 
@@ -36,6 +37,7 @@ require 'strelka/httpresponse/negotiation'
 #   end # class UserService
 # 
 module Strelka::App::Negotiation
+	include Strelka::Constants
 	extend Strelka::App::Plugin
 
 	run_before :routing, :filters, :templating
