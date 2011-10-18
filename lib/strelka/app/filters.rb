@@ -39,7 +39,7 @@ module Strelka::App::Filters
 
 		### Return filters which should be applied to responses, i.e., those with a +which+ of
 		### :response or :both.
-		def request_filters
+		def response_filters
 			return self.filters[ :both ] + self.filters[ :response ]
 		end
 

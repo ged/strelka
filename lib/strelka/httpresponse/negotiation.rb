@@ -426,8 +426,8 @@ module Strelka::HTTPResponse::Negotiation
 		self.log.debug "Looking for better charsets than %p (%0.2f)" %
 			[ current_charset, current_qvalue ]
 
-		return charsets.sort.find_all do |charset|
-			charset.qvalue > current_qvalue
+		return charsets.sort.find_all do |cs|
+			cs.qvalue > current_qvalue
 		end
 	end
 
