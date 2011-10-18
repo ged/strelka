@@ -17,7 +17,7 @@ class Strelka::App::DefaultRouter
 	###     <options_hash>, # The hash of route config options
 	###   ]
 	def initialize( routes=[] )
-		@routes = Hash.new {|routes, verb| routes[verb] = {} }
+		@routes = Hash.new {|hash, verb| hash[verb] = {} }
 		routes.each do |tuple|
 			self.log.debug "  adding route: %p" % [ tuple ]
 			self.add_route( *tuple )
