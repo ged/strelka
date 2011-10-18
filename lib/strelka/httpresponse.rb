@@ -16,10 +16,11 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add some instance variables to new HTTPResponses.
 	def initialize( * ) # :notnew:
-		super
 		@charset = nil
 		@languages = []
 		@encodings = []
+
+		super
 	end
 
 
@@ -60,6 +61,17 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 		return headers
 	end
+
+
+	### Overridden to reset charset, language, and encoding data, too.
+	def reset
+		super
+
+		@charset = nil
+		@languages.clear
+		@encodings.clear
+	end
+
 
 
 	#########

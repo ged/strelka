@@ -4,8 +4,9 @@ require 'set'
 require 'yaml'
 require 'yajl'
 
-require 'strelka/httpresponse'
+require 'strelka/constants'
 require 'strelka/exceptions'
+require 'strelka/httpresponse' unless defined?( Strelka::HTTPResponse )
 
 
 # The mixin that adds methods to Strelka::HTTPResponse for content-negotiation.
@@ -20,6 +21,7 @@ require 'strelka/exceptions'
 # is acceptable according to its request's `Accept*` headers.
 #
 module Strelka::HTTPResponse::Negotiation
+	include Strelka::Constants
 
 	# TODO: Perhaps replace this with something like this:
 	#   Mongrel2::Config::Mimetype.to_hash( :extension => :mimetype )
@@ -79,6 +81,21 @@ module Strelka::HTTPResponse::Negotiation
 	attr_reader :vary_fields
 
 
+	### Overridden to reset content-negotiation callbacks, too.
+	def reset
+		super
+
+		@mediatype_callbacks.clear
+		@language_callbacks.clear
+		@encoding_callbacks.clear
+
+		# Not clearing the Vary: header for now, as it's useful in a 406 to
+		# determine what accept-* headers can be modified to get an acceptable
+		# response
+		# @vary_fields.clear
+	end
+
+
 	### Overridden to add a Vary: header to outgoing headers if the response has
 	### any #vary_fields.
 	def normalized_headers
@@ -103,15 +120,106 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Transform the entity body if it doesn't meet the criteria 
-	def negotiated_body
+	### Check for any negotiation that should happen and 
+	def negotiate
+		return if self.handled? || !self.request
 		self.transform_content_type
 		self.transform_language
 		self.transform_charset
 		self.transform_encoding
+	end
 
+
+	### Transform the entity body if it doesn't meet the criteria 
+	def negotiated_body
+		self.negotiate
 		return self.body
 	end
+
+
+	#
+	# :section: Acceptance Predicates
+	#
+
+	### Return true if the receiver satisfies all of its originating request's
+	### Accept* headers, or it has no originating request.
+	def acceptable?
+		self.negotiate
+		return self.acceptable_content_type? &&
+		       self.acceptable_charset? &&
+		       self.acceptable_language? &&
+		       self.acceptable_encoding?
+	end
+	alias_method :is_acceptable?, :acceptable?
+
+
+	### Returns true if the content-type of the response is set to a
+	### mediatype that was designated as acceptable by the originating
+	### request, or if there was no originating request.
+	def acceptable_content_type?
+		req = self.request or return true
+		return req.accepts?( self.content_type )
+	end
+	alias_method :has_acceptable_content_type?, :acceptable_content_type?
+
+
+	### Returns true if the receiver's #charset is set to a value that was
+	### designated as acceptable by the originating request, or if there
+	### was no originating request.
+	def acceptable_charset?
+		req = self.request or return true
+		charset = self.find_header_charset
+
+		# Types other than text are binary, and so aren't subject to charset
+		# acceptability.
+		# For 'text/' subtypes:
+		#   When no explicit charset parameter is provided by the sender, media
+		#   subtypes of the "text" type are defined to have a default charset
+		#   value of "ISO-8859-1" when received via HTTP. [RFC2616 3.7.1]
+		if charset == Encoding::ASCII_8BIT
+			return true unless self.content_type.start_with?( 'text/' )
+			charset = Encoding::ISO8859_1 
+		end
+
+		return req.accepts_charset?( charset )
+	end
+	alias_method :has_acceptable_charset?, :acceptable_charset?
+
+
+	### Returns true if at least one of the receiver's #languages is set
+	### to a value that was designated as acceptable by the originating
+	### request, if there was no originating request, or if no #languages
+	### have been set for a non-empty entity body.
+	def acceptable_language?
+		req = self.request or return true
+
+		# Lack of an accept-language field means all languages are accepted
+		return true if req.accepted_languages.empty?
+
+		# If no language is given for an existing entity body, there's no way
+		# to know whether or not there's a better alternative
+		return true if self.languages.empty? && self.body && !self.body.empty?
+
+		# If any of the languages present for the body are accepted, the
+		# request is acceptable. Or at least that's what I got out of 
+		# reading RFC2616, Section 14.4.
+		return self.languages.any? {|lang| req.accepts_language?(lang) }
+	end
+	alias_method :has_acceptable_language?, :acceptable_language?
+
+
+	### Returns true if all of the receiver's #encodings were designated 
+	### as acceptable by the originating request, if there was no originating
+	### request, or if no #encodings have been set.
+	def acceptable_encoding?
+		req = self.request or return true
+
+		encs = self.encodings.dup
+		encs << 'identity' if encs.empty?
+
+		return encs.all? {|enc| req.accepts_encoding?(enc) }
+	end
+	alias_method :has_acceptable_encoding?, :acceptable_encoding?
 
 
 	#
@@ -299,7 +407,8 @@ module Strelka::HTTPResponse::Negotiation
 	### a higher qvalue than the one used by the current response.
 	def better_charsets
 		req = self.request or return []
-		return [] unless self.content_type.start_with?( 'text/' )
+		return [] unless self.content_type &&
+			self.content_type.start_with?( 'text/', 'application/' )
 		return [] unless req.headers.accept_charset
 
 		current_qvalue = 0.0
@@ -443,91 +552,6 @@ module Strelka::HTTPResponse::Negotiation
 		end
 	end
 
-
-	#
-	# :section: Acceptance Predicates
-	#
-
-	### Return true if the receiver satisfies all of its originating request's
-	### Accept* headers, or it has no originating request.
-	def acceptable?
-		return true if self.handled? or !self.request
-
-		return self.acceptable_content_type? &&
-		       self.acceptable_charset? &&
-		       self.acceptable_language? &&
-		       self.acceptable_encoding?
-	end
-	alias_method :is_acceptable?, :acceptable?
-
-
-	### Returns true if the content-type of the response is set to a
-	### mediatype that was designated as acceptable by the originating
-	### request, or if there was no originating request.
-	def acceptable_content_type?
-		req = self.request or return true
-		return req.accepts?( self.content_type )
-	end
-	alias_method :has_acceptable_content_type?, :acceptable_content_type?
-
-
-	### Returns true if the receiver's #charset is set to a value that was
-	### designated as acceptable by the originating request, or if there
-	### was no originating request.
-	def acceptable_charset?
-		req = self.request or return true
-		charset = self.find_header_charset
-
-		# Types other than text are binary, and so aren't subject to charset
-		# acceptability.
-		# For 'text/' subtypes:
-		#   When no explicit charset parameter is provided by the sender, media
-		#   subtypes of the "text" type are defined to have a default charset
-		#   value of "ISO-8859-1" when received via HTTP. [RFC2616 3.7.1]
-		if charset == Encoding::ASCII_8BIT
-			return true unless self.content_type.start_with?( 'text/' )
-			charset = Encoding::ISO8859_1 
-		end
-
-		return req.accepts_charset?( charset )
-	end
-	alias_method :has_acceptable_charset?, :acceptable_charset?
-
-
-	### Returns true if at least one of the receiver's #languages is set
-	### to a value that was designated as acceptable by the originating
-	### request, if there was no originating request, or if no #languages
-	### have been set for a non-empty entity body.
-	def acceptable_language?
-		req = self.request or return true
-
-		# Lack of an accept-language field means all languages are accepted
-		return true if req.accepted_languages.empty?
-
-		# If no language is given for an existing entity body, there's no way
-		# to know whether or not there's a better alternative
-		return true if self.languages.empty? && self.body && !self.body.empty?
-
-		# If any of the languages present for the body are accepted, the
-		# request is acceptable. Or at least that's what I got out of 
-		# reading RFC2616, Section 14.4.
-		return self.languages.any? {|lang| req.accepts_language?(lang) }
-	end
-	alias_method :has_acceptable_language?, :acceptable_language?
-
-
-	### Returns true if all of the receiver's #encodings were designated 
-	### as acceptable by the originating request, if there was no originating
-	### request, or if no #encodings have been set.
-	def acceptable_encoding?
-		req = self.request or return true
-
-		encs = self.encodings.dup
-		encs << 'identity' if encs.empty?
-
-		return encs.all? {|enc| req.accepts_encoding?(enc) }
-	end
-	alias_method :has_acceptable_encoding?, :acceptable_encoding?
 
 end # module Strelka::HTTPResponse::Negotiation
 

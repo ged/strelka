@@ -43,13 +43,6 @@ describe Strelka::HTTPResponse::Negotiation do
 	end
 
 
-	it "assumes the response has already been made acceptable if it's had its status set" do
-		@res.should_not be_acceptable()
-		@res.status = HTTP::OK
-		@res.should be_acceptable()
-	end
-
-
 	describe "content-alternative callback methods" do
 
 		it "can provide blocks for bodies of several different mediatypes" do
@@ -101,6 +94,16 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.content_type = 'text/plain'
 
 			@res.negotiated_body.encoding.should == Encoding::KOI8_R
+			@res.header_data.should =~ /accept-charset(?!-)/i
+		end
+
+		it "transcodes String entity bodies if the charset is not acceptable" do
+			@req.headers.accept_charset = 'utf-8'
+
+			@res.body = File.read( __FILE__, encoding: 'iso-8859-5' )
+			@res.content_type = 'application/json'
+
+			@res.negotiated_body.encoding.should == Encoding::UTF_8
 			@res.header_data.should =~ /accept-charset(?!-)/i
 		end
 
