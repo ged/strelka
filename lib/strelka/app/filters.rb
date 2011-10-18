@@ -9,6 +9,7 @@ module Strelka::App::Filters
 	extend Strelka::App::Plugin
 
 	run_before :routing
+	run_after :templating
 
 	### Class methods to add to classes with routing.
 	module ClassMethods

@@ -31,6 +31,26 @@ describe Strelka::App::Plugins do
 		reset_logging()
 	end
 
+	RSpec::Matchers.define( :order ) do |item|
+		match do |enumerable|
+			if defined?( @before )
+				enumerable.index( @before ) < enumerable.index( item ) 
+			elsif defined?( @after )
+				enumerable.index( @after ) > enumerable.index( item ) 
+			else
+				raise "No .before or .after to compare against!"
+			end
+		end
+
+		chain :before do |item|
+			@before = item
+		end
+
+		chain :after do |item|
+			@after = item
+		end
+	end
+
 
 	describe "Plugin module" do
 
@@ -63,16 +83,9 @@ describe Strelka::App::Plugins do
 				end
 			end
 
-			it "knows that it isn't after the other plugin" do
-				@before_mod.should_not be_after( @other_mod )
-			end
-
-			it "knows that it is before the other plugin" do
-				@before_mod.should be_before( @other_mod )
-			end
-
-			it "sorts before the other plugin" do
-				[ @other_mod, @before_mod].sort.should == [ @before_mod, @other_mod ]
+			it "sorts before it in the plugin registry" do
+				Strelka::App.loaded_plugins.tsort.
+					should order( @other_mod.plugin_name ).before( @before_mod.plugin_name )
 			end
 
 		end
@@ -88,16 +101,10 @@ describe Strelka::App::Plugins do
 				end
 			end
 
-			it "knows that it is after the other plugin" do
-				@after_mod.should be_after( @other_mod )
-			end
 
-			it "knows that is isn't before the other plugin" do
-				@after_mod.should_not be_before( @other_mod )
-			end
-
-			it "sorts after the other plugin" do
-				[ @after_mod, @other_mod ].sort.should == [ @other_mod, @after_mod ]
+			it "sorts after it in the plugin registry" do
+				Strelka::App.loaded_plugins.tsort.
+					should order( @other_mod.plugin_name ).after( @after_mod.plugin_name )
 			end
 
 		end
