@@ -14,6 +14,7 @@ module Strelka::App::Templating
 	extend Strelka::App::Plugin
 
 	run_before :routing, :filters
+	run_after :negotiation
 
 
 	# Class methods to add to classes with templating.
@@ -111,6 +112,7 @@ module Strelka::App::Templating
 	### Every other response is returned without modification.
 	def handle_request( request, &block )
 		response = super
+
 		self.log.debug "Templating: examining %p response." % [ response.class ]
 		template = nil
 

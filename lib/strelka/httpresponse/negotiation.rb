@@ -345,7 +345,6 @@ module Strelka::HTTPResponse::Negotiation
 	### a higher qvalue than the current response's entity body (if any).
 	def better_languages
 		req = self.request or return []
-		return [] unless req.headers.accept_language
 
 		current_qvalue = 0.0
 		accepted_languages = req.accepted_languages.sort
@@ -378,21 +377,23 @@ module Strelka::HTTPResponse::Negotiation
 
 		self.log.debug "Looking for language transformations"
 		self.better_languages.uniq.each do |lang|
+			callback = langcode = nil
 
-			self.log.debug "  looking for transformations for %p" % [ lang.primary_tag.to_sym ]
-			if (( callback = self.language_callbacks[ lang.primary_tag.to_sym ] ))
-
-				self.log.debug "  found a callback for %s: %p" % [ lang, callback ]
-				if (( new_body = callback.call(lang.primary_tag) ))
-					self.body = new_body
-					self.languages.replace([ lang.primary_tag ])
-					self.log.debug "    success."
-					break
-				end
-
+			if lang.primary_tag
+				langcode = lang.language_range
+				callback = self.language_callbacks[ lang.primary_tag.to_sym ]
 			else
-				self.log.debug "  no transformation for %p in %p" %
-					[ lang.primary_tag.to_sym, self.language_callbacks.keys ]
+				langcode, callback = self.language_callbacks.first
+			end
+
+			next unless callback
+
+			self.log.debug "  found a callback for %s: %p" % [ langcode, callback ]
+			if (( new_body = callback.call(langcode) ))
+				self.body = new_body
+				self.languages.replace([ langcode.to_s ])
+				self.log.debug "    success."
+				break
 			end
 
 		end

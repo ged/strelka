@@ -173,6 +173,19 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.header_data.should =~ /accept-language/i
 		end
 
+		it "calls the first block for requests with no accept-language header" do
+			@req.headers.delete( :accept_language )
+			@req.headers.accept = 'text/plain'
+
+			@res.content_type = 'text/plain'
+			@res.for_language( :en ) { "English translation" }
+			@res.for_language( :de ) { "German translation" }
+			@res.for_language( :sl ) { "Slovenian translation" }
+
+			@res.negotiated_body.should == "English translation"
+			@res.languages.should == ["en"]
+			@res.header_data.should =~ /accept-language/i
+		end
 	end
 
 

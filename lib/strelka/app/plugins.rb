@@ -47,11 +47,18 @@ class Strelka::App
 		### Comparable operator -- use the plugin load_order to compare Plugin modules.
 		def <=>( other_plugin )
 			if self.before?( other_plugin ) || other_plugin.after?( self )
+				Strelka.log.debug "%p sorts before %p" % [ self, other_plugin ]
 				return -1
 			elsif self.after?( other_plugin ) || other_plugin.before?( self )
+				Strelka.log.debug "%p sorts before %p" % [ other_plugin, self ]
 				return 1
 			else
-				return 0
+				Strelka.log.debug "%p sorts alphabetically %s %p" % [
+					self,
+					((self.plugin_name <=> other_plugin.plugin_name) < 0 ? "before" : "after"),
+					other_plugin,
+				]
+				return self.plugin_name <=> other_plugin.plugin_name
 			end
 		end
 
