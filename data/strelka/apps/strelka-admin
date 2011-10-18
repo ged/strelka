@@ -12,7 +12,7 @@ class Strelka::AdminConsole < Strelka::App
 	ID = Strelka::ADMINCONSOLE_ID
 
 	# Load some plugins
-	plugins :templating, :routing, :parameters
+	plugins :templating, :routing, :parameters, :negotiation
 
 	# By default, responses are HTML
 	default_type 'text/html'
@@ -68,16 +68,17 @@ class Strelka::AdminConsole < Strelka::App
 	# GET /uuid -- fetch a plain-text random UUID
 	get '/uuid' do |req|
 		res = req.response
-		res.content_type = 'text/plain'
-		res.status = HTTP::OK
-		res << UUIDTools::UUID.random_create
+		uuid = UUIDTools::UUID.random_create.to_s
+
+		res.for( :text, :yaml ) { uuid }
+		res.for( :json ) { [uuid] }
 
 		return res
 	end
 
 
 	# GET /servers -- fetch a list of the configured Server objects.
-	get 'servers' do |req|
+	get '/servers' do |req|
 		res = req.response
 		servers = Mongrel2::Config::Server.dataset.naked
 
