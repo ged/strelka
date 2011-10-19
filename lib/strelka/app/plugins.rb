@@ -211,9 +211,8 @@ class Strelka::App
 
 
 		### An alternate extension-point for the plugin system. Plugins can implement this method
-		### to alter or replace the +response+ to the specified +request+ after the regular 
-		### request/response cycle is finished.
-		def fixup_response( request, response )
+		### to alter or replace the +response+ after the regular request/response cycle is finished.
+		def fixup_response( response )
 			return response
 		end
 

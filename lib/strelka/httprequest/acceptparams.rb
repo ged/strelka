@@ -205,7 +205,7 @@ class Strelka::HTTPRequest
 		### Parse the given +accept_param+ as a mediatype and return a 
 		### Strelka::HTTPRequest::MediaType object for it.
 		def self::parse( accept_param )
-			raise ArgumentError, "Bad Accept param: no media-range" unless
+			raise ArgumentError, "Bad Accept param: no media-range in %p" % [accept_param] unless
 				accept_param.include?( '/' )
 			media_range, *stuff = accept_param.split( /\s*;\s*/ )
 			type, subtype = media_range.downcase.split( '/', 2 )

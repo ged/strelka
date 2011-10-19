@@ -72,12 +72,14 @@ class Strelka::App < Mongrel2::Handler
 	def handle( request )
 		response = nil
 
-		# Run fixup hooks on the request
-		request = self.fixup_request( request )
-
 		# Dispatch the request after allowing plugins to to their thing
 		status_info = catch( :finish ) do
+
+			# Run fixup hooks on the request
+			request = self.fixup_request( request )
 			response = self.handle_request( request )
+			response = self.fixup_response( response )
+
 			nil # rvalue for the catch
 		end
 
@@ -85,14 +87,9 @@ class Strelka::App < Mongrel2::Handler
 		if status_info
 			self.log.debug "Preparing a status response: %p" % [ status_info ]
 			return self.prepare_status_response( request, status_info )
-
-		# Normal response
-		else
-			self.log.debug "Preparing a regular response: %p" % [ response ]
-			response ||= request.response
-			return self.fixup_response( request, response )
 		end
 
+		return response
 	rescue => err
 		msg = "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
 		self.log.error( msg )
@@ -137,13 +134,14 @@ class Strelka::App < Mongrel2::Handler
 	### Mongrel and return it. This is an alternate extension-point for plugins that 
 	### wish to modify or replace the response after the whole request cycle is
 	### completed.
-	def fixup_response( request, response )
+	def fixup_response( response )
 		self.log.debug "Fixing up response: %p" % [ response ]
 		self.fixup_response_content_type( response )
-		self.fixup_head_response( response ) if request.verb == :HEAD
+		self.fixup_head_response( response ) if
+			response.request && response.request.verb == :HEAD
 		self.log.debug "  after fixup: %p" % [ response ]
 
-		super
+		return super
 	end
 
 

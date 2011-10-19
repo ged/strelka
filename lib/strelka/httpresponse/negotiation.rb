@@ -44,9 +44,10 @@ module Strelka::HTTPResponse::Negotiation
 	# A collection of stringifier callbacks, keyed by mimetype. If an object other
 	# than a String is returned by a content callback, and an entry for the callback's
 	# mimetype exists in this Hash, it will be #call()ed to stringify the object.
-	STRINGIFIERS = Hash.new( Object.method(:String) )
-	STRINGIFIERS[ 'application/x-yaml' ] = YAML.method( :dump )
-	STRINGIFIERS[ 'application/json'   ] = Yajl.method( :dump )
+	STRINGIFIERS = {
+		'application/x-yaml' => YAML.method( :dump ),
+		'application/json'   => Yajl.method( :dump ),
+	}
 
 
 	### Add some instance variables for negotiation.
@@ -158,7 +159,11 @@ module Strelka::HTTPResponse::Negotiation
 	### request, or if there was no originating request.
 	def acceptable_content_type?
 		req = self.request or return true
-		return req.accepts?( self.content_type )
+		answer = req.accepts?( self.content_type )
+		self.log.warn "Content-type %p NOT acceptable: %p" %
+			[ self.content_type, req.accepted_mediatypes ] unless answer
+
+		return answer
 	end
 	alias_method :has_acceptable_content_type?, :acceptable_content_type?
 
@@ -181,7 +186,11 @@ module Strelka::HTTPResponse::Negotiation
 			charset = Encoding::ISO8859_1 
 		end
 
-		return req.accepts_charset?( charset )
+		answer = req.accepts_charset?( charset )
+		self.log.warn "Content-charset %p NOT acceptable: %p" %
+			[ self.find_header_charset, req.accepted_charsets ] unless answer
+
+		return answer
 	end
 	alias_method :has_acceptable_charset?, :acceptable_charset?
 
@@ -198,12 +207,16 @@ module Strelka::HTTPResponse::Negotiation
 
 		# If no language is given for an existing entity body, there's no way
 		# to know whether or not there's a better alternative
-		return true if self.languages.empty? && self.body && !self.body.empty?
+		return true if self.languages.empty?
 
 		# If any of the languages present for the body are accepted, the
 		# request is acceptable. Or at least that's what I got out of 
 		# reading RFC2616, Section 14.4.
-		return self.languages.any? {|lang| req.accepts_language?(lang) }
+		answer = self.languages.any? {|lang| req.accepts_language?(lang) }
+		self.log.warn "Content-language %p NOT acceptable: %s" %
+			[ self.languages, req.accepted_languages ] unless answer
+
+		return answer
 	end
 	alias_method :has_acceptable_language?, :acceptable_language?
 
@@ -217,7 +230,11 @@ module Strelka::HTTPResponse::Negotiation
 		encs = self.encodings.dup
 		encs << 'identity' if encs.empty?
 
-		return encs.all? {|enc| req.accepts_encoding?(enc) }
+		answer = encs.all? {|enc| req.accepts_encoding?(enc) }
+		self.log.warn "Content-encoding %p NOT acceptable: %s" %
+			[ encs, req.accepted_encodings ] unless answer
+
+		return answer
 	end
 	alias_method :has_acceptable_encoding?, :acceptable_encoding?
 
@@ -307,8 +324,8 @@ module Strelka::HTTPResponse::Negotiation
 		new_body = callback.call( mimetype ) or return false
 
 		self.log.debug "  successfully transformed! Setting up response."
-		new_body = STRINGIFIERS[ mimetype ].call( new_body ) unless
-			new_body.is_a?( String )
+		new_body = STRINGIFIERS[ mimetype ].call( new_body ) if
+			STRINGIFIERS.key?( mimetype ) && !new_body.is_a?( String )
 
 		self.body = new_body
 		self.content_type = mimetype

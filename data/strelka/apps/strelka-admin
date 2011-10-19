@@ -72,6 +72,12 @@ class Strelka::AdminConsole < Strelka::App
 
 		res.for( :text, :yaml ) { uuid }
 		res.for( :json ) { [uuid] }
+		res.for( :html ) do
+			tmpl = self.template( :message )
+			tmpl.message = uuid
+			self.log.debug "Returning message template: %p" % [ tmpl ]
+			tmpl
+		end
 
 		return res
 	end

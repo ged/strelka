@@ -373,11 +373,11 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.should have_acceptable_language()
 		end
 
-		it "knows that it is not acceptable if it has no body yet" do
+		it "knows that it is acceptable if it has no body yet" do
 			@req.headers.accept_language = 'en-gb, en; q=0.7, ja;q=0.2'
 			@res.languages.clear
 
-			@res.should_not have_acceptable_language()
+			@res.should have_acceptable_language()
 		end
 
 		it "knows that it is acceptable if it doesn't have an originating request" do

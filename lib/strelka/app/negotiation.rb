@@ -40,7 +40,8 @@ module Strelka::App::Negotiation
 	include Strelka::Constants
 	extend Strelka::App::Plugin
 
-	run_before :routing, :filters, :templating, :parameters
+	run_before :routing
+	run_after  :filters, :templating, :parameters
 
 
 	### Class methods to add to classes with content-negotiation.
@@ -78,9 +79,17 @@ module Strelka::App::Negotiation
 	end
 
 
-	### Add content-negotiation to incoming requests, then handle any necessary
-	### conversion of the resulting response's entity body.
-	def handle_request( request, &block )
+	### Start content-negotiation when the response has returned.
+	def handle_request( request )
+		response = super
+		response.negotiate
+
+		return response
+	end
+
+
+	### Check to be sure the response is acceptable after the request is handled.
+	def fixup_response( response )
 		response = super
 
 		# Ensure the response is acceptable; if it isn't respond with the appropriate

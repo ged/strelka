@@ -245,7 +245,7 @@ describe Strelka::App do
 			# make a fixup plugin that adds a custom x- header to the response
 			header_fixup_plugin = Module.new do
 				extend Strelka::App::Plugin
-				def fixup_response( req, res )
+				def fixup_response( res )
 					res.headers.x_funted_by = 'Cragnux/1.1.3'
 					super
 				end
