@@ -405,9 +405,12 @@ class Strelka::LeashCommand
 		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
 			raise ScriptError, "Ack! No server named '#{ADMINSERVER_ID}' in #{Mongrel2::Config.pathname}"
 
-		message "Starting mongrel2..."
-		cmd = [ 'mongrel2', 'mongrel2 (Strelka Admin)' ]
+		mongrel2 = ENV['MONGREL2'] || 'mongrel2'
+
+		message "Starting mongrel2 (%s)..." % [ mongrel2 ]
+		cmd = [ mongrel2, 'mongrel2 (Strelka Admin)' ]
 		args = [ Mongrel2::Config.pathname.to_s, server.uuid ]
+
 
 		return spawn( cmd, *args )
 	end
