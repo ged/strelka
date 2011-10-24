@@ -289,7 +289,22 @@ class Strelka::LeashCommand
 			Process.kill( :TERM, apppid ) if apppid
 
 		ensure
-			results = Process.waitall
+			pids = [ m2pid, apppid ]
+			until pids.empty?
+			 	pid, status = Process.wait2
+				pids.delete( pid )
+
+				if status.exited? || status.signal?
+					message "  child %d exited normally" % [ pid ]
+				else
+					message "  child %d exited abnormally" % [ pid ]
+					unless pids.empty?
+						message "    killing the other children"
+						Process.kill( :TERM, *pids )
+					end
+				end
+			end
+
 			message "Done: %p" % [ results ]
 		end
 	end
@@ -383,12 +398,9 @@ class Strelka::LeashCommand
 	def setup_adminserver_directory
 		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
 			raise "No server %p configured!" % [ ADMINSERVER_ID ]
-		basedir = Pathname.pwd
 
+		basedir = DATADIR
 		header "Setting up chroot environment..."
-
-		message "  copying static assets..."
-		FileUtils.cp_r( DATADIR + 'static', basedir, :verbose => $VERBOSE )
 
 		message "  creating directories..."
 		directories = server.values.values_at( :access_log, :error_log, :pid_file ).collect do |path|
@@ -409,10 +421,11 @@ class Strelka::LeashCommand
 
 		message "Starting mongrel2 (%s)..." % [ mongrel2 ]
 		cmd = [ mongrel2, 'mongrel2 (Strelka Admin)' ]
-		args = [ Mongrel2::Config.pathname.to_s, server.uuid ]
+		cfgpath = Mongrel2::Config.pathname.relative_path_from( DATADIR )
 
-
-		return spawn( cmd, *args )
+		Dir.chdir( DATADIR ) do
+			return spawn( cmd, cfgpath.to_s, server.uuid )
+		end
 	end
 
 
