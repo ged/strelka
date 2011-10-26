@@ -1,42 +1,51 @@
 <!doctype html>
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
-  <title>Strelka: <?subscribe title ?></title>
-  <meta name="author" content="Michael Granger">
+		<title>Strelka: <?subscribe title ?></title>
 
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+		<meta name="author" content="Michael Granger" />
 
-	<script src="/js/jquery.tools.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.jeditable.mini.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.tmpl.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/strelka.js" type="text/javascript" charset="utf-8"></script>
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
 
-	<link rel="shortcut icon" type="image/png" href="/images/21d1-16.png" />
-	<link rel="stylesheet" href="/css/master.css" type="text/css" media="screen"
-		title="no title" charset="utf-8" />
-</head>
-<body>
+		<script src="/js/jquery.tools.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/js/jquery.jeditable.mini.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/js/jquery.tmpl.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/js/strelka.js" type="text/javascript" charset="utf-8"></script>
 
-  <header>
-		<h1>Стрелке</h1>
-  </header>
+		<link rel="shortcut icon" type="image/png" href="/images/21d1-16.png" />
+		<link rel="stylesheet" href="/css/master.css" type="text/css" media="screen"
+			title="no title" charset="utf-8" />
+	</head>
+	<body>
 
-	<nav id="breadcrumbs">
-		<?subscribe breadcrumbs || Console ?>
-	</nav>
+		<header>
+			<h1>Стрелке</h1>
+		</header>
 
-  <section id="body">
-		<?attr body ?>
-  </section>
+		<nav id="breadcrumbs">
+			<?subscribe breadcrumbs || Console ?>
+		</nav>
 
-  <footer>
-		<p>
-			<span class="vcs-id">$Id$</span>
-			<span class="copyright">Copyright © 2011, Michael Granger</span>
-		</p>
-  </footer>
+		<section id="body">
+			<?attr body ?>
+		</section>
 
-</body>
+		<div id="overlay">
+			<script id="error-template" type="text/x-jquery-tmpl">
+				<div class="error"></div>
+			</script>
+		</div>
+
+		<footer>
+			<p>
+				<span class="vcs-id">$Id$</span>
+				<span class="copyright">Copyright © 2011, Michael Granger</span>
+			</p>
+		</footer>
+
+	</body>
 </html>
+

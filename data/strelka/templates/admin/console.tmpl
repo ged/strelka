@@ -1,3 +1,4 @@
+<?import request ?>
 <?publish title ?>Admin Console<?end publish ?>
 
 <section id="servers">
@@ -5,16 +6,24 @@
 		<h1>Servers</h1>
 	</header>
 
-	<nav class="actions">
-		<button class="create">Add a Server</button>
-	</nav>
-
-<?if servers.empty? ?>
-	<p>No servers configured.</p>
-<?else?>
 	<table>
+		<caption>
+			<p class="instructions">Double-click to edit a server.</p>
+		</caption>
+
+		<colgroup class="attributes">
+			<col class="id" />
+			<col class="uuid" />
+			<col class="name" />
+			<col class="default-host" />
+			<col class="bind-addr" />
+			<col class="ssl-enabled" />
+		</colgroup>
+		<colgroup class="controls"><col /></colgroup>
+
 		<thead>
 			<tr>
+				<th>ID</th>
 				<th>UUID</th>
 				<th>Name</th>
 				<th>Default Host</th>
@@ -24,18 +33,20 @@
 				<th class="controls">&nbsp;</th>
 			</tr>
 		</thead>
-		<tbody>
-		<?for server in servers ?>
+		<tbody class="data">
+			
+			<script id="server-template" type="text/x-jquery-tmpl">
 			<tr class="server">
-				<td class="editable uuid">
-					<a href="[?call request.app_path ?]/server/[?call server.uuid ?]"><?call server.uuid ?></a>
+				<td data-binding="id"><a href="${uri}">${id}</a></td>
+				<td class="editable" data-binding="uuid">${uuid}</td>
+				<td class="editable" data-binding="name">${name}</td>
+				<td class="editable" data-binding="default_host">${default_host}</td>
+				<td class="editable" data-binding="bind_addr">${bind_addr}</td>
+				<td class="editable" data-binding="port">${port}</td>
+				<td class="toggle icon {{if use_ssl}} enabled{{/if}}" data-binding="use_ssl">
+					<span class="target"><img 
+					src="/images/icons/tick-white.png" width="16" height="16" alt="" /></span>
 				</td>
-				<td class="editable name"><?call server.name ?></td>
-				<td class="editable default-host"><?call server.default_host ?></td>
-				<td class="editable bind-addr"><?call server.bind_addr ?></td>
-				<td class="editable port"><?call server.port ?></td>
-				<td class="toggle icon ssl[?if server.use_ssl.nonzero? ?] enabled[?end if ?]"><img 
-					src="/images/icons/tick-white.png" width="16" height="16" alt="" /></td>
 				<td class="controls">
 					<button class="save"><img src="/images/icons/tick-button.png" width="16" height="16" 
 						title="Save Changes" alt="Save" /></button>
@@ -43,27 +54,22 @@
 						title="Discard Changes" alt="Cancel" /></button>
 				</td>
 			</tr>
-		<?end for ?>
-		</tbody>
-	</table>
-<?end if ?>
-</section>
+			</script>
 
-<script id="server-template" type="text/x-jquery-tmpl">
-<tr class="server unsaved">
-	<td class="editable uuid">${uuid}</td>
-	<td class="editable name">${name}</td>
-	<td class="editable default-host">${default_host}</td>
-	<td class="editable bind-addr">${bind_addr}</td>
-	<td class="editable port">${port}</td>
-	<td class="toggle icon ssl{{if use_ssl}} enabled{{/if}}"><img 
-		src="/images/icons/tick-white.png" width="16" height="16" alt="" /></td>
-	<td class="controls">
-		<button class="save"><img src="/images/icons/tick-button.png" width="16" height="16" 
-			title="Save Changes" alt="Save" /></button>
-		<button class="cancel"><img src="/images/icons/cross-button.png" width="16" height="16" 
-			title="Discard Changes" alt="Cancel" /></button>
-	</td>
-</tr>
-</script>
+		</tbody>
+
+		<tbody class="actions">
+			<tr>
+				<td colspan="7">
+					<nav>
+						<button class="create">Add a Server</button>
+					</nav>
+				</td>
+				<td class="controls">&nbsp;</td>
+			</tr>
+		</tbody>
+
+	</table>
+	
+</section>
 

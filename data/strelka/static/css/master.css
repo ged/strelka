@@ -2,6 +2,7 @@
 
 @import url(reset.css);
 
+/* @group Fonts */
 @font-face {
 	font-family: IstokWeb;
 	src: local('IstokWeb'),
@@ -33,8 +34,10 @@
 	src: local('Inconsolata'),
 		url(../fonts/Inconsolata.otf) format("opentype");
 }
+/* @end */
 
 
+/* @group Generic Element Styles */
 html {
 	margin: 0;
 	font: 14px/18px IstokWeb;
@@ -49,6 +52,20 @@ body {
 }
 
 
+h1,h2,h3,h4,h5,h6 {
+	font-weight: bold;
+	color: black;
+}
+
+a {
+	color: #911;
+	text-decoration: none;
+	background: rgba( 255,255,255, 0.15 );
+}
+/* @end */
+
+
+/* @group Top-level Sections and Headers */
 body > header,
 body > section {
     background: #cbcfd5 url(../images/noise.png) repeat;
@@ -63,7 +80,13 @@ body > header h1 {
 	margin: 0;
 	color: white;
 }
+body > section {
+	padding: 0 40px 1em;
+}
 
+/* @end */
+
+/* @group Top-level Nav */
 body > nav {
 	margin-top: -0.5em;
     background: #b5b9be;
@@ -76,15 +99,11 @@ body > nav ol li + li:before {
 	content: "> ";
 	color: whitesmoke;
 }
+/* @end */
 
-body > section {
-	padding: 0 40px 1em;
-}
 
-body > section > section {
-	padding: 2em 0;
-}
 
+/* @group Footers */
 body > footer {
 	color: #777;
 	font-size: 0.9em;
@@ -122,24 +141,40 @@ body > footer {
 		rgba(0,0,0,0) 39%,
 		rgba(0,0,0,0) 100%); /* W3C */
 }
-
-h1,h2,h3,h4,h5,h6 {
-	font-weight: bold;
-	color: black;
+footer span.copyright {
+	float: right;
 }
+/* @end */
 
+
+/* @group Second-Level sections and headers */
+body > section > section {
+	padding: 2em 0;
+}
 section > header {
 	padding: 0.5em 0;
 	font-size: 1.2em;
 }
-
+/* Add space between sibing sections and tables */
 section + section,
 table + section,
 section + table {
 	margin-top: 2em;
 }
+/* @end */
 
+
+/* @group Tables */
 table {}
+table caption {
+	caption-side: bottom;
+	padding: 1em;
+	font-size: 0.9em;
+	color: #777;
+}
+table caption p {
+	text-align: center;
+}
 td, th {
 	padding: 2px 1em;
 }
@@ -159,12 +194,74 @@ td.icon {
 	line-height: 8px;
 	vertical-align: bottom;
 }
-td.toggle span.target {
-	border: 1px dashed rgba( 0,0,0, 0.20 );
-	border-radius: 4px;
-	display: inline-block;
+
+tbody.actions td {
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+tbody.actions nav {
+	text-align: right;
+}
+tbody.actions nav button {
+	font-size: 1.1em;
+	padding: 0.5em 1em;
+	margin: 1em 0;
+	border: 1px;
+	background: #45484d;
+	background: -moz-linear-gradient(top, #45484d 0%, #000000 100%);
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#45484d), color-stop(100%,#000000));
+	background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%);
+	background: -o-linear-gradient(top, #45484d 0%,#000000 100%);
+	background: -ms-linear-gradient(top, #45484d 0%,#000000 100%);
+	background: linear-gradient(top, #45484d 0%,#000000 100%);
+    display: inline-block; 
+    padding: 5px 10px 6px; 
+    color: #fff; 
+    text-decoration: none;
+    -moz-border-radius: 5px; 
+    -webkit-border-radius: 5px;
+    -moz-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 -1px 1px rgba(0,0,0,0.25);
+    border-bottom: 1px solid rgba(0,0,0,0.25);
+    position: relative;
+    cursor: pointer;
+}
+
+
+/* @group Editable row affordance */
+tr.unsaved {}
+tr.unsaved td {}
+
+tr.unsaved td.editable,
+tr.unsaved td.toggle {
+	font-style: italic;
+	background: white;
 	cursor: pointer;
 }
+tr.unsaved td.controls {
+	visibility: visible;
+}
+
+.editable form {
+	margin: 0;
+	padding: 0;
+	display: inline-block;
+}
+.editable form input {
+	margin: 0;
+	padding: 0 4px;
+	border: 1px solid #efefef;
+	background: #efefef;
+	border-radius: 0.5em;
+	outline: none;
+	max-height: 1em;
+}
+.editable form input:focus {
+	outline: none;
+}
+
 td.toggle img {
 	visibility: hidden;
 }
@@ -172,6 +269,18 @@ td.toggle.enabled img {
 	visibility: visible;
 }
 
+tr.server.unsaved span.target {
+	cursor: pointer;
+}
+
+td.toggle span.target {
+	border: 1px dashed rgba( 0,0,0, 0.20 );
+	border-radius: 4px;
+	display: inline-block;
+}
+/* @end */
+
+/* @group Controls Column */
 th.controls,
 td.controls {
 	border: none;
@@ -186,20 +295,11 @@ td.controls button {
 	background: clear;
 	cursor: pointer;
 }
+/* @end */
+/* @end */
 
-tr.unsaved {
-	font-style: italic;
-}
-tr.unsaved td.controls {
-	visibility: visible;
-}
 
-a {
-	color: #911;
-	text-decoration: none;
-	background: rgba( 255,255,255, 0.15 );
-}
-
+/* @group Specific Application Section Styles */
 section#body {
 	min-height: 600px;
 }
@@ -208,6 +308,10 @@ section#versions ul {
 }
 section#tasklist tr.system-task {
 	font-style: italic;
+}
+
+section#servers table {
+	width: 90%;
 }
 
 section#routes td.target {
@@ -229,7 +333,5 @@ section#routes span.default-ctype {
 	font-family: Inconsolata, monospace;
 	font-size: 0.8em;
 }
+/* @end */
 
-footer span.copyright {
-	float: right;
-}

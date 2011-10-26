@@ -58,7 +58,7 @@
 			<tbody>
 			<?for host in server.hosts ?>
 				<tr class="host">
-					<td class="name"><a href="/[?call request.app_path
+					<td class="name"><a href="[?call request.route
 						 	?]/host/[?uriencode host.id ?]"><?call host.name ?></a></td>
 					<td class="matching"><?call host.matching ?></td>
 					<td class="maintenance-mode"><?if 

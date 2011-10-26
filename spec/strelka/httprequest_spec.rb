@@ -36,12 +36,16 @@ describe Strelka::HTTPRequest do
 
 		it "knows what the request's parsed URI is" do
 			@req.uri.should be_a( URI )
-			@req.uri.path.should == '/directory/userinfo/ged'
-			@req.uri.query.should be_nil()
+			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged'
 		end
 
 		it "knows what Mongrel2 route it followed" do
 			@req.pattern.should == '/directory'
+		end
+
+		it "knows what the URI of the route handling the request is" do
+			@req.app_uri.should be_a( URI )
+			@req.app_uri.to_s.should == 'http://localhost:8080/directory'
 		end
 
 		it "knows what the path of the request past its route is" do

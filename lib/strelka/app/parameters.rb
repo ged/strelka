@@ -196,6 +196,9 @@ module Strelka::App::Parameters
 			:untaint_constraint_fields => [],
 			:untaint_all_constraints => self.class.untaint_all_constraints,
 		}
+
+		self.log.debug "Validator profile is: %p" % [ profile ]
+
 		return self.class.parameters.inject( profile ) do |accum, (name, opts)|
 			self.log.debug "  adding parameter: %p: %p" % [ name, opts ]
 			if opts[:required]

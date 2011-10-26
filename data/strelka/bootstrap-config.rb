@@ -32,7 +32,7 @@ server ADMINSERVER_ID do
     end
 end
 
-setting "control_port", 'ipc://run/admin-control'
+setting "control_port", 'ipc://run/control'
 
 mimetypes '.ttf' => 'application/x-font-truetype',
           '.otf' => 'application/x-font-opentype'

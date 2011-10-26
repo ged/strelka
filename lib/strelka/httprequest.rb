@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'yajl'
+require 'yaml'
 require 'uri'
 
 require 'mongrel2/httprequest'
@@ -52,21 +54,39 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	### Return a URI object parsed from the URI of the request.
 	def uri
-		return @uri ||= URI( self.headers.uri )
+		unless @uri
+			# :TODO: Make this detect https scheme once I figure out how to
+			# detect it.
+			uri = "http://%s%s" % [
+				self.headers.host,
+				self.headers.uri
+			]
+			@uri = URI( uri )
+		end
+
+		return @uri
+	end
+
+
+	### Return a URI object for the base of the app being run.
+	def app_uri
+		rval = self.uri
+		rval.path = self.route
+		return rval
 	end
 
 
 	### Return the portion of the Request's path that was routed by Mongrel2. This and the
 	### #app_path make up the #path.
-	def pattern
+	def route
 		return self.headers.pattern
 	end
+	alias_method :pattern, :route
 
 
-	### Return the portion of the Request's path relative to the application's
-	### Mongrel2 route.
+	### Return the portion of the Request's path relative to the request's #route.
 	def app_path
-		return self.path[ self.pattern.length .. -1 ]
+		return self.path[ self.route.length .. -1 ]
 	end
 
 
@@ -104,6 +124,10 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		case self.headers.content_type
 		when 'application/x-www-form-urlencoded'
 			 return merge_query_args( URI.decode_www_form(self.body) )
+		when 'application/json', 'text/javascript'
+			return Yajl.load( self.body )
+		when 'text/x-yaml', 'application/x-yaml'
+			return YAML.load( self.body )
 		when 'multipart/form-data'
 			raise NotImplementedError, "%p doesn't handle multipart form data yet" %
 				[ self.class ]
