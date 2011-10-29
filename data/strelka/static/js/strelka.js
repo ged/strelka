@@ -36,12 +36,15 @@
 
 
 const ServerDefaults = {
-	uuid: 'new-server',
-	name: 'New Server',
+	uuid:         'new-server',
+	name:         'New Server',
 	default_host: 'localhost',
-	bind_addr: '0.0.0.0',
-	port: '80',
-	use_ssl: false
+	bind_addr:    '0.0.0.0',
+	port:         '80',
+	use_ssl:      false,
+	access_log:   '/logs/access.log',
+	error_log:    '/logs/error.log',
+	pid_file:     '/run/mongrel2.pid'
 };
 
 const AjaxSettings = {
@@ -49,9 +52,8 @@ const AjaxSettings = {
 	dataType: 'json'
 };
 
-// Globals
-var Servers = [];
 
+const Server = $.RESTResource( '/')
 
 /**
  * 
@@ -134,13 +136,15 @@ function start_servers_section( elem )
  */
 function make_row_editable( row )
 {
+	var server = row.data( 'server' );
 	console.debug( "Making row editable: %o", row );
 	row.addClass( 'unsaved' ).unbind( 'dblclick.editable' );
 
 	row.find( 'td.editable' ).editable( save_field, {
 		data:   edit_field,
 		onblur: 'submit',
-		select: true
+		select: true,
+		server: server
 	});
 	row.find( 'td.toggle' ).toggleable();
 	row.find( 'td.controls button.save' ).click( save_server_edits );
@@ -179,11 +183,15 @@ function edit_field( value, settings )
 function save_field( value, settings )
 {
 	var $this = $(this);
-	if ( $this.attr('data-binding') == 'uuid' ) {
-		var anchor = $("<a />");
-		anchor.attr( 'href', 'server/' + value );
-		anchor.html( value );
-		return anchor;
+	if ( $this.attr('data-binding') == 'id' || $this.attr('data-binding') == 'uuid' ) {
+		if ( settings.server ) {
+			var anchor = $("<a />");
+			anchor.attr( 'href', settings.server.uri );
+			anchor.html( value );
+			return anchor;
+		} else {
+			return value;
+		}
 	} else {
 		return value;
 	}
@@ -222,18 +230,22 @@ function update_server_table( data, status, jqxhr ) {
  */
 function extract_row_data( row )
 {
-	var obj = {};
+	var obj = jQuery.extend( {}, ServerDefaults );
+
 	$(row).find( 'td[data-binding]' ).each( function(i) {
 		var $this = $(this);
 		var key = $this.attr( 'data-binding' );
 		var value = null;
 
+		/* Extract the value as a boolean for toggle fields */
 		if ( $this.hasClass('toggle') ) {
-			value = $this.hasClass('enabled');
+			value = $this.hasClass('enabled') ? 1 : 0;
 		}
+		/* ...or from the contents of the anchor if there is one */
 		else if ( $this.children('a').size() ) {
 			value = $this.children('a').html();
 		}
+		/* ...or just from the value in the column */
 		else {
 			value = $this.html();
 		}
@@ -263,7 +275,9 @@ function cancel_server_edits( e )
 		row.remove();
 	} else {
 		console.debug( "Cancelled edit of server %s", server.uuid );
-		row.find( 'td' ).each( restore_original_column_value ).unbind( 'click.editable' );
+		row.find( 'td[data-binding]' ).
+			each( function() { restore_original_column_value(this, server); } ).
+			unbind( 'click.editable' );
 		row.bind( 'dblclick.editable', make_row_editable ).removeClass( 'unsaved' );
 	}
 
@@ -271,34 +285,33 @@ function cancel_server_edits( e )
 
 
 /**
- * 
+ * Extract the original value of the given {td} from the {server} object and restore
+ * it, preserving links and toggle columns.
  */
-function restore_original_column_value() {
-	var td = $(this);
-	var field = td.attr('data-binding');
+function restore_original_column_value( td, server ) {
+	var $td = $(td);
+	var field = $td.attr('data-binding');
 
 	if ( field ) {
-		console.debug( "Looking for edits to: %o (%s)", this, field );
+		console.debug( "Looking for edits to: %o (%s)", td, field );
 		var original_value = server[ field ];
 
 		if ( original_value ) {
 			console.debug( "Undoing edit to: %o. Original value = %o", this, original_value );
-			if ( td.hasClass('toggle') ) {
+
+			/* State for a toggle is the presence or absence of the 'enabled' class */
+			if ( $td.hasClass('toggle') ) {
 				if ( original_value ) {
-					td.addClass( 'enabled' );
+					$td.addClass( 'enabled' );
 				} else {
-					td.removeClass( 'enabled' );
+					$td.removeClass( 'enabled' );
 				}
 			}
-			// Restore <a>
-			else if ( td.children('a').size() ) {
-				var oldval = td.children('a').html();
-				td.children( 'a' ).attr( 'href', function(i, val) {
-					val.replace( oldval, original_value );
-				});
-				td.children('a').html( original_value );
+			// Restore the text inside anchors
+			else if ( $td.children('a').size() ) {
+				$td.children('a').html( original_value );
 			} else {
-				$(this).text( original_value );
+				$td.text( original_value );
 			}
 		}
 	}

@@ -41,7 +41,7 @@ class Strelka::AdminConsole < Strelka::App
 	param :name,         :printable
 	param :bind_addr,    :ip_address
 	param :port,         :integer
-	param :use_ssl,      :boolean
+	param :use_ssl,      :integer
 
 	untaint_all_constraints true
 
@@ -86,7 +86,7 @@ class Strelka::AdminConsole < Strelka::App
 		res = req.response
 		uuid = UUIDTools::UUID.random_create.to_s
 
-		res.for( :text, :json, :yaml ) { uuid }
+		res.for( :text, :yaml, :json ) {[ uuid ]}
 		res.for( :html ) do
 			tmpl = self.template( :message )
 			tmpl.message = uuid
@@ -109,7 +109,9 @@ class Strelka::AdminConsole < Strelka::App
 
 		# Make it into a REST-ish hash with links to each resource
 		hash = servers.to_hash( :id )
-		hash.each {|id,fields| fields[:uri] = "%s/server/%d" % [req.route, id] }
+		hash.each do |id,fields|
+			fields[:uri] = server_uri( req, fields[:id] )
+		end
 
 		res.for( :text ) do
 			buf = ''
@@ -153,17 +155,17 @@ class Strelka::AdminConsole < Strelka::App
 			finish_with( HTTP::BAD_REQUEST, err.message )
 		end
 
-		server_uri = req.route + '/server/' + server.id
+		location = server_uri( req, server.id )
 		res = req.response
-		res.headers.location = server_uri
+		res.headers.location = location
 
 		res.for( :text ) do
 			res.status = HTTP::CREATED
-			"Server %s created: %s" % [ server.name, server_uri ]
+			"Server %s created: %s" % [ server.name, location ]
 		end
 		res.for( :json, :yaml ) do
 			res.status = HTTP::CREATED
-			server_uri
+			[ location.to_s ]
 		end
 
 		return res
@@ -192,6 +194,16 @@ class Strelka::AdminConsole < Strelka::App
 		res.for( :json, :yaml ) { host.values }
 
 		return res
+	end
+
+
+	#######
+	private
+	#######
+
+	### Return a URI for the server with the given +server_id+.
+	def server_uri( request, server_id )
+		return "%sserver/%d" % [ request.base_uri, server_id ]
 	end
 
 end # class Strelka::AdminConsole

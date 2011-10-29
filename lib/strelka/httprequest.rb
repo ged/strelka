@@ -69,7 +69,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Return a URI object for the base of the app being run.
-	def app_uri
+	def base_uri
 		rval = self.uri
 		rval.path = self.route
 		return rval
