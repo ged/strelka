@@ -39,7 +39,7 @@ end
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => :spec
+task 'hg:precheckin' => [ :check_history, :check_manifest, :spec ]
 
 ### Make the ChangeLog update if the repo has changed since it was last built
 file '.hg/branch'
