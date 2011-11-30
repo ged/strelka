@@ -6,8 +6,9 @@ require 'strelka'
 # The main <%= project %> application
 class <%= klass %>::Application < Strelka::App
 
-	# The 'appid' of the route to point the application at
-	ID = '<%= XIF %>' # (set the app id of the main application)
+	# Uncomment this if you need an appid other than 
+	# '<%= klass.gsub(/[^[:alnum:]]+/, '-').downcase %>-application'.
+	#ID = '<%= XIF %>' # (set the app id of the main application)
 
 	# Load some plugins
 	plugins :templating, :routing
