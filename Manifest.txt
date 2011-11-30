@@ -1,6 +1,6 @@
 .gemtest
 History.rdoc
-IDEAS.textile
+IDEAS.rdoc
 Manifest.txt
 README.rdoc
 Rakefile

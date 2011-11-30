@@ -1,5 +1,5 @@
 ---
-title: How to Deploy a Strelka App
+title: How to Write a Strelka App
 layout: default
 index: 2
 filters:
@@ -13,34 +13,3 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-Strelka uses the Rubygems plugin system to find and load applications. You don't need to necessarily package them up this way if you've already got a deployment strategy in mind, but the rest of this manual assumes you will be.
-
-A 
-
-** Include their static content and the apps themselves in their data dir
-** Include any library code in lib/
-* These instructions use Hoe, but you don't need to necessarily use that
-
-h3. Setting up the Project
-
-First you'll need to create the project layout; Hoe provides a tool that does this for you called 'sow':
-
-    $ sow GoodDoggie
-    erb: .autotest.erb
-    erb: History.md.erb
-    erb: Manifest.txt.erb
-    erb: README.md.erb
-    erb: Rakefile.erb
-    erb: bin/file_name.erb
-    erb: lib/file_name.rb.erb
-    erb: spec/file_name_spec.rb.erb
-    
-    ... done, now go fix all occurrences of 'FIX':
-    
-      GoodDoggie/lib/good_doggie.rb:3:# FIX (top-level documentation)
-      GoodDoggie/README.md:3:* FIX (url)
-      GoodDoggie/README.md:7:FIX (describe your package)
-      GoodDoggie/README.md:60:[bitbucket]: FIX (bitbucket or hg repo)
-      GoodDoggie/README.md:61:[github]: FIX (github mirror)
-
-I've customized my template, so your output might look a bit different. Once the basic layout is 

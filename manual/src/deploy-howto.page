@@ -1,0 +1,86 @@
+---
+title: How to Deploy a Strelka App
+layout: default
+index: 3
+filters:
+  - erb
+  - links
+  - examples
+  - textile
+---
+
+h2. <%= page.config['title'] %>
+
+<div id="auto-toc"></div>
+
+Strelka uses the Rubygems plugin system to find and load applications. You don't need to necessarily package them up this way if you've already got a deployment strategy in mind, but the rest of this manual assumes you will be.
+
+** Include their static content and the apps themselves in their data dir
+** Include any library code in lib/
+* These instructions use Hoe, but you don't need to necessarily use that
+
+h3. Setting up the Project
+
+First you'll need to create the project layout. It should look something like this:
+
+!images/project-layout.png(Example project layout screenshot)!
+
+The data directory should contain your apps, templates, and any static content your app requires in a directory with the same name as your gem. Strelka's runtime environment will look for them there, though most of them can be configured to look elsewhere. The presence of an @apps@ subdirectory is what Strelka looks for when searching for installed application gems.
+
+The rest of the gem is [pretty standard](http://chneukirchen.github.com/rps/): Your applications' reusable code should be under @lib/@ and @ext/@ directories, and tests or specs under @test/@ and @spec/@, respectively. 
+
+h4. Easy Setup with Hoe
+
+Hoe is a Rake helper that provides tasks for setting up and maintaining a project. It comes with a tool called 'sow' that generates a project based on a template directory. Strelka includes a Hoe project template in its @contrib/hoetemplate@ directory. If you copy that directory into @~/.hoe_template@:
+
+    $ sow  #(run once to set up the template directory if you don't have one)
+	$ cp -r contrib/hoetemplate ~/.hoe_template/strelka
+
+you can generate a new project like so:
+
+	$ sow -s strelka GoodDoggie
+	erb: .autotest.erb
+	erb: History.rdoc.erb
+	erb: Manifest.txt.erb
+	erb: README.rdoc.erb
+	erb: Rakefile.erb
+	erb: data/good_doggie/apps/file_name_app
+	erb: data/good_doggie/templates/layout.tmpl.erb
+	erb: data/good_doggie/templates/top.tmpl.erb
+	erb: lib/file_name.rb.erb
+	erb: spec/file_name_spec.rb.erb
+	
+	... done, now go fix all occurrences of 'FIX':
+	
+	  GoodDoggie/data/good_doggie/apps/good_doggie_app:10:	ID = 'FIX' # (set the app id of the main application)
+	  GoodDoggie/data/good_doggie/templates/layout.tmpl:5:			FIX (application title)
+	  GoodDoggie/data/good_doggie/templates/layout.tmpl:9:		<!-- FIX (set up the main layout template) -->
+	  GoodDoggie/data/good_doggie/templates/top.tmpl:1:<!-- FIX (set up the main content template) -->
+	  GoodDoggie/lib/good_doggie.rb:3:# FIX (top-level documentation)
+	  GoodDoggie/Rakefile:17:	self.developer 'FIX', 'FIX' # (name, email)
+	  GoodDoggie/README.rdoc:3:* FIX (url)
+	  GoodDoggie/README.rdoc:7:FIX (describe your package)
+	  GoodDoggie/README.rdoc:15:Copyright (c) 2011, FIX
+
+Now just fix all the "FIX" items.
+
+h3. Setting an Application ID
+
+The first thing to do is to decide on an ID for your app. Mongrel2 identifies its Handler routes on a 'send_ident', which is described in the Mongrel2 manual as a UUID, but can actually be any string consisting of dashes and alphanumeric characters.
+
+Strelka gives you a couple of different ways of doing this. It will default to a string derived from the name of the class, or you can set it yourself by uncommenting the @ID@ constant at the top.
+
+Strelka looks for handler apps in the 'apps' subdirectory of your gem's datadir, so in our example, the app is @GoodDoggie/data/good_doggie/apps/good_doggie_app@:
+
+    # The main GoodDoggie application
+	class GoodDoggie::Application < Strelka::App
+
+		# Uncomment this if you need an appid other than 
+		# 'gooddoggie-application'.
+		#ID = 'FIX' # (set the app id of the main application)
+	
+
+
+
+
+
