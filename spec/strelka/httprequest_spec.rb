@@ -44,8 +44,8 @@ describe Strelka::HTTPRequest do
 		end
 
 		it "knows what the URI of the route handling the request is" do
-			@req.app_uri.should be_a( URI )
-			@req.app_uri.to_s.should == 'http://localhost:8080/directory'
+			@req.base_uri.should be_a( URI )
+			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
 		end
 
 		it "knows what the path of the request past its route is" do
