@@ -1,0 +1,17 @@
+# .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
+amalgalite -v1.1.2
+arrayfields -v4.7.4
+configurability -v1.0.8
+daemons -v1.1.4
+fastercsv -v1.5.4
+formvalidator -v0.1.5
+inversion -v0.4.0
+mongrel2 -v0.9.2
+nokogiri -v1.5.0
+sequel -v3.30.0
+sysexits -v1.0.2
+tnetstring -v0.3.4
+trollop -v1.16.2
+uuidtools -v2.1.2
+yajl-ruby -v0.8.3
+zmq -v2.1.4
