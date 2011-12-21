@@ -28,6 +28,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'highline',        '~> 1.6'
 	self.dependency 'formvalidator',   '~> 0.1.5'
 	self.dependency 'uuidtools',       '~> 2.1.2'
+	self.dependency 'sysexits',        '~> 1.0'
 
 	self.dependency 'rspec',           '~> 2.6', :developer
 
