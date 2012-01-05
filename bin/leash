@@ -294,7 +294,7 @@ class Strelka::LeashCommand
 			 	pid, status = Process.wait2
 				pids.delete( pid )
 
-				if status.exited? || status.signal?
+				if status.exited? || status.signaled?
 					message "  child %d exited normally" % [ pid ]
 				else
 					message "  child %d exited abnormally" % [ pid ]
