@@ -3,48 +3,46 @@
 require 'strelka/mixins'
 require 'strelka/httprequest'
 
-
-# Strelka::HTTPRequest::AcceptParam -- a parser for request Accept, Accept-encoding,
-# Accept-charset, and Accept-language header values. They provide weighted and wildcard
-# comparisions between two values of the same field.
-#
-#   require 'strelka/httprequest/acceptparam'
-#	mediatype = Strelka::HTTPRequest::AcceptParam.parse_mediatype( "text/html;q=0.9;level=2" )
-#
-#	ap.type         #=> 'text'
-#	ap.subtype      #=> 'html'
-#	ap.qvalue       #=> 0.9
-#	ap =~ 'text/*'  #=> true
-#
-#	language = Strelka::HTTPRequest::AcceptParam.parse_language( "en-gb" )
-#
-#	ap.type         #=> :en
-#	ap.subtype      #=> :gb
-#	ap.qvalue       #=> 1.0
-#	ap =~ 'en'      #=> true
-#
-#	encoding = Strelka::HTTPRequest::AcceptParam.parse_encoding( "compress; q=0.7" )
-#
-#	ap.type          #=> :compress
-#	ap.subtype       #=> nil
-#	ap.qvalue        #=> 0.7
-#	ap =~ 'compress' #=> true
-#
-#	charset = Strelka::HTTPRequest::AcceptParam.parse_charset( "koi8-r" )
-#
-#	ap.type          #=> 'koi8-r'
-#	ap.subtype       #=> nil
-#	ap.qvalue        #=> 1.0
-#	ap =~ 'koi8-r'   #=> true
-#
-# == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
 class Strelka::HTTPRequest
 
-	# The abstract base class for all Accept parameters.
+	# A parser for request Accept, Accept-encoding, Accept-charset, and Accept-language 
+	# header values. They provide weighted and wildcard comparisions between two values 
+	# of the same field.
+	#
+	#   require 'strelka/httprequest/acceptparam'
+	#   mediatype = Strelka::HTTPRequest::AcceptParam.parse_mediatype( "text/html;q=0.9;level=2" )
+	#
+	#   ap.type         #=> 'text'
+	#   ap.subtype      #=> 'html'
+	#   ap.qvalue       #=> 0.9
+	#   ap =~ 'text/*'  #=> true
+	#
+	#   language = Strelka::HTTPRequest::AcceptParam.parse_language( "en-gb" )
+	#
+	#   ap.type         #=> :en
+	#   ap.subtype      #=> :gb
+	#   ap.qvalue       #=> 1.0
+	#   ap =~ 'en'      #=> true
+	#
+	#   encoding = Strelka::HTTPRequest::AcceptParam.parse_encoding( "compress; q=0.7" )
+	#
+	#   ap.type          #=> :compress
+	#   ap.subtype       #=> nil
+	#   ap.qvalue        #=> 0.7
+	#   ap =~ 'compress' #=> true
+	#
+	#   charset = Strelka::HTTPRequest::AcceptParam.parse_charset( "koi8-r" )
+	#
+	#   ap.type          #=> 'koi8-r'
+	#   ap.subtype       #=> nil
+	#   ap.qvalue        #=> 1.0
+	#   ap =~ 'koi8-r'   #=> true
+	#
+	# == Authors
+	#
+	# * Michael Granger <ged@FaerieMUD.org>
+	# * Mahlon E. Smith <mahlon@martini.nu>
+	#
 	class AcceptParam
 		include Comparable,
 		        Strelka::Loggable,

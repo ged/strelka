@@ -6,7 +6,6 @@ require 'tsort'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-# Pluggable functionality mixin for Strelka::App.
 class Strelka::App
 
 	# A topologically-sorted hash for plugin management

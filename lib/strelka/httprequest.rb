@@ -53,6 +53,10 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Return a URI object parsed from the URI of the request.
+	###
+	###   # "GET /user/1/profile HTTP/1.1"
+	###   request.uri
+	###   # => #<URI::HTTP:0x007fe34d16b2e0 URL:http://localhost:8080/user/1/profile>
 	def uri
 		unless @uri
 			# :TODO: Make this detect https scheme once I figure out how to
@@ -68,7 +72,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	end
 
 
-	### Return a URI object for the base of the app being run.
+	### Return a URI object for the base of the app being run. This is the #uri with the
+	### #app_path removed.
+	###
+	###   # For a handler with a route of '/user', for the request:
+	###   # "GET /user/1/profile HTTP/1.1"
+	###   request.base_uri
+	###   # => #<URI::HTTP:0x007fe34d16b2e0 URL:http://localhost:8080/user>
 	def base_uri
 		rval = self.uri
 		rval.path = self.route
@@ -78,6 +88,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	### Return the portion of the Request's path that was routed by Mongrel2. This and the
 	### #app_path make up the #path.
+	###
+	###   # For a handler with a route of '/user', for the request:
+	###   # "GET /user/1/profile HTTP/1.1"
+	###   request.route
+	###   # => "/user"
 	def route
 		return self.headers.pattern
 	end
@@ -85,12 +100,23 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Return the portion of the Request's path relative to the request's #route.
+	###
+	###   # For a handler with a route of '/user', for the request:
+	###   # "GET /user/1/profile HTTP/1.1"
+	###   request.app_path
+	###   # => "/1/profile"
 	def app_path
 		return self.path[ self.route.length .. -1 ]
 	end
 
 
-	### Parse the request parameters and return them as a Hash.
+	### Parse the request parameters and return them as a Hash. For GET requests, these are
+	### take from the query arguments, and for POST requests, from the 
+	###
+	###   # For a handler with a route of '/user', for the request:
+	###   # "GET /user/1/profile?checkbox=1&checkbox=2&text=foo HTTP/1.1"
+	###   # r.params
+	###   # => {"checkbox"=>["1", "2"], "text"=>"foo"}
 	def params
 		unless @params
 			case self.verb
