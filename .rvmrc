@@ -6,28 +6,27 @@
 environment_id="ruby-1.9.3-p0@strelka"
 
 if [[ -d "${rvm_path:-$HOME/.rvm}/environments" \
-  && -s "${rvm_path:-$HOME/.rvm}/environments/$environment_id" ]]
-then
-  echo "Using ${environment_id}"
-  . "${rvm_path:-$HOME/.rvm}/environments/$environment_id"
+	&& -s "${rvm_path:-$HOME/.rvm}/environments/$environment_id" ]]; then
+	echo "Using ${environment_id}"
+	. "${rvm_path:-$HOME/.rvm}/environments/$environment_id"
 
-  if [[ -s "${rvm_path:-$HOME/.rvm}/hooks/after_use" ]]
-  then
-    . "${rvm_path:-$HOME/.rvm}/hooks/after_use"
-  fi
+	if [[ -s "${rvm_path:-$HOME/.rvm}/hooks/after_use" ]]; then
+		. "${rvm_path:-$HOME/.rvm}/hooks/after_use"
+	fi
 else
-  # If the environment file has not yet been created, use the RVM CLI to select.
-  if ! rvm --create use  "$environment_id"
-  then
-    echo "Failed to create RVM environment '${environment_id}'."
-    exit 1
-  fi
+	# If the environment file has not yet been created, use the RVM CLI to select.
+	if ! rvm --create use  "$environment_id"
+		then
+		echo "Failed to create RVM environment '${environment_id}'."
+		exit 1
+	fi
 fi
 
 filename=".rvm.gems"
 if [[ -s "$filename" ]]; then
-  rvm gemset import "$filename" | grep -v already | grep -v listed | grep -v complete | sed '/^$/d'
+	rvm gemset import "$filename"
 fi
 
 echo "Хорошая собака, Стрелке! Очень хорошо."
 echo
+
