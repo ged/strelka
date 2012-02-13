@@ -15,8 +15,9 @@ h2. <%= page.config['title'] %>
 
 Currently, the manual is composed of two sections:
 
-* <?link How to Write a Strelka App ?>
-* and <?link How to Deploy a Strelka App ?>
+* <?link Writing a Strelka App ?>
+* <?link Distributing a Strelka App ?>
+* and <?link Deploying a Strelka App ?>
 
 Enjoy!
 

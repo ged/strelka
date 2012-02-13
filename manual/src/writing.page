@@ -1,0 +1,48 @@
+---
+title: Writing a Strelka App
+layout: default
+index: 2
+filters:
+  - erb
+  - links
+  - examples
+  - textile
+---
+
+h2. <%= page.config['title'] %>
+
+<div id="auto-toc"></div>
+
+Strelka applications are subclasses of the <?api Strelka::App ?> class. Strelka::App is pretty minimal by itself; it inherits most of its behavior from the basic Mongrel2::Handler class, only adding a few convenience methods for common HTTP tasks. 
+
+A minimalistic application would look something like:
+
+<?example { lang: Ruby, caption: "A dead-simple app." } ?>
+#!/usr/bin/env ruby
+
+require 'strelka'
+
+# The Strelka admin web console.
+class HelloWorldApp < Strelka::App
+
+	def handle_request( request )
+		response = request.response
+		response.headers[:content_type] = 'text/plain'
+		response.body = "Hello, World!"
+		return response
+	end
+
+end # class HelloWorldApp
+
+# Run the app
+HelloWorldApp.run if __FILE__ == $0
+<?end example ?>
+
+While functional, this application is pretty dumb, and making it any more intelligent on your own would require a bunch of additional code and accompanying tests.  Fortunately, Strelka already has done the heavy lifting. Strelka::App's primary strength is providing hooks into the lifecycle of an HTTP request, and a plugin system that uses these hooks to handle common application tasks. This allows you to mix in the specific framework parts you need, so you get exactly what you want and nothing more.
+
+The plugins system itself is contained in the Strelka::App::Plugins mixin, which is included in Strelka::App already. This adds the +plugins+ declarative, which you use from your app to load the plugins you want to use.
+
+This app uses the 'routing' plugin, which adds Sinatra-like hooks for matching callbacks to requests. The example app above responds only to 'GET' requests, and ignores the path of the request altogether.
+
+Strelka comes with a few default plugins, but you can define your own fairly easily.
+

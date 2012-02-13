@@ -1,4 +1,4 @@
-= Стрелке (Strelka)
+= Strelka
 
 * http://deveiate.org/projects/Strelka
 
