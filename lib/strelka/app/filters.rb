@@ -47,22 +47,32 @@ module Strelka::App::Filters
 
 	### Apply filters to the given +request+ before yielding back to the App, then apply
 	### filters to the response that comes back.
-	def handler( request )
+	def handle_request( request )
 		self.apply_request_filters( request )
 		response = super
 		self.apply_response_filters( response )
+
+		return response
 	end
 
 
 	### Apply :request and :both filters to +request+.
 	def apply_request_filters( request )
-		self.class.request_filters.each {|filter| filter.call(request) }
+		self.log.debug "Applying request filters:"
+		self.class.request_filters.each do |filter|
+			self.log.debug "  filter: %p" % [ filter ]
+			filter.call( request )
+		end
 	end
 
 
 	### Apply :both and :response filters to +response+.
 	def apply_response_filters( response )
-		self.class.response_filters.each {|filter| filter.call(response) }
+		self.log.debug "Applying response filters:"
+		self.class.response_filters.each do |filter|
+			self.log.debug "  filter: %p" % [ filter ]
+			filter.call( response )
+		end
 	end
 
 end # module Strelka::App::Filters
