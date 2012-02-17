@@ -100,6 +100,27 @@ describe Strelka::App do
 	end
 
 
+	it "uses the specified content type for error responses" do
+		# make an auth plugin that always denies requests
+		forbidden_plugin = Module.new do
+			extend Strelka::App::Plugin
+			def handle_request( r )
+				finish_with( HTTP::FORBIDDEN, "You aren't allowed to look at that.",
+					:content_type => 'text/html' )
+				fail "Shouldn't be reached."
+			end
+		end
+		@app.plugin( forbidden_plugin )
+
+		res = @app.new.handle( @req )
+
+		res.should be_a( Mongrel2::HTTPResponse )
+		res.status_line.should == 'HTTP/1.1 403 Forbidden'
+		res.content_type.should == 'text/html'
+		res.body.should == "You aren't allowed to look at that.\n"
+	end
+
+
 	it "provides a declarative for setting the default content type of responses" do
 		@app.class_eval do
 			default_type 'text/css'

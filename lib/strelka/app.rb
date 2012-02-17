@@ -195,7 +195,7 @@ class Strelka::App < Mongrel2::Handler
 		# Some status codes allow explanatory text to be returned; some forbid it. Append the
 		# message for those that allow one.
 		unless request.verb == :HEAD || HTTP::BODILESS_HTTP_RESPONSE_CODES.include?( status_code )
-			response.content_type = 'text/plain'
+			response.content_type = status_info[ :content_type ] || 'text/plain'
 			response.puts( message )
 		end
 
