@@ -100,7 +100,7 @@ module Strelka::App::Templating
 	### 2. An Inversion::Template by itself.
 	### 3. A Symbol that matches one of the keys of the registered templates.
 	###
-	### In all three of these cases, the return value will be a Mongrel2::Request with a
+	### In all three of these cases, the return value will be a Mongrel2::Response with a
 	### body set to the rendered value of the template in question, and with its status
 	### set to '200 OK' unless it is already set to something else.
 	###
