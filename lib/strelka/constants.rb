@@ -50,18 +50,6 @@ module Strelka::Constants
 		# The list of HTTP verbs considered "idempotent"
 		IDEMPOTENT_RFC2616_VERBS = %w[OPTIONS GET HEAD PUT DELETE TRACE]
 
-		# A registry of HTTP status codes that don't allow an entity body 
-		# in the response.
-		BODILESS_HTTP_RESPONSE_CODES = [
-			CONTINUE,
-			SWITCHING_PROTOCOLS,
-			PROCESSING,
-			NO_CONTENT,
-			RESET_CONTENT,
-			NOT_MODIFIED,
-			USE_PROXY,
-		]
-
 	end # module HTTP
 
 end # module Strelka::Constants
