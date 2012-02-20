@@ -2,6 +2,7 @@
 hoe-deveiate -v0.0.8
 formvalidator -v0.1.5
 inversion -v0.4.0
-mongrel2 -v0.10.0
+mongrel2 -v0.12.0
 uuidtools -v2.1.2
+configurability -v1.0.8
 pluginfactory -v1.0.8

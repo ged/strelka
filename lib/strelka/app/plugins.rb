@@ -65,7 +65,7 @@ class Strelka::App
 		attr_reader :successors
 
 
-		### Return the name of the receiving plugin 
+		### Return the name of the receiving plugin
 		def plugin_name
 			name = self.name || "anonymous#{self.object_id}"
 			name.sub!( /.*::/, '' )

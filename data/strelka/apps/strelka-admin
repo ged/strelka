@@ -13,7 +13,7 @@ class Strelka::AdminConsole < Strelka::App
 	ID = Strelka::ADMINCONSOLE_ID
 
 	# Load some plugins
-	plugins :templating, :routing, :parameters, :negotiation
+	plugins :templating, :routing, :restresources
 
 	# By default, responses are HTML
 	default_type 'text/html'
@@ -25,25 +25,6 @@ class Strelka::AdminConsole < Strelka::App
 		:server  => 'admin/server.tmpl',
 		:host    => 'admin/host.tmpl',
 		:message => 'admin/message.tmpl'
-
-	# Request parameter validation
-	param :id,           :integer
-	param :limit,        :integer
-	param :offset,       :integer
-
-	# Server parameter validations
-	param :uuid,         /^[a-z][\-\w]+$/i
-	param :access_log,   :printable
-	param :error_log,    :printable
-	param :chroot,       :printable
-	param :pid_file,     :printable
-	param :default_host, :hostname
-	param :name,         :printable
-	param :bind_addr,    :ip_address
-	param :port,         :integer
-	param :use_ssl,      :integer
-
-	untaint_all_constraints true
 
 
 	### Initialize some application data.
@@ -66,6 +47,10 @@ class Strelka::AdminConsole < Strelka::App
 	end
 
 
+	#
+	# App Routes
+	#
+
 	# GET / -- console view
 	get do |req|
 		tmpl = self.template( :console )
@@ -80,6 +65,7 @@ class Strelka::AdminConsole < Strelka::App
 	#
 	# Service API -- utility methods
 	#
+
 
 	# GET /uuid -- fetch a plain-text random UUID
 	get '/uuid' do |req|
@@ -102,109 +88,23 @@ class Strelka::AdminConsole < Strelka::App
 	# Service API -- Servers
 	#
 
-	# GET /servers -- fetch a list of the configured Server objects.
-	get '/servers' do |req|
-		res = req.response
-		servers = Mongrel2::Config::Server.dataset.naked
+	# GET /servers[/:id]
+	# POST /servers
+	# PUT /servers/:id
+	# DELETE /servers/:id
+	resource Mongrel2::Config::Server,
+		name: '/servers',
+		prefix: '/api/v1',
+		readonly: false,
+		use_transactions: true
 
-		# Make it into a REST-ish hash with links to each resource
-		hash = servers.to_hash( :id )
-		hash.each do |id,fields|
-			fields[:uri] = server_uri( req, fields[:id] )
-		end
-
-		res.for( :text ) do
-			buf = ''
-			PP.pp( hash, buf )
-			buf
-		end
-		res.for( :json, :yaml ) { hash }
-
-		return res
-	end
+	resource Mongrel2::Config::Host
+	resource Mongrel2::Config::Route
+	resource Mongrel2::Config::Setting
+	resource Mongrel2::Config::Filter
+	resource Mongrel2::Config::Mimetype
 
 
-	# GET /server/«uuid»
-	get '/server/:id' do |req|
-		self.log.debug "Fetching server record for %p" % [ req.params[:id] ]
-		server = Mongrel2::Config::Server[ req.params[:id] ] or
-			finish_with( HTTP::NOT_FOUND, "No such server" )
-
-		res = req.response
-		res.for( :html ) {
-			tmpl = self.template( :server )
-			tmpl.server = server
-			tmpl.request = req
-			tmpl.control = @control
-			tmpl
-		}
-		res.for( :json, :yaml ) { server.values }
-
-		return res
-	end
-
-
-	# Create a new server
-	post '/server' do |req|
-		finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(',') ) unless
-			req.params.okay?
-
-		begin
-			server = Mongrel2::Config::Server.create( req.params.valid )
-		rescue Sequel::ValidationFailed => err
-			finish_with( HTTP::BAD_REQUEST, err.message )
-		end
-
-		location = server_uri( req, server.id )
-		res = req.response
-		res.headers.location = location
-
-		res.for( :text ) do
-			res.status = HTTP::CREATED
-			"Server %s created: %s" % [ server.name, location ]
-		end
-		res.for( :json, :yaml ) do
-			res.status = HTTP::CREATED
-			[ location.to_s ]
-		end
-
-		return res
-	end
-
-
-	#
-	# Service API -- Hosts
-	#
-
-	# GET /server/«uuid»/host/«id»
-	get '/host/:id' do |req|
-		id, uuid = req.params.values_at( :id, :uuid )
-		self.log.debug "Fetching host record for host %d under the %p server" % [ id, uuid ]
-		host = Mongrel2::Config::Host[ id ] or
-			finish_with( HTTP::NOT_FOUND, "No such host" )
-
-		res = req.response
-		res.for( :html ) {
-			tmpl = self.template( :host )
-			tmpl.host = host
-			tmpl.request = req
-			tmpl.control = @control
-			tmpl
-		}
-		res.for( :json, :yaml ) { host.values }
-
-		return res
-	end
-
-
-	#######
-	private
-	#######
-
-	### Return a URI for the server with the given +server_id+.
-	def server_uri( request, server_id )
-		return "%sserver/%d" % [ request.base_uri, server_id ]
-	end
 
 end # class Strelka::AdminConsole
 

@@ -112,6 +112,15 @@ module Strelka::SpecHelpers
 		end
 	end
 
+	### Set up a Mongrel2 configuration database according to the specified +dbspec+.
+	def setup_config_db( dbspec=':memory:' )
+		Mongrel2::Config.configure( :configdb => dbspec ) unless
+			Mongrel2::Config.db.uri[ %r{sqlite:/(.*)}, 1 ] == dbspec
+		Mongrel2::Config.init_database
+		Mongrel2::Config.db.tables.collect {|t| Mongrel2::Config.db[t] }.each( &:truncate )
+	end
+
+
 end
 
 

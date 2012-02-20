@@ -65,6 +65,7 @@ lib/strelka/app/negotiation.rb
 lib/strelka/app/parameters.rb
 lib/strelka/app/paramvalidator.rb
 lib/strelka/app/plugins.rb
+lib/strelka/app/restresources.rb
 lib/strelka/app/router.rb
 lib/strelka/app/routing.rb
 lib/strelka/app/templating.rb
@@ -89,6 +90,7 @@ spec/strelka/app/negotiation_spec.rb
 spec/strelka/app/parameters_spec.rb
 spec/strelka/app/paramvalidator_spec.rb
 spec/strelka/app/plugins_spec.rb
+spec/strelka/app/restresources_spec.rb
 spec/strelka/app/router_spec.rb
 spec/strelka/app/routing_spec.rb
 spec/strelka/app/templating_spec.rb

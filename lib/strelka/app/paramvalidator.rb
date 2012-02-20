@@ -481,6 +481,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 	def match_printable( val )
 		return self.match_builtin_constraint( val, :printable )
 	end
+	alias_method :match_string, :match_printable
 
 
 	### Constrain a value to any UTF-8 word characters.
