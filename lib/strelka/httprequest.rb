@@ -73,7 +73,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Return a URI object for the base of the app being run. This is the #uri with the
-	### #app_path removed.
+	### #app_path and any query string removed.
 	###
 	###   # For a handler with a route of '/user', for the request:
 	###   # "GET /user/1/profile HTTP/1.1"
@@ -82,6 +82,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	def base_uri
 		rval = self.uri
 		rval.path = self.route
+		rval.query = nil
 		return rval
 	end
 
@@ -106,7 +107,9 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.app_path
 	###   # => "/1/profile"
 	def app_path
-		return self.path[ self.route.length .. -1 ]
+		rval = self.uri.path
+		rval.slice!( 0, self.route.length )
+		return rval
 	end
 
 

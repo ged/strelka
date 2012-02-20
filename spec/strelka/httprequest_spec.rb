@@ -65,6 +65,37 @@ describe Strelka::HTTPRequest do
 	end
 
 
+	context "instance with a query string" do
+
+		before( :each ) do
+			@req = @request_factory.get( '/directory/userinfo/ged?limit=10;offset=20' )
+		end
+
+		it "knows what the request's parsed URI is" do
+			@req.uri.should be_a( URI )
+			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged?limit=10;offset=20'
+		end
+
+		it "knows what Mongrel2 route it followed" do
+			@req.pattern.should == '/directory'
+		end
+
+		it "knows what the URI of the route handling the request is" do
+			@req.base_uri.should be_a( URI )
+			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+		end
+
+		it "knows what the path of the request past its route is" do
+			@req.app_path.should == '/userinfo/ged'
+		end
+
+		it "knows what HTTP verb the request used" do
+			@req.verb.should == :GET
+		end
+
+	end
+
+
 	describe "request-parameter parsing" do
 
 		context "a GET request" do

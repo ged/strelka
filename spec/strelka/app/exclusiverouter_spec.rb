@@ -50,6 +50,11 @@ describe Strelka::App::ExclusiveRouter do
 			@router.route_request( req ).should == :the_foo_bar_action
 		end
 
+		it "routes /user/foo/bar?limit=10 to the foo/bar action" do
+			req = @request_factory.get( '/user/foo/bar?limit=10' )
+			@router.route_request( req ).should == :the_foo_bar_action
+		end
+
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
 			@router.route_request( req ).should == :the_foo_action
