@@ -4,3 +4,4 @@ formvalidator -v0.1.5
 inversion -v0.4.0
 mongrel2 -v0.10.0
 uuidtools -v2.1.2
+pluginfactory -v1.0.8

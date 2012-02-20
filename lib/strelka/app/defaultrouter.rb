@@ -2,12 +2,13 @@
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
+require 'strelka/app/router'
 
 # Simple (dumb?) request router for Strelka::App-based applications.
-class Strelka::App::DefaultRouter
+class Strelka::App::DefaultRouter < Strelka::App::Router
 	include Strelka::Loggable
 
-	### Create a new router that will route requests according to the specified 
+	### Create a new router that will route requests according to the specified
 	### +routes+. Each route is a tuple of the form:
 	###
 	###   [
@@ -16,12 +17,10 @@ class Strelka::App::DefaultRouter
 	###     <action>,       # A #to_proc-able object to invoke when the route is matched
 	###     <options_hash>, # The hash of route config options
 	###   ]
-	def initialize( routes=[] )
+	def initialize( routes=[], options={} )
 		@routes = Hash.new {|hash, verb| hash[verb] = {} }
-		routes.each do |tuple|
-			self.log.debug "  adding route: %p" % [ tuple ]
-			self.add_route( *tuple )
-		end 
+
+		super
 	end
 
 
@@ -36,7 +35,7 @@ class Strelka::App::DefaultRouter
 	### Add a route for the specified +verb+, +path+, and +options+ that will return
 	### +action+ when a request matches them.
 	def add_route( verb, path, action, options={} )
-		re = Regexp.compile( path.join('/') )
+		re = Regexp.compile( '^' + path.join('/') )
 
 		# Make the Hash for the specified HTTP verb if it hasn't been 
 		self.routes[ verb ][ re ] = { :options => options, :action => action }
@@ -73,6 +72,10 @@ class Strelka::App::DefaultRouter
 	end
 
 
+	#########
+	protected
+	#########
+
 	### Find the longest match in +patterns+ for the given +path+ and return the MatchData
 	### object for it. Returns +nil+ if no match was found.
 	def find_longest_match( patterns, path )
@@ -95,4 +98,5 @@ class Strelka::App::DefaultRouter
 		end
 
 	end
+
 end # class Strelka::App::DefaultRouter

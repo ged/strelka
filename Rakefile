@@ -29,11 +29,14 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'formvalidator',   '~> 0.1.5'
 	self.dependency 'uuidtools',       '~> 2.1.2'
 	self.dependency 'sysexits',        '~> 1.0'
+	self.dependency 'pluginfactory',   '~> 1.0'
 
 	self.dependency 'rspec',           '~> 2.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.require_ruby_version( '>=1.9.2' )
+	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
+	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )
 
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end

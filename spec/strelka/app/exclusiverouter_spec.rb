@@ -11,14 +11,14 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/defaultrouter'
+require 'strelka/app/exclusiverouter'
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::DefaultRouter do
+describe Strelka::App::ExclusiveRouter do
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -26,7 +26,7 @@ describe Strelka::App::DefaultRouter do
 	end
 
 	before( :each ) do
-		@router = Strelka::App::Router.create( 'default' )
+		@router = Strelka::App::ExclusiveRouter.new
 	end
 
 	after( :all ) do
@@ -40,9 +40,9 @@ describe Strelka::App::DefaultRouter do
 			@router.add_route( :GET, ['foo','bar'], :the_foo_bar_action )
 		end
 
-		it "routes /user/foo/bar/baz to the foo/bar action" do
+		it "doesn't route /user/foo/bar/baz" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
-			@router.route_request( req ).should == :the_foo_bar_action
+			@router.route_request( req ).should be_nil()
 		end
 
 		it "routes /user/foo/bar to the foo/bar action" do
@@ -57,11 +57,6 @@ describe Strelka::App::DefaultRouter do
 
 		it "doesn't route /user" do
 			req = @request_factory.get( '/user' )
-			@router.route_request( req ).should be_nil()
-		end
-
-		it "doesn't route /user/something/foo/bar" do
-			req = @request_factory.get( '/user/something/foo/bar' )
 			@router.route_request( req ).should be_nil()
 		end
 
@@ -80,9 +75,9 @@ describe Strelka::App::DefaultRouter do
 			@router.add_route( :GET, ['foo','bar'], :the_foo_bar_action )
 		end
 
-		it "routes /user/foo/bar/baz to the foo/bar action" do
+		it "doesn't route /user/foo/bar/baz" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
-			@router.route_request( req ).should == :the_foo_bar_action
+			@router.route_request( req ).should be_nil()
 		end
 
 		it "routes /user/foo/bar to the foo/bar action" do
@@ -100,9 +95,9 @@ describe Strelka::App::DefaultRouter do
 			@router.route_request( req ).should == :the_fallback_action
 		end
 
-		it "routes /user/other to the fallback action" do
+		it "doesn't route /user/other" do
 			req = @request_factory.get( '/user/other' )
-			@router.route_request( req ).should == :the_fallback_action
+			@router.route_request( req ).should be_nil()
 		end
 
 	end
@@ -115,9 +110,9 @@ describe Strelka::App::DefaultRouter do
 			@router.add_route( :GET, ['foo',/\w{6}/], :the_foo_sixaction )
 		end
 
-		it "routes /user/foo/barbim/baz to the foo/\w{6} action" do
+		it "doesn't route /user/foo/barbim/baz" do
 			req = @request_factory.get( '/user/foo/barbim/baz' )
-			@router.route_request( req ).should == :the_foo_sixaction
+			@router.route_request( req ).should be_nil()
 		end
 
 		it "routes /user/foo/barbat to the foo/\w{6} action" do
@@ -125,9 +120,9 @@ describe Strelka::App::DefaultRouter do
 			@router.route_request( req ).should == :the_foo_sixaction
 		end
 
-		it "routes /user/foo/bar/baz to the foo/\w{3} action" do
+		it "doesn't route /user/foo/bar/baz" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
-			@router.route_request( req ).should == :the_foo_threeaction
+			@router.route_request( req ).should be_nil()
 		end
 
 		it "routes /user/foo/bar to the foo/\w{3} action" do

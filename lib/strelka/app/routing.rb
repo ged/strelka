@@ -3,7 +3,7 @@
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-require 'strelka/app/defaultrouter'
+require 'strelka/app/router'
 require 'strelka/exceptions'
 require 'strelka/app/plugins'
 
@@ -12,7 +12,7 @@ require 'strelka/app/plugins'
 # This plugin adds the ability to declare hooks for requests based on their
 # attributes. The default router (Strelka::App::DefaultRouter) uses only the
 # HTTP verb and the path, but you can also define your own router class if
-# you want to include other attributes. 
+# you want to include other attributes.
 #
 # You declare a hook using the HTTP verb, followed by the path, followed by
 # a Hash of options and a block that will be called when a matching request
@@ -26,23 +26,53 @@ require 'strelka/app/plugins'
 # into one.
 #
 # == Examples
-# 
-# 	class HelloWorld < Strelka::App
+#
+#	class HelloWorld < Strelka::App
+#
+#       plugins :routing
 #
 #       # match any GET request
-# 		get do |req|
-# 			return req.response << 'Hello, World!'
-# 		end
+#		get do |req|
+#			return req.response << 'Hello, World!'
+#		end
 #
-#       # match any GET request whose path starts with '/goodbye' 		
-# 		get '/goodbye' do |req|
-# 			return req.response << "Goodbye, cruel World!"
-# 		end
+#       # match any GET request whose path starts with '/goodbye'
+#		get '/goodbye' do |req|
+#			return req.response << "Goodbye, cruel World!"
+#		end
 #
 #
-# 	end # class HelloWorld
-# 
-# 
+#	end # class HelloWorld
+#
+# Routing strategies are pluggable, so if Mongrel2's the "longest-match wins"
+# routing isn't to your taste, you can load a different one by name. To use
+# the alternative "exclusive" router distributed with Strelka, use the 'router'
+# declaration:
+#
+#	class ExclusiveHelloWorld < Strelka::App
+#
+#       plugins :routing
+#       router :exclusive
+#
+#       # match a GET request for the exact route only
+#		get do |req|
+#			return req.response << 'Hello, World!'
+#		end
+#
+#       # only match a GET request for '/goodbye'
+#		get '/goodbye' do |req|
+#			return req.response << "Goodbye, cruel World!"
+#		end
+#
+#      # Every other request responds with a 404
+#
+#	end # class ExclusiveHelloWorld
+#
+# == Custom Routers
+#
+# See the Strelka::App::DefaultRouter for information on how to define your
+# own routing strategies.
+#
 module Strelka::App::Routing
 	extend Strelka::App::Plugin
 	include Strelka::Loggable,
@@ -58,9 +88,9 @@ module Strelka::App::Routing
 		attr_reader :routes
 		@routes = []
 
-		# The class of object to instantiate for routing
+		# The name of the routing strategy class to use
 		attr_accessor :routerclass
-		@routerclass = Strelka::App::DefaultRouter
+		@routerclass = :default
 
 
 		### Return a Hash of the methods defined by routes.
@@ -116,7 +146,7 @@ module Strelka::App::Routing
 		### Get/set the router class to use for mapping requests to handlers to +newclass.
 		def router( newclass=nil )
 			if newclass
-				Strelka.log.info "%p will use the %p router" % [ self, newclass ]
+				Strelka.log.info "%p router class set to: %p" % [ self, newclass ]
 				self.routerclass = newclass
 			end
 
@@ -192,7 +222,7 @@ module Strelka::App::Routing
 	### Create a new router object for each class with Routing.
 	def initialize( * )
 		super
-		@router ||= self.class.routerclass.new( self.class.routes )
+		@router ||= Strelka::App::Router.create( self.class.routerclass, self.class.routes )
 	end
 
 
