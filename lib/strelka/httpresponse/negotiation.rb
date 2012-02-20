@@ -121,20 +121,23 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Check for any negotiation that should happen and 
+	### Transform the entity body if it doesn't meet the criteria
+	def negotiated_body
+		return '' if self.bodiless?
+
+		self.negotiate
+		return self.body
+	end
+
+
+	### Check for any negotiation that should happen and apply the necessary
+	### transforms if they're available.
 	def negotiate
-		return if self.handled? || !self.request
+		return if !self.request
 		self.transform_content_type
 		self.transform_language
 		self.transform_charset
 		self.transform_encoding
-	end
-
-
-	### Transform the entity body if it doesn't meet the criteria 
-	def negotiated_body
-		self.negotiate
-		return self.body
 	end
 
 
@@ -143,13 +146,14 @@ module Strelka::HTTPResponse::Negotiation
 	#
 
 	### Return true if the receiver satisfies all of its originating request's
-	### Accept* headers, or it has no originating request.
+	### Accept* headers, or it's a bodiless response.
 	def acceptable?
-		self.negotiate
-		return self.acceptable_content_type? &&
-		       self.acceptable_charset? &&
-		       self.acceptable_language? &&
-		       self.acceptable_encoding?
+		# self.negotiate
+		return self.bodiless? ||
+		       ( self.acceptable_content_type? &&
+		         self.acceptable_charset? &&
+		         self.acceptable_language? &&
+		         self.acceptable_encoding? )
 	end
 	alias_method :is_acceptable?, :acceptable?
 
@@ -299,7 +303,7 @@ module Strelka::HTTPResponse::Negotiation
 		return if self.mediatype_callbacks.empty?
 
 		self.log.debug "Applying content-type transforms (if any)"
- 		self.better_mediatypes.each do |mediatype|
+		self.better_mediatypes.each do |mediatype|
 			callbacks = self.mediatype_callbacks.find_all do |mimetype, _|
 				mediatype =~ mimetype
 			end
@@ -329,7 +333,7 @@ module Strelka::HTTPResponse::Negotiation
 
 		self.body = new_body
 		self.content_type = mimetype
-		self.status = HTTP::OK
+		self.status ||= HTTP::OK
 
 		return true
 	end

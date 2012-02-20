@@ -14,11 +14,11 @@ require 'strelka/httpresponse/negotiation'
 # different response blocks for different acceptable content types, provides 
 # tranformations for entity bodies and set transformations for new content
 # types.
-# 
+#
 #   class UserService < Strelka::App
-# 
+#
 #       plugins :routing, :negotiation
-# 
+#
 #       add_content_type :tnetstring, 'text/x-tnetstring' do |response|
 #           tnetstr = nil
 #           begin
@@ -33,9 +33,9 @@ require 'strelka/httpresponse/negotiation'
 #               return true
 #           end
 #       end
-# 
+#
 #   end # class UserService
-# 
+#
 module Strelka::App::Negotiation
 	include Strelka::Constants
 	extend Strelka::App::Plugin
