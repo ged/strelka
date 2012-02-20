@@ -125,7 +125,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 			case self.verb
 			when :GET, :HEAD
 				@params = self.parse_query_args
-			when :POST
+			when :POST, :PUT
 				@params = self.parse_form_data
 			else
 				self.log.debug "No parameters for a %s request." % [ self.verb ]
