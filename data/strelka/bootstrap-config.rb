@@ -5,6 +5,7 @@ require 'pathname'
 require 'mongrel2/config'
 include Mongrel2::Config::DSL
 
+require 'strelka'
 require 'strelka/constants'
 include Strelka::Constants
 
