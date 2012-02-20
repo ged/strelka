@@ -145,6 +145,8 @@ class Strelka::App::ParamValidator < ::FormValidator
 		@require_some_fields = []
 		@optional_fields     = []
 		@filters_array       = []
+		@untaint_fields      = []
+
 		@parsed_params       = nil
 
 		self.validate( params ) if params
@@ -163,6 +165,8 @@ class Strelka::App::ParamValidator < ::FormValidator
 		@require_some_fields = @require_some_fields.clone
 		@optional_fields     = @optional_fields.clone
 		@filters_array       = @filters_array.clone
+		@untaint_fields      = @untaint_fields.clone
+
 		@parsed_params       = @parsed_params.clone if @parsed_params
 	end
 
