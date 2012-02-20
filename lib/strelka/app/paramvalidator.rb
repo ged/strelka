@@ -489,7 +489,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 	end
 
 
-	### Override the parent class's definition to (not-sloppily) match email 
+	### Override the parent class's definition to (not-sloppily) match email
 	### addresses.
 	def match_email( val )
 		return self.match_builtin_constraint( val, :email )
@@ -548,7 +548,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 
 	### Apply a constraint given as a Hash to the value/s corresponding to the
 	### specified +key+:
-	### 
+	###
 	### constraint::
 	###   A builtin constraint (as a Symbol; e.g., :email), a Regexp, or a Proc.
 	### name::
