@@ -34,7 +34,7 @@
 			</tr>
 		</thead>
 		<tbody class="data">
-			
+
 			<script id="server-template" type="text/x-jquery-tmpl">
 			<tr class="server">
 {{if uri}}
@@ -43,13 +43,13 @@
 {{else}}
 				<td data-binding="id">&nbsp;</td>
 				<td class="editable" data-binding="uuid">${uuid}</td>
-{{end if}}
+{{/if}}
 				<td class="editable" data-binding="name">${name}</td>
 				<td class="editable" data-binding="default_host">${default_host}</td>
 				<td class="editable" data-binding="bind_addr">${bind_addr}</td>
 				<td class="editable" data-binding="port">${port}</td>
 				<td class="toggle icon {{if use_ssl}} enabled{{/if}}" data-binding="use_ssl">
-					<span class="target"><img 
+					<span class="target"><img
 					src="/images/icons/tick-white.png" width="16" height="16" alt="" /></span>
 				</td>
 				<td class="controls">

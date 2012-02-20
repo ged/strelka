@@ -106,8 +106,10 @@ module Strelka::App::RestResources
 
 		### Add parameter declarations for parameters related to +rsrcobj+.
 		def add_parameters( rsrcobj, options )
+			Strelka.log.debug "Declaring validations for columns from %p" % [ rsrcobj ]
 			self.untaint_all_constraints = true
 			rsrcobj.db_schema.each do |col, config|
+				Strelka.log.debug "  %s (%p)" % [ col, config[:type] ]
 				param col, config[:type]
 			end
 		end

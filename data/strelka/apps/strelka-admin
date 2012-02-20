@@ -5,6 +5,8 @@ require 'pathname'
 require 'strelka'
 require 'uuidtools'
 
+Mongrel2::Config.configure( :configdb => Strelka::DEFAULT_CONFIG_URI )
+
 
 # The Strelka admin web console.
 class Strelka::AdminConsole < Strelka::App
@@ -40,8 +42,6 @@ class Strelka::AdminConsole < Strelka::App
 		Inversion.logger.level = Logger::WARN
 
 		@control = Mongrel2::Control.new( 'ipc://run/admin-control' )
-
-		Mongrel2::Config.configure( :configdb => Strelka::DEFAULT_CONFIG_URI )
 
 		super
 	end
@@ -88,16 +88,13 @@ class Strelka::AdminConsole < Strelka::App
 	# Service API -- Servers
 	#
 
+	resource_prefix '/api/v1'
+
 	# GET /servers[/:id]
 	# POST /servers
 	# PUT /servers/:id
 	# DELETE /servers/:id
-	resource Mongrel2::Config::Server,
-		name: '/servers',
-		prefix: '/api/v1',
-		readonly: false,
-		use_transactions: true
-
+	resource Mongrel2::Config::Server
 	resource Mongrel2::Config::Host
 	resource Mongrel2::Config::Route
 	resource Mongrel2::Config::Setting

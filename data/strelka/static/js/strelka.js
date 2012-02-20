@@ -53,7 +53,6 @@ const AjaxSettings = {
 };
 
 
-const Server = $.RESTResource( '/')
 
 /**
  * 
@@ -107,7 +106,7 @@ function start_servers_section( elem )
 	var section = $(elem);
 	section.find( '.actions button.create' ).click( create_server );
 
-	var req = $.getJSON( '/servers' );
+	var req = $.getJSON( '/api/v1/servers' );
 	req.done( function(servers) {
 		var tbody = section.find( 'table tbody.data' );
 		console.debug( "Existing servers: %o", servers );
