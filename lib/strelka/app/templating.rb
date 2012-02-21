@@ -13,7 +13,8 @@ module Strelka::App::Templating
 	include Strelka::Constants
 	extend Strelka::App::Plugin
 
-	run_before :routing, :filters, :negotiation
+	run_before :routing, :negotiation
+	run_after :filters
 
 
 	# Class methods to add to classes with templating.

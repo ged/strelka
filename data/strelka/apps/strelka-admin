@@ -15,7 +15,7 @@ class Strelka::AdminConsole < Strelka::App
 	ID = Strelka::ADMINCONSOLE_ID
 
 	# Load some plugins
-	plugins :templating, :routing, :restresources
+	plugins :templating, :routing, :restresources, :filters
 
 	# By default, responses are HTML
 	default_type 'text/html'
@@ -27,6 +27,12 @@ class Strelka::AdminConsole < Strelka::App
 		:server  => 'admin/server.tmpl',
 		:host    => 'admin/host.tmpl',
 		:message => 'admin/message.tmpl'
+
+
+	filter( :response ) do |res|
+		Strelka.log.debug "Response is: %p, headers are: %p" % [ res, res.headers ]
+		res.headers[:x_strelka_version] = Strelka.version_string( true )
+	end
 
 
 	### Initialize some application data.
