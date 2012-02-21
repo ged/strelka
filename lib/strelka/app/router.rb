@@ -4,23 +4,15 @@ require 'pluginfactory'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
+require 'strelka/mixins'
 
 # Abstract base class for pluggable routing strategies for the Routing
 # plugin.
 #
 class Strelka::App::Router
 	include PluginFactory,
-	        Strelka::Loggable
-
-	# Hide the constructor
-	private_class_method :new
-
-	### Unhide the constructor in derivatives
-	def self::inherited( subclass )
-		subclass.class_eval { public_class_method :new }
-		super
-	end
-
+	        Strelka::Loggable,
+			Strelka::AbstractClass
 
 	### PluginFactory API -- return the Array of directories to search for plugins.
 	def self::derivative_dirs
@@ -52,17 +44,15 @@ class Strelka::App::Router
 	public
 	######
 
+	### Document-method: add_route
 	### Add a route for the specified +verb+, +path+, and +options+ that will return
 	### +action+ when a request matches them.
-	def add_route( verb, path, action, options={} )
-		raise NotImplementedError, "%p doesn't implement #add_route"
-	end
+	pure_virtual :add_route
 
 
+	### Document-method: route_request
 	### Determine the most-specific route for the specified +request+ and return
 	### the UnboundMethod object of the App that should handle it.
-	def route_request( request )
-		raise NotImplementedError, "%p doesn't implement #route_request"
-	end
+	pure_virtual :route_request
 
 end # class Strelka::App::Router
