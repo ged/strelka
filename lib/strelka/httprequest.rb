@@ -107,7 +107,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.app_path
 	###   # => "/1/profile"
 	def app_path
-		rval = self.uri.path
+		rval = self.uri.path.dup
 		rval.slice!( 0, self.route.length )
 		return rval
 	end

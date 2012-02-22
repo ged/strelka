@@ -87,6 +87,7 @@ describe Strelka::HTTPRequest do
 
 		it "knows what the path of the request past its route is" do
 			@req.app_path.should == '/userinfo/ged'
+			@req.app_path.should == '/userinfo/ged' # make sure the slice is non-destructive
 		end
 
 		it "knows what HTTP verb the request used" do
