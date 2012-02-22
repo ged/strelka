@@ -6,3 +6,5 @@ mongrel2 -v0.12.0
 uuidtools -v2.1.2
 configurability -v1.0.8
 pluginfactory -v1.0.8
+simplecov -v0.5.4
+
