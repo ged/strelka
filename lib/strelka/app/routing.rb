@@ -183,12 +183,16 @@ module Strelka::App::Routing
 			# Remove any existing route for the same verb, patternparts, and options
 			# (support for overriding inherited routes)
 			self.routes.delete_if do |r|
-				r[0] == verb && r[1] == patternparts && r[3] == options
+				r[0] == verb && r[1] == patternparts && r[2][:options] == options
 			end
 
-			# Now add all the parts to the routes array for the router created by 
-			# instances 
-			self.routes << [ verb, patternparts, self.instance_method(methodname), options ]
+			# Now add all the parts to the routes array for the router created by
+			# instances
+			self.routes << [
+				verb,
+				patternparts,
+				{:action => self.instance_method(methodname), :options => options}
+			]
 		end
 
 
@@ -232,8 +236,11 @@ module Strelka::App::Routing
 
 	### Dispatch the request using the Router.
 	def handle_request( request, &block )
-		if handler = self.router.route_request( request )
-			return handler.bind( self ).call( request, &block )
+		if route = self.router.route_request( request )
+			# Track which route was chosen for later plugins
+			request.notes[:routing][:route] = route
+			# Bind the action of the route and call it
+			return route[:action].bind( self ).call( request, &block )
 		else
 			finish_with HTTP::NOT_FOUND, "The requested resource was not found on this server."
 		end

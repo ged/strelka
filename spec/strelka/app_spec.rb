@@ -212,7 +212,7 @@ describe Strelka::App do
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status.should == HTTP::SERVER_ERROR
 		res.content_type = 'text/plain'
-		res.body.should =~ /something went wrong/i
+		res.body.should =~ /internal server error/i
 	end
 
 

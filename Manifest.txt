@@ -59,6 +59,7 @@ data/strelka/templates/layout.tmpl
 lib/strelka.rb
 lib/strelka/app.rb
 lib/strelka/app/defaultrouter.rb
+lib/strelka/app/errors.rb
 lib/strelka/app/exclusiverouter.rb
 lib/strelka/app/filters.rb
 lib/strelka/app/negotiation.rb
@@ -79,11 +80,13 @@ lib/strelka/httpresponse.rb
 lib/strelka/httpresponse/negotiation.rb
 lib/strelka/logging.rb
 lib/strelka/mixins.rb
+spec/data/error.tmpl
 spec/data/layout.tmpl
 spec/data/main.tmpl
 spec/lib/constants.rb
 spec/lib/helpers.rb
 spec/strelka/app/defaultrouter_spec.rb
+spec/strelka/app/errors_spec.rb
 spec/strelka/app/exclusiverouter_spec.rb
 spec/strelka/app/filters_spec.rb
 spec/strelka/app/negotiation_spec.rb

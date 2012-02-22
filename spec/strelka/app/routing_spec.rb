@@ -76,7 +76,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :OPTIONS, [], @app.instance_method(:OPTIONS), {} ]]
+			@app.routes.should == [
+				[ :OPTIONS, [], {action: @app.instance_method(:OPTIONS), options: {}} ]
+			]
 		end
 
 		it "can declare a GET route" do
@@ -87,7 +89,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :GET, [], @app.instance_method(:GET), {} ]]
+			@app.routes.should == [
+				[ :GET, [], {action: @app.instance_method(:GET), options: {}} ]
+			]
 		end
 
 		it "can declare a POST route" do
@@ -98,7 +102,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :POST, [], @app.instance_method(:POST), {} ]]
+			@app.routes.should == [
+				[ :POST, [], {action: @app.instance_method(:POST), options: {}} ]
+			]
 		end
 
 		it "can declare a PUT route" do
@@ -109,7 +115,7 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :PUT, [], @app.instance_method(:PUT), {} ]]
+			@app.routes.should == [[ :PUT, [], {action: @app.instance_method(:PUT), options: {}} ]]
 		end
 
 		it "can declare a DELETE route" do
@@ -120,7 +126,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :DELETE, [], @app.instance_method(:DELETE), {} ]]
+			@app.routes.should == [
+				[ :DELETE, [], {action: @app.instance_method(:DELETE), options: {}} ]
+			]
 		end
 
 		it "can declare a TRACE route" do
@@ -131,7 +139,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :TRACE, [], @app.instance_method(:TRACE), {} ]]
+			@app.routes.should == [
+				[ :TRACE, [], {action: @app.instance_method(:TRACE), options: {}} ]
+			]
 		end
 
 		it "can declare a CONNECT route" do
@@ -142,7 +152,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :CONNECT, [], @app.instance_method(:CONNECT), {} ]]
+			@app.routes.should == [
+				[ :CONNECT, [], {action: @app.instance_method(:CONNECT), options: {}} ]
+			]
 		end
 
 
@@ -155,7 +167,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :GET, ['info'], @app.instance_method(:GET_info), {} ]]
+			@app.routes.should == [
+				[ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ]
+			]
 		end
 
 		it "allows a route to omit the leading '/' when specifying a path" do
@@ -164,7 +178,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [[ :GET, ['info'], @app.instance_method(:GET_info), {} ]]
+			@app.routes.should == [
+				[ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ]
+			]
 		end
 
 
@@ -196,11 +212,12 @@ describe Strelka::App::Routing do
 			subclass.routes.should have( 3 ).members
 
 			subclass.routes.
-				should include([ :GET, ['info'], @app.instance_method(:GET_info), {} ])
+				should include([ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ])
 			subclass.routes.
-				should include([ :GET, ['about'], @app.instance_method(:GET_about), {} ])
-			subclass.routes.
-				should include([ :GET, ['origami'], subclass.instance_method(:GET_origami), {} ])
+				should include([ :GET, ['about'], {action: @app.instance_method(:GET_about), options: {}} ])
+			subclass.routes.should include(
+				[ :GET, ['origami'], {action: subclass.instance_method(:GET_origami), options: {}} ]
+			)
 		end
 
 		describe "that also uses the :parameters plugin" do
@@ -216,9 +233,9 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should == 
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
-					   @app.instance_method(:POST_userinfo__username), {} ]]
+				@app.routes.should ==
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with ^ and $ for the route" do
@@ -228,9 +245,9 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should == 
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
-					   @app.instance_method(:POST_userinfo__username), {} ]]
+				@app.routes.should ==
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\A and \\z for the route" do
@@ -240,9 +257,9 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should == 
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
-					   @app.instance_method(:POST_userinfo__username), {} ]]
+				@app.routes.should ==
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\Z for the route" do
@@ -252,9 +269,9 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should == 
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/], 
-					   @app.instance_method(:POST_userinfo__username), {} ]]
+				@app.routes.should ==
+					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					  {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
 			it "merges parameters from the route path into the request's param validator" do
@@ -273,7 +290,7 @@ describe Strelka::App::Routing do
 
 			it "raises a ScriptError if a route is defined with a param without it having first " +
 			   "been set up" do
-				# RSpec's "expect {}.to" construct only rescues RuntimeErrors, so we have to do 
+				# RSpec's "expect {}.to" construct only rescues RuntimeErrors, so we have to do
 				# this ourselves.
 				begin
 					@app.get( '/userinfo/:username' ) {}

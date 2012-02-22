@@ -36,8 +36,8 @@ describe Strelka::App::ExclusiveRouter do
 	context "a router with routes for 'foo', 'foo/bar'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo'], :the_foo_action )
-			@router.add_route( :GET, ['foo','bar'], :the_foo_bar_action )
+			@router.add_route( :GET, ['foo'], route(:foo) )
+			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
 		end
 
 		it "doesn't route /user/foo/bar/baz" do
@@ -47,17 +47,17 @@ describe Strelka::App::ExclusiveRouter do
 
 		it "routes /user/foo/bar to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should == :the_foo_bar_action
+			@router.route_request( req ).should match_route( :foo_bar )
 		end
 
 		it "routes /user/foo/bar?limit=10 to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar?limit=10' )
-			@router.route_request( req ).should == :the_foo_bar_action
+			@router.route_request( req ).should match_route( :foo_bar )
 		end
 
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should == :the_foo_action
+			@router.route_request( req ).should match_route( :foo )
 		end
 
 		it "doesn't route /user" do
@@ -75,9 +75,9 @@ describe Strelka::App::ExclusiveRouter do
 	context "a router with routes for 'foo', 'foo/bar', and a fallback action" do
 
 		before( :each ) do
-			@router.add_route( :GET, [], :the_fallback_action )
-			@router.add_route( :GET, ['foo'], :the_foo_action )
-			@router.add_route( :GET, ['foo','bar'], :the_foo_bar_action )
+			@router.add_route( :GET, [], route(:fallback) )
+			@router.add_route( :GET, ['foo'], route(:foo) )
+			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
 		end
 
 		it "doesn't route /user/foo/bar/baz" do
@@ -87,17 +87,17 @@ describe Strelka::App::ExclusiveRouter do
 
 		it "routes /user/foo/bar to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should == :the_foo_bar_action
+			@router.route_request( req ).should match_route( :foo_bar )
 		end
 
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should == :the_foo_action
+			@router.route_request( req ).should match_route( :foo )
 		end
 
 		it "routes /user to the fallback action" do
 			req = @request_factory.get( '/user' )
-			@router.route_request( req ).should == :the_fallback_action
+			@router.route_request( req ).should match_route( :fallback )
 		end
 
 		it "doesn't route /user/other" do
@@ -110,9 +110,9 @@ describe Strelka::App::ExclusiveRouter do
 	context "a router with routes for 'foo', 'foo/\w{3}', and 'foo/\w{6}'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo'], :the_foo_action )
-			@router.add_route( :GET, ['foo',/\w{3}/], :the_foo_threeaction )
-			@router.add_route( :GET, ['foo',/\w{6}/], :the_foo_sixaction )
+			@router.add_route( :GET, ['foo'], route(:foo) )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
+			@router.add_route( :GET, ['foo',/\w{6}/], route(:foo_six) )
 		end
 
 		it "doesn't route /user/foo/barbim/baz" do
@@ -122,7 +122,7 @@ describe Strelka::App::ExclusiveRouter do
 
 		it "routes /user/foo/barbat to the foo/\w{6} action" do
 			req = @request_factory.get( '/user/foo/barbat' )
-			@router.route_request( req ).should == :the_foo_sixaction
+			@router.route_request( req ).should match_route( :foo_six )
 		end
 
 		it "doesn't route /user/foo/bar/baz" do
@@ -132,12 +132,12 @@ describe Strelka::App::ExclusiveRouter do
 
 		it "routes /user/foo/bar to the foo/\w{3} action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should == :the_foo_threeaction
+			@router.route_request( req ).should match_route( :foo_three )
 		end
 
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should == :the_foo_action
+			@router.route_request( req ).should match_route( :foo )
 		end
 
 		it "doesn't route /user" do
@@ -158,28 +158,28 @@ describe Strelka::App::ExclusiveRouter do
 	context "a router with routes for: 'foo/\w{3}', then 'foo/\d+'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo',/\w{3}/], :the_foo_threeaction )
-			@router.add_route( :GET, ['foo',/\d+/], :the_foo_digitaction )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
+			@router.add_route( :GET, ['foo',/\d+/], route(:foo_digit) )
 		end
 
 		it "routes /user/foo/1 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 		it "routes /user/foo/12 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/12' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 		it "routes /user/foo/123 to the foo/\w{3} action" do
 			req = @request_factory.get( '/user/foo/123' )
-			@router.route_request( req ).should == :the_foo_threeaction
+			@router.route_request( req ).should match_route( :foo_three )
 		end
 
 		it "routes /user/foo/1234 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1234' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 	end
@@ -190,28 +190,28 @@ describe Strelka::App::ExclusiveRouter do
 	context "a router with routes for: 'foo/\d+', then 'foo/\w{3}'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo',/\d+/], :the_foo_digitaction )
-			@router.add_route( :GET, ['foo',/\w{3}/], :the_foo_threeaction )
+			@router.add_route( :GET, ['foo',/\d+/], route(:foo_digit) )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
 		end
 
 		it "routes /user/foo/1 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 		it "routes /user/foo/12 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/12' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 		it "routes /user/foo/123 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/123' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 		it "routes /user/foo/1234 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1234' )
-			@router.route_request( req ).should == :the_foo_digitaction
+			@router.route_request( req ).should match_route( :foo_digit )
 		end
 
 	end

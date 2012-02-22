@@ -171,8 +171,11 @@ class Strelka::App
 				# Load the associated Plugin Module objects
 				names.flatten.each {|name| self.load_plugin(name) }
 
+				sorted_plugins = Strelka::App.loaded_plugins.tsort.reverse
+				Strelka.log.debug "Sorted plugins: app -> %p <- Mongrel2" % [ sorted_plugins ]
+
 				# Install the plugins in reverse-sorted order
-				Strelka::App.loaded_plugins.tsort.reverse.each do |name|
+				sorted_plugins.each do |name|
 					plugin = Strelka::App.loaded_plugins[ name ]
 					Strelka.log.debug "Considering %p" % [ name ]
 					if names.include?( name ) || names.include?( plugin )

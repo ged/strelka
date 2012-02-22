@@ -95,7 +95,7 @@ class Strelka::App < Mongrel2::Handler
 		self.log.error( msg )
 		err.backtrace[ 1..-1 ].each {|frame| self.log.debug('  ' + frame) }
 
-		status_info = { :status => HTTP::SERVER_ERROR, :message => msg }
+		status_info = { :status => HTTP::SERVER_ERROR, :message => 'internal server error' }
 		return self.prepare_status_response( request, status_info )
 	end
 
@@ -148,6 +148,15 @@ class Strelka::App < Mongrel2::Handler
 	### If the +response+ doesn't yet have a Content-type header, and the app has
 	### defined a default (via App.default_type), set it to the default.
 	def fixup_response_content_type( response )
+
+		# Make the error for returning something other than a Response object a little
+		# nicer.
+		unless response.respond_to?( :content_type )
+			self.log.error "expected response (%p, a %p) to respond to #content_type" %
+				[ response, response.class ]
+			finish_with( HTTP::SERVER_ERROR, "malformed response" )
+		end
+
 		restype = response.content_type
 
 		if !restype

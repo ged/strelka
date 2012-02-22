@@ -30,11 +30,11 @@ class Strelka::App::ExclusiveRouter < Strelka::App::DefaultRouter
 
 	### Add a route for the specified +verb+, +path+, and +options+ that will return
 	### +action+ when a request matches them.
-	def add_route( verb, path, action, options={} )
+	def add_route( verb, path, route )
 		re = Regexp.compile( '^' + path.join('/') + '$' )
 
 		# Make the Hash for the specified HTTP verb if it hasn't been created already
-		self.routes[ verb ][ re ] = { :options => options, :action => action }
+		self.routes[ verb ][ re ] = route
 	end
 
 end # class Strelka::App::DefaultRouter

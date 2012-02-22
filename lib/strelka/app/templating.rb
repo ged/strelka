@@ -147,6 +147,13 @@ module Strelka::App::Templating
 			template = l_template
 		end
 
+		# Set some default stuff on the top-level template
+		template.request          = request
+		template.strelka_version  = Strelka.version_string( true )
+		template.mongrel2_version = Mongrel2.version_string( true )
+		template.route            = request.notes[:routing][:route]
+
+		# Now render the response body
 		self.log.debug "  rendering the template into the response body"
 		response.body = template.render
 		response.status ||= HTTP::OK

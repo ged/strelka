@@ -17,8 +17,13 @@ class Strelka::AdminConsole < Strelka::App
 	# Load some plugins
 	plugins :templating, :routing, :restresources, :filters
 
+
 	# By default, responses are HTML
 	default_type 'text/html'
+
+	#
+	# Templating
+	#
 
 	# Templating -- wrap everything in the layout
 	layout 'layout.tmpl'
@@ -29,11 +34,20 @@ class Strelka::AdminConsole < Strelka::App
 		:message => 'admin/message.tmpl'
 
 
+	#
+	# Filters
+	#
+
+	# Add some custom headers to all responses
 	filter( :response ) do |res|
 		Strelka.log.debug "Response is: %p, headers are: %p" % [ res, res.headers ]
 		res.headers[:x_strelka_version] = Strelka.version_string( true )
 	end
 
+
+	#
+	# Routes
+	#
 
 	### Initialize some application data.
 	def initialize( * )
@@ -51,6 +65,16 @@ class Strelka::AdminConsole < Strelka::App
 
 		super
 	end
+
+
+	#
+	# Custom Error Responses
+	#
+
+	# on_status 404, :missing
+	# 
+	# on_status 302,304, :redirect
+
 
 
 	#
