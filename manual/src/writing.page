@@ -5,6 +5,7 @@ index: 2
 filters:
   - erb
   - links
+  - api
   - examples
   - textile
 ---
@@ -13,9 +14,9 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-Strelka applications are subclasses of the <?api Strelka::App ?> class. Strelka::App is pretty minimal by itself; it inherits most of its behavior from the basic Mongrel2::Handler class, only adding a few convenience methods for common HTTP tasks. 
+Strelka applications are subclasses of the <?api Strelka::App ?> class. Strelka::App is pretty minimal by itself; it inherits most of its behavior from the basic Mongrel2::Handler class, only adding a few convenience methods for common HTTP tasks.
 
-A minimalistic application would look something like:
+A minimal application would look something like:
 
 <?example { lang: Ruby, caption: "A dead-simple app." } ?>
 #!/usr/bin/env ruby
@@ -36,11 +37,42 @@ end # class HelloWorldApp
 
 # Run the app
 HelloWorldApp.run if __FILE__ == $0
+
 <?end example ?>
 
-While functional, this application is pretty dumb, and making it any more intelligent on your own would require a bunch of additional code and accompanying tests.  Fortunately, Strelka already has done the heavy lifting. Strelka::App's primary strength is providing hooks into the lifecycle of an HTTP request, and a plugin system that uses these hooks to handle common application tasks. This allows you to mix in the specific framework parts you need, so you get exactly what you want and nothing more.
+While functional, this application is pretty dumb, and making it do anything more intelligent on your own would require a bunch of additional code and accompanying tests.  Fortunately, Strelka already has done the heavy lifting. It knows how to read the Mongrel2 configuration and hook your app up with the right sockets to talk to the Mongrel2 front end (providing you follow one of several simple conventions), provides hooks into the lifecycle of an HTTP request, and includes a plugin system that uses these hooks to handle common application tasks. This allows you to mix in the specific framework parts you need, so you get exactly what you want and nothing more.
 
-The plugins system itself is contained in the Strelka::App::Plugins mixin, which is included in Strelka::App already. This adds the +plugins+ declarative, which you use from your app to load the plugins you want to use.
+h3. Talking to Mongrel2
+
+Mongrel2 associates handlers with itself via an identifier, which is described in the Mongrel2 manual as a UUID, but can actually be any string consisting of dashes and alphanumeric characters. Strelka reads the Mongrel2 config database, and can automatically configure its apps to talk to the right socket with the right @send_ident@ if it can find them. Its gives you a couple of different ways of doing this. It will default to a string derived from the name of the class, or you can set it yourself by declaring an @ID@ constant in your application class. If you need more control, you can also override the @::run@ class method and @super@ with the right @appid@:
+
+<?example { language: ruby, caption: "Overriding the ::run method" } ?>
+#!/usr/bin/env ruby
+
+require 'strelka'
+require 'socket'
+
+class HelloWorldApp
+	# Run as a tester if not running in the production environment
+	def self::run
+		appid = if Socket.gethostname.include?( 'test' )
+				'helloworld-test'
+			else
+				'helloworld'
+			end
+
+		super( appid )
+	end
+
+end #class HelloWorldApp
+
+<?end ?>
+
+
+
+h3. Plugins
+
+The plugins system is contained in the Strelka::App::Plugins mixin, which is included in Strelka::App already. This adds the +plugins+ declarative, which you use from your app to load the plugins you want to use.
 
 This app uses the 'routing' plugin, which adds Sinatra-like hooks for matching callbacks to requests. The example app above responds only to 'GET' requests, and ignores the path of the request altogether.
 

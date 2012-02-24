@@ -64,12 +64,6 @@ erb: spec/file_name_spec.rb.erb
 
 p. Now just fix all the "FIX" items.
 
-h3. Setting an Application ID
-
-The first thing to do is to decide on an ID for your app. Mongrel2 identifies its Handler routes on a 'send_ident', which is described in the Mongrel2 manual as a UUID, but can actually be any string consisting of dashes and alphanumeric characters.
-
-Strelka gives you a couple of different ways of doing this. It will default to a string derived from the name of the class, or you can set it yourself by uncommenting the @ID@ constant at the top.
-
 Strelka looks for handler apps in the 'apps' subdirectory of your gem's datadir, so in our example, the app is @GoodDoggie/data/good_doggie/apps/good_doggie_app@:
 
 bc.. # The main GoodDoggie application
@@ -78,6 +72,7 @@ class GoodDoggie::Application < Strelka::App
 	# Uncomment this if you need an appid other than 
 	# 'gooddoggie-application'.
 	#ID = 'FIX' # (set the app id of the main application)
+
 
 p. The End
 

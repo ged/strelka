@@ -13,13 +13,18 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-Currently, the manual is composed of two sections:
+Strelka is a framework for creating and deploying "Mongrel2":http://mongrel2.org/ web applications in Ruby, and for managing a Mongrel2 cluster.
 
-* <?link Writing a Strelka App ?>
-* <?link Distributing a Strelka App ?>
-* and <?link Deploying a Strelka App ?>
+It's named after the Russian dog who was one of the first space travelers to orbit the Earth and return alive.
 
-Enjoy!
+The first part of this manual, <?link Writing a Strelka App ?>, is a step-by-step tutorial on setting up a new Strelka app.
+
+Then there's a section called <?link Deploying a Strelka App ?> that covers packaging up your app as a gem and deploying it.
+
+Then we dive in a little deeper, and show you how you can <?link Write Your Own Strelka Plugin ?> by refactoring common code out of your applications.
+
+Finally, there's a <?link "cookbook":Strelka Cookbook ?>-style section that covers general tips and tricks.
+
 
 h3. Authors
 
@@ -28,7 +33,7 @@ h3. Authors
 
 h3. License
 
-Copyright © 2011, Michael Granger
+Copyright © 2011-2012, Michael Granger
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are
