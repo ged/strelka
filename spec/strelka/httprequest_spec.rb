@@ -206,15 +206,37 @@ describe Strelka::HTTPRequest do
 					'Content-type' => 'multipart/form-data' )
 			end
 
-			it "returns an empty Hash for an empty body" do
+			it "returns nil for an empty body" do
 				pending "multipart/form-data support" do
 					@req.body = ''
-					@req.params.should == {}
+					@req.params.should be_nil()
 				end
 			end
 
 		end
 
+
+		context "a POST request with a 'application/json' body" do
+			before( :each ) do
+				@req = @request_factory.post( '/directory/path', '',
+					'Content-type' => 'application/json' )
+			end
+
+			it "returns nil for an empty body" do
+				@req.body = ''
+				@req.params.should be_nil()
+			end
+
+			it "has the JSON data as the params if it has a body with JSON object in it" do
+				data = {
+					'animal' => 'ducky',
+					'adjectives' => ['fluffy', 'puddle-ey'],
+				}
+				@req.body = Yajl.dump( data )
+				@req.params.should == data
+			end
+
+		end
 
 	end
 
