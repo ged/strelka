@@ -11,13 +11,6 @@ module Strelka::Constants
 	# Import Mongrel2's constants, too
 	include Mongrel2::Constants
 
-	# Override the path to the default Sqlite configuration database
-	# remove_const( :DEFAULT_CONFIG_URI )
-	DEFAULT_CONFIG_URI = 'strelka.sqlite'
-
-	# The admin server port
-	DEFAULT_ADMIN_PORT = 7337
-
 	# The data directory in the project if that exists, otherwise the gem datadir
 	DATADIR = if File.directory?( 'data/strelka' )
 		Pathname( 'data/strelka' )
@@ -27,11 +20,28 @@ module Strelka::Constants
 		raise ScriptError, "can't find the data directory!"
 	end
 
+	# The default path to the Mongrel2 server config database
+	DEFAULT_MONGREL2_DB = DATADIR + 'strelka.sqlite'
+
+	# The default path to the admin app's templates
+	DEFAULT_TEMPLATE_PATH = [ DATADIR + 'templates' ]
+
+	# Default admin config values
+	ADMIN_CONFIG_DEFAULTS = {
+		mongrel2: { configdb: DEFAULT_MONGREL2_DB.to_s },
+		templates: {
+			template_paths: DEFAULT_TEMPLATE_PATH,
+		},
+	}
+
+	# Unified config for the admin application
+	DEFAULT_ADMIN_CONFIG = DATADIR + 'admin.conf'
+
 	# The ID of the adminserver in the mongrel2 config
 	ADMINSERVER_ID = 'strelka-admin'
 
-	# The ID of the admin console app
-	ADMINCONSOLE_ID = 'admin-console'
+	# The ID of the Mongrel2 configuration REST service
+	CONFIGSERVICE_ID = 'config-service'
 
 
 	# Extend Mongrel2's HTTP constants collection

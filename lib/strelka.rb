@@ -2,6 +2,7 @@
 
 require 'mongrel2'
 require 'configurability'
+require 'configurability/config'
 
 # An application framework for Ruby-mongrel2
 # 
@@ -37,6 +38,19 @@ module Strelka
 
 	require 'strelka/app'
 	require 'strelka/httprequest'
+
+
+	# The installed Configurability::Config object
+	@config = nil
+	class << self; attr_accessor :config; end
+
+
+	### Convenience method -- Load the Configurability::Config from +configfile+
+	### and install it.
+	def self::load_config( configfile=DEFAULT_ADMIN_CONFIG )
+		self.config = Configurability::Config.load( configfile, Strelka::ADMIN_CONFIG_DEFAULTS )
+		self.config.install
+	end
 
 end # module Strelka
 

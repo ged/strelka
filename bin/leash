@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'configurability'
+require 'configurability/config'
+
 require 'mongrel2'
 require 'mongrel2/config'
 require 'strelka'
@@ -155,8 +158,8 @@ class Strelka::LeashCommand
 				text ''
 
 				text 'Global Options'
-				opt :config, "Specify the configfile to use.",
-					:default => DEFAULT_CONFIG_URI
+				opt :config, "Specify the Mongrel2 config database to use for the admin server.",
+					:default => DEFAULT_ADMIN_CONFIG.to_s
 				text ''
 
 				text 'Other Options:'
@@ -250,6 +253,10 @@ class Strelka::LeashCommand
 			message( *command_table )
 		end
 
+		Configurability.logger = Strelka.logger
+		Mongrel2.logger = Strelka.logger
+
+		Strelka.load_config( @options.config )
 	end
 	help :help, "Show help for a single COMMAND if given, or list available commands if not"
 	usage :help, "[COMMAND]"
@@ -278,7 +285,10 @@ class Strelka::LeashCommand
 			m2pid = self.start_admin_mongrel2
 			apppid = self.start_admin_app
 
-			header "Okay, point a browser at http://localhost:#{DEFAULT_ADMIN_PORT}/"
+			adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+				raise "No server %p configured!" % [ ADMINSERVER_ID ]
+
+			header "Okay, point a browser at http://%s:%d/" % [ adminserver.bind_addr, adminserver.port ]
 
 		rescue => err
 			error "%p while starting: %s: %s" % [ err.class, err.message, err.backtrace.first ]

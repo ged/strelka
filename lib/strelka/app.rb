@@ -40,13 +40,11 @@ class Strelka::App < Mongrel2::Handler
 			end
 		end
 
-		# Configure the Mongrel2 config database classes if they haven't been already
-		Mongrel2::Config.configure( :configdb => Strelka::Constants::DEFAULT_CONFIG_URI ) unless
-			Mongrel2::Config.database_initialized?
-
+		# Load the universal config unless it's already been loaded
+		Strelka.load_config unless Strelka.config
 		Strelka.logger.level = Logger::DEBUG if $VERBOSE
-		super( appid )
 
+		super( appid )
 	end
 
 
