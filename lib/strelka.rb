@@ -48,6 +48,7 @@ module Strelka
 	### Convenience method -- Load the Configurability::Config from +configfile+
 	### and install it.
 	def self::load_config( configfile=DEFAULT_ADMIN_CONFIG )
+		Strelka.log.info "Loading universal config from %p" % [ configfile ]
 		self.config = Configurability::Config.load( configfile, Strelka::ADMIN_CONFIG_DEFAULTS )
 		self.config.install
 	end

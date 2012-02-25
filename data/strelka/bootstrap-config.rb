@@ -14,7 +14,8 @@ include Strelka::Constants
 
 server ADMINSERVER_ID do
     name 'Strelka Admin Server'
-	port DEFAULT_ADMIN_PORT
+	port 8833
+	chroot '.'
 	access_log '/logs/admin-access.log'
 	error_log '/logs/admin-error.log'
 	pid_file '/run/admin.pid'
@@ -23,8 +24,9 @@ server ADMINSERVER_ID do
 	default_host 'localhost'
 
     host 'localhost' do
-        route '/', handler( 'tcp://127.0.0.1:19999', ADMINCONSOLE_ID )
+        route '/', handler( 'tcp://127.0.0.1:19999', ADMINSERVER_ID )
         route '/hello', handler( 'tcp://127.0.0.1:19995', 'hello-world' )
+        route '/plainhello', handler( 'tcp://127.0.0.1:19990', 'helloworld-handler' )
 
 		route '/css',    directory( 'static/css/', 'base.css', 'text/css' )
 		route '/images', directory( 'static/images/' )

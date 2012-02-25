@@ -2,6 +2,8 @@
 
 require 'strelka'
 
+Strelka.load_config( 'data/strelka/admin.conf' )
+
 # The Strelka admin web console.
 class HelloWorldApp < Strelka::App
 

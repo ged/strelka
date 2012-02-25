@@ -5,14 +5,14 @@ require 'pathname'
 require 'strelka'
 require 'uuidtools'
 
-Mongrel2::Config.configure( :configdb => Strelka::DEFAULT_CONFIG_URI )
+Strelka.load_config( 'data/strelka/admin.conf' )
 
 
 # The Strelka admin web console.
 class Strelka::AdminConsole < Strelka::App
 
 	# The 'appid' of the route to point the application at
-	ID = Strelka::ADMINCONSOLE_ID
+	ID = Strelka::ADMINSERVER_ID
 
 	# Load some plugins
 	plugins :templating, :routing, :restresources, :filters
@@ -52,16 +52,13 @@ class Strelka::AdminConsole < Strelka::App
 	### Initialize some application data.
 	def initialize( * )
 
-		# Use the templates in the same data directory as this app
-		templatedir = Strelka::DATADIR + 'templates'
-		Inversion::Template.configure( :template_paths => [templatedir] )
-
 		# Commonalize all the loggers
 		Mongrel2.logger = Strelka.logger
 		Configurability.logger = Strelka.logger
 		Inversion.logger.level = Logger::WARN
 
-		@control = Mongrel2::Control.new( 'ipc://run/admin-control' )
+		@adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID )
+		@control = @adminserver.control_socket
 
 		super
 	end
@@ -72,7 +69,7 @@ class Strelka::AdminConsole < Strelka::App
 	#
 
 	# on_status 404, :missing
-	# 
+	#
 	# on_status 302,304, :redirect
 
 
