@@ -158,7 +158,7 @@ class Strelka::LeashCommand
 				text ''
 
 				text 'Global Options'
-				opt :config, "Specify the Mongrel2 config database to use for the admin server.",
+				opt :config, "Specify the Strelka config file to use.",
 					:default => DEFAULT_ADMIN_CONFIG.to_s
 				text ''
 
@@ -192,7 +192,10 @@ class Strelka::LeashCommand
 			Strelka.logger.level = Strelka::Logging::LOG_LEVELS[ @options.loglevel ]
 		end
 
-		Mongrel2::Config.configure( :configdb => @options.config )
+		Configurability.logger = Strelka.logger
+		Mongrel2.logger = Strelka.logger
+
+		Strelka.load_config( @options.config )
 	end
 
 
@@ -301,7 +304,7 @@ class Strelka::LeashCommand
 		ensure
 			pids = [ m2pid, apppid ]
 			until pids.empty?
-			 	pid, status = Process.wait2
+				pid, status = Process.wait2
 				pids.delete( pid )
 
 				if status.exited? || status.signaled?
@@ -389,16 +392,20 @@ class Strelka::LeashCommand
 
 		if Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID )
 			message "Admin server is already configured"
-		else
-			configfile = DATADIR + 'bootstrap-config.rb'
-			runspace = Module.new do
-				extend Mongrel2::Config::DSL, FileUtils::Verbose
+			if !self.prompt.agree( "Replace the existing config? ", true )
+				message "Okay, keeping the existing config."
+				return
 			end
-
-			header "Installing admin server config from #{configfile}"
-			source = configfile.read
-			runspace.module_eval( source, configfile.to_s, 1 )
 		end
+
+		configfile = DATADIR + 'bootstrap-config.rb'
+		runspace = Module.new do
+			extend Mongrel2::Config::DSL, FileUtils::Verbose
+		end
+
+		header "Installing admin server config from #{configfile}"
+		source = configfile.read
+		runspace.module_eval( source, configfile.to_s, 1 )
 	end
 
 
@@ -444,7 +451,7 @@ class Strelka::LeashCommand
 		message "Starting up control app..."
 
 		pid = fork do
-			$0 = Strelka::ADMINCONSOLE_ID
+			$0 = Strelka::ADMINSERVER_ID
 			strelka_admin = DATADIR + 'apps/strelka-admin'
 
 			Kernel.load( strelka_admin )
