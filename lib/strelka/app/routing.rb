@@ -103,6 +103,13 @@ module Strelka::App::Routing
 		end
 
 
+		### Returns +true+ if the app has a route for the specified +verb+ and +path+.
+		def has_route?( http_verb, path )
+			path_pattern = self.split_route_pattern( path )
+			self.routes.find {|tuple| tuple[0] == http_verb && tuple[1] == path_pattern }
+		end
+
+
 		# OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
 
 		### Define a route for the OPTIONS verb and the given +pattern+.
