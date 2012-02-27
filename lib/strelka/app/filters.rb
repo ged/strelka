@@ -11,8 +11,8 @@ module Strelka::App::Filters
 	run_before :routing, :templating
 
 
-	### Class methods to add to classes with routing.
-	module ClassMethods
+	# Class methods to add to classes with routing.
+	module ClassMethods # :nodoc:
 
 		# Default filters hash
 		@filters = { :request => [], :response => [], :both => [] }

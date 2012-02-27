@@ -27,51 +27,55 @@ require 'strelka/app/plugins'
 #
 # == Examples
 #
-#	class HelloWorld < Strelka::App
+#   class HelloWorld < Strelka::App
 #
 #       plugins :routing
 #
 #       # match any GET request
-#		get do |req|
-#			return req.response << 'Hello, World!'
-#		end
+#       get do |req|
+#           return req.response << 'Hello, World!'
+#       end
 #
 #       # match any GET request whose path starts with '/goodbye'
-#		get '/goodbye' do |req|
-#			return req.response << "Goodbye, cruel World!"
-#		end
+#       get '/goodbye' do |req|
+#           return req.response << "Goodbye, cruel World!"
+#       end
 #
 #
-#	end # class HelloWorld
+#   end # class HelloWorld
 #
-# Routing strategies are pluggable, so if Mongrel2's the "longest-match wins"
-# routing isn't to your taste, you can load a different one by name. To use
-# the alternative "exclusive" router distributed with Strelka, use the 'router'
-# declaration:
+# == Routing Strategies
 #
-#	class ExclusiveHelloWorld < Strelka::App
+# The algorithm used to map requests to routes are defined by an object
+# that implements the Strategy pattern. These routing strategies are pluggable,
+# so if Mongrel2's the "longest-match wins" routing isn't to your taste,
+# you can specify a different one using the +router+ declaration. Strelka
+# comes with one alternative "exclusive" router that implements a more
+# restrictive mapping:
+#
+#   class ExclusiveHelloWorld < Strelka::App
 #
 #       plugins :routing
 #       router :exclusive
 #
 #       # match a GET request for the exact route only
-#		get do |req|
-#			return req.response << 'Hello, World!'
-#		end
+#       get do |req|
+#           return req.response << 'Hello, World!'
+#       end
 #
 #       # only match a GET request for '/goodbye'
-#		get '/goodbye' do |req|
-#			return req.response << "Goodbye, cruel World!"
-#		end
+#       get '/goodbye' do |req|
+#           return req.response << "Goodbye, cruel World!"
+#       end
 #
 #      # Every other request responds with a 404
 #
-#	end # class ExclusiveHelloWorld
+#   end # class ExclusiveHelloWorld
 #
 # == Custom Routers
 #
-# See the Strelka::App::DefaultRouter for information on how to define your
-# own routing strategies.
+# See the Strelka::App::Router for information on how to define your own
+# routing strategies.
 #
 module Strelka::App::Routing
 	extend Strelka::App::Plugin
@@ -82,7 +86,7 @@ module Strelka::App::Routing
 
 
 	# Class methods to add to classes with routing.
-	module ClassMethods
+	module ClassMethods # :nodoc:
 
 		# The list of routes to pass to the Router when the application is created
 		attr_reader :routes

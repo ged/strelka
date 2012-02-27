@@ -9,6 +9,17 @@ require 'strelka/mixins'
 # Abstract base class for pluggable routing strategies for the Routing
 # plugin.
 #
+# This class can't be instantiated itself, but it does act as a factory for
+# loading and instantiating its subclasses:
+#
+#     # Create an instance of the default router strategy with the given
+#     # routes and options.
+#     Strelka::App::Router.create( 'default', routes, options )
+#
+# To define your own strategy, you'll need to inherit this class, name it
+# <tt>Strelka::App::{Something}Router</tt>, save it in a file named
+# <tt>strelka/app/{something}router.rb</tt>, and be sure to override the
+# #add_route and #route_request methods.
 class Strelka::App::Router
 	include PluginFactory,
 	        Strelka::Loggable,
@@ -21,14 +32,7 @@ class Strelka::App::Router
 
 
 	### Create a new router that will route requests according to the specified
-	### +routes+. Each route is a tuple of the form:
-	###
-	###   [
-	###     <http_verb>,    # The HTTP verb as a Symbol (e.g., :GET, :POST, etc.)
-	###     <path_array>,   # An Array of the parts of the path, as Strings and Regexps.
-	###     <action>,       # A #to_proc-able object to invoke when the route is matched
-	###     <options_hash>, # The hash of route config options
-	###   ]
+	### +routes+.
 	###
 	### If the optional +options+ hash is specified, it is passed to the router
 	### strategy.
@@ -44,15 +48,26 @@ class Strelka::App::Router
 	public
 	######
 
-	### Document-method: add_route
-	### Add a route for the specified +verb+, +path+, and +options+ that will return
-	### +action+ when a request matches them.
+	##
+	# :call-seq:
+	#   add_route( http_verb, path_array, routing_info )
+	#
+	# Add a route for the specified +http_verb+, +path_array+, and +routing_info+. The
+	# +http_verb+ will be one of the methods from
+	# {RFC 2616}[http://tools.ietf.org/html/rfc2616#section-9] as a Symbol (e.g.,
+	# +:GET+, +:DELETE+). The +path_array+ will be the route path split up by
+	# path separator. The +routing_info+ is a Hash that contains the action
+   	# that will be run when the route matches, routing options, and any other
+	# routing information associated with the route.
 	pure_virtual :add_route
 
 
-	### Document-method: route_request
-	### Determine the most-specific route for the specified +request+ and return
-	### the UnboundMethod object of the App that should handle it.
+	##
+	# :call-seq:
+	#   route_request( request )
+	#
+	# Determine the most-specific route for the specified +request+ and return
+	# the routing info Hash.
 	pure_virtual :route_request
 
 end # class Strelka::App::Router

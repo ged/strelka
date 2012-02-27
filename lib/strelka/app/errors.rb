@@ -39,7 +39,7 @@ module Strelka::App::Errors
 
 
 	# Class-level functionality
-	module ClassMethods
+	module ClassMethods # :nodoc:
 
 		@status_handlers = {}
 

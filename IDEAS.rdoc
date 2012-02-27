@@ -49,4 +49,11 @@ database.
 
 For example, a CMS called "Snipper" might come in a gem called 'snipper'
 
+=== Future Plugins
+
+* CORS (cors) — manage {Cross-Origin Resource Sharing}[http://www.html5rocks.com/en/tutorials/cors/]
+  headers
+
+
+
 

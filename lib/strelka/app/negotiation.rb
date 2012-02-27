@@ -44,8 +44,8 @@ module Strelka::App::Negotiation
 	run_after  :filters, :templating, :parameters
 
 
-	### Class methods to add to classes with content-negotiation.
-	module ClassMethods
+	# Class methods to add to classes with content-negotiation.
+	module ClassMethods # :nodoc:
 
 		# Content-type tranform registry, keyed by name
 		@content_type_transforms = {}

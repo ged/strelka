@@ -122,7 +122,7 @@ class Strelka::App
 		### Class methods to add to classes with plugins.
 		module ClassMethods
 
-			### Load the plugin with the given +name+, or nil if 
+			### Load the plugin with the given +name+
 			def load_plugin( name )
 
 				# Just return Modules as-is

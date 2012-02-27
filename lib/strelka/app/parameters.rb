@@ -47,8 +47,8 @@ module Strelka::App::Parameters
 	run_after :filters
 
 
-	### Class methods to add to classes with routing.
-	module ClassMethods
+	# Class methods to add to classes with routing.
+	module ClassMethods # :nodoc:
 
 		# Pattern for matching route parameters
 		PARAMETER_PATTERN = %r{/:(?<paramname>[a-z]\w*)}i
