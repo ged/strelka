@@ -57,7 +57,7 @@ class Strelka::AdminConsole < Strelka::App
 		Configurability.logger = Strelka.logger
 		Inversion.logger.level = Logger::WARN
 
-		@adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID )
+		@adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first
 		@control = @adminserver.control_socket
 
 		super

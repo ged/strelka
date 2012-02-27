@@ -288,7 +288,7 @@ class Strelka::LeashCommand
 			m2pid = self.start_admin_mongrel2
 			apppid = self.start_admin_app
 
-			adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+			adminserver = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first or
 				raise "No server %p configured!" % [ ADMINSERVER_ID ]
 
 			header "Okay, point a browser at http://%s:%d/" % [ adminserver.bind_addr, adminserver.port ]
@@ -390,7 +390,7 @@ class Strelka::LeashCommand
 	def setup_bootstrap_config
 		Mongrel2::Config.init_database
 
-		if Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID )
+		if Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first
 			message "Admin server is already configured"
 			if !self.prompt.agree( "Replace the existing config? ", true )
 				message "Okay, keeping the existing config."
@@ -413,7 +413,7 @@ class Strelka::LeashCommand
 	### files, and creating the necessary directories. This depends on the configuration
 	### being installed.
 	def setup_adminserver_directory
-		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first or
 			raise "No server %p configured!" % [ ADMINSERVER_ID ]
 
 		basedir = DATADIR
@@ -431,7 +431,7 @@ class Strelka::LeashCommand
 
 	### Start the Mongrel2 instance that serves as the front end of the admin server.
 	def start_admin_mongrel2
-		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ) or
+		server = Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first or
 			raise ScriptError, "Ack! No server named '#{ADMINSERVER_ID}' in #{Mongrel2::Config.pathname}"
 
 		mongrel2 = ENV['MONGREL2'] || 'mongrel2'
