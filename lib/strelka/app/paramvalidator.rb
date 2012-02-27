@@ -114,6 +114,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 		:alpha        => /^(?<alpha>[[:alpha:]]+)$/,
 		:alphanumeric => /^(?<alphanumeric>[[:alnum:]]+)$/,
 		:printable    => /\A(?<printable>[[:print:][:blank:]\r\n]+)\z/,
+		:string       => /\A(?<string>[[:print:][:blank:]\r\n]+)\z/,
 		:word         => /^(?<word>[[:word:]]+)$/,
 		:email        => /^(?<email>#{RFC822_EMAIL_ADDRESS})$/,
 		:hostname     => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
