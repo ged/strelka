@@ -53,17 +53,98 @@ describe Strelka::App::RestResources do
 		end
 
 
-		it "has a Hash of resource objects to the route they're mounted on (collection)" do
-			@app.resource_routes.should be_a( Hash )
+		it "knows what resources are mounted where" do
+			@app.resource_verbs.should be_a( Hash )
+			@app.resource_verbs.should be_empty()
 		end
 
 
 		describe "with a resource declared using default options" do
 
-			before( :each ) do
+			subject { @app }
 
+			before( :each ) do
+				@app.class_eval do
+					resource Mongrel2::Config::Server
+				end
+			end
+
+			it "knows about the mounted resource" do
+				@app.resource_verbs.should have( 1 ).member
+				@app.resource_verbs.should include( 'servers' )
+				@app.resource_verbs[ 'servers' ].
+					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
+			end
+
+			# Reader regular routes
+			it { should have_route(:OPTIONS, 'servers') }
+			it { should have_route(:GET,     'servers') }
+			it { should have_route(:GET,     'servers/:id') }
+
+			# Writer regular routes
+			it { should have_route(:POST,    'servers') }
+			it { should have_route(:PUT,     'servers') }
+			it { should have_route(:PUT,     'servers/:id') }
+			it { should have_route(:DELETE,  'servers') }
+			it { should have_route(:DELETE,  'servers/:id') }
+
+			# Reader composite routes
+			it { should have_route(:GET,     'servers/by_uuid/:uuid') }
+			it { should have_route(:GET,     'servers/:id/hosts') }
+			it { should have_route(:GET,     'servers/:id/filters') }
+
+		end
+
+
+		describe "with a resource declared as read-only" do
+
+			subject { @app }
+
+			before( :each ) do
+				@app.class_eval do
+					resource Mongrel2::Config::Server, readonly: true
+				end
+			end
+
+			it "knows about the mounted resource" do
+				@app.resource_verbs.should have( 1 ).member
+				@app.resource_verbs.should include( 'servers' )
+				@app.resource_verbs[ 'servers' ].
+					should include( :OPTIONS, :GET, :HEAD )
+				@app.resource_verbs[ 'servers' ].
+					should_not include( :POST, :PUT, :DELETE )
+			end
+
+			# Reader regular routes
+			it { should have_route(:OPTIONS, 'servers') }
+			it { should have_route(:GET,     'servers') }
+			it { should have_route(:GET,     'servers/:id') }
+
+			# Writer regular routes
+			it { should_not have_route(:POST,    'servers') }
+			it { should_not have_route(:PUT,     'servers') }
+			it { should_not have_route(:PUT,     'servers/:id') }
+			it { should_not have_route(:DELETE,  'servers') }
+			it { should_not have_route(:DELETE,  'servers/:id') }
+
+			# Reader composite routes
+			it { should have_route(:GET,     'servers/by_uuid/:uuid') }
+			it { should have_route(:GET,     'servers/:id/hosts') }
+			it { should have_route(:GET,     'servers/:id/filters') }
+
+		end
+
+
+		describe "route behaviors" do
+
+			before( :each ) do
 				# Create two servers in the config db to test with
-				server 'test-server'
+				server 'test-server' do
+					host 'main'
+					host 'monitor'
+					host 'adminpanel'
+					host 'api'
+				end
 				server 'step-server'
 
 				@app.class_eval do
@@ -76,11 +157,19 @@ describe Strelka::App::RestResources do
 				Mongrel2::Config.subclasses.each {|klass| klass.truncate }
 			end
 
-			context "OPTIONS verb" do
-				it "has an OPTIONS route for the exposed resource"
-			end
+			context "OPTIONS routes" do
+				it "responds to a top-level OPTIONS request with a resource description (JSON Schema?)"
+				it "responds to an OPTIONS request for a particular resource with details about it" do
+					req = @request_factory.options( '/api/v1/servers' )
+					res = @app.new.handle( req )
 
-			context "GET verb" do
+					res.status.should == HTTP::OK
+					res.headers.allowed.split( /\s*,\s*/ ).should include(*%w[GET HEAD POST PUT DELETE])
+				end
+			end # OPTIONS routes
+
+
+			context "GET routes" do
 				it "has a GET route to fetch the resource collection" do
 					req = @request_factory.get( '/api/v1/servers', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
@@ -142,9 +231,52 @@ describe Strelka::App::RestResources do
 					res.status.should == HTTP::NOT_FOUND
 					res.body.should =~ /requested resource was not found/i
 				end
-			end
 
-			context "POST verb" do
+				it "has a GET route for fetching the resource via one of its dataset methods" do
+					req = @request_factory.get( '/api/v1/servers/by_uuid/test-server', :accept => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					body = Yajl.load( res.body )
+
+					body.should be_an( Array )
+					body.should have( 1 ).member
+					body.first.should be_a( Hash )
+					body.first['uuid'].should == 'test-server'
+				end
+
+				it "has a GET route for fetching the resource's associated objects" do
+					req = @request_factory.get( '/api/v1/servers/1/hosts' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					body = Yajl.load( res.body )
+
+					body.should be_an( Array )
+					body.should have( 4 ).members
+					body.first.should be_a( Hash )
+					body.first['server_id'].should == 1
+					body.first['id'].should == 1
+				end
+
+				it "supports offset and limits for composite GET routes" do
+					req = @request_factory.get( '/api/v1/servers/1/hosts?offset=2;limit=2' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					body = Yajl.load( res.body )
+
+					body.should be_an( Array )
+					body.should have( 2 ).members
+					body.first.should be_a( Hash )
+					body.first['server_id'].should == 1
+					body.first['id'].should == 3
+				end
+
+			end # GET routes
+
+
+			context "POST routes" do
 
 				before( :each ) do
 					@server_values = {
@@ -158,6 +290,10 @@ describe Strelka::App::RestResources do
 						'bind_addr'    => "127.0.0.1",
 						'port'         => '7337',
 						'use_ssl'      => '0',
+					}
+					@host_values = {
+						'name'         => 'step',
+						'matching'     => 'step.example.com',
 					}
 				end
 
@@ -184,10 +320,11 @@ describe Strelka::App::RestResources do
 					new_server.port.should         == 7337
 					new_server.use_ssl.should      == 0
 				end
-			end
+
+			end # POST routes
 
 
-			context "PUT verb" do
+			context "PUT routes" do
 
 				before( :each ) do
 					@posted_values = {
@@ -222,10 +359,10 @@ describe Strelka::App::RestResources do
 					Mongrel2::Config::Server.map( :bind_addr ).uniq.should == ['0.0.0.0']
 				end
 
-			end
+			end # PUT routes
 
 
-			context "DELETE verb" do
+			context "DELETE routes" do
 
 				it "has a DELETE route to delete single instances in the resource collection" do
 					req = @request_factory.delete( '/api/v1/servers/1' )
@@ -247,11 +384,10 @@ describe Strelka::App::RestResources do
 					Mongrel2::Config::Server.count.should == 0
 				end
 
-			end
+			end # DELETE routes
 
-		end
+		end # route behaviors
 
 	end
 
 end
-

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'set'
 require 'sequel'
 
 require 'strelka' unless defined?( Strelka )
@@ -7,6 +8,37 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 
 # RESTful resource utilities for Strelka::App.
+#
+# This plugin allows you to automatically set up RESTful service resources
+# for Sequel::Model-derived classes.
+#
+# For example, if you have a model class called ACME::Customer for tracking
+# customer data, you can set up a RESTful resource in your Strelka app like this:
+#
+#     require 'strelka'
+#     require 'acme/customer'
+#
+#     class ACME::RestServices < Strelka::App
+#         plugins :restresources
+#         resource ACME::Customer
+#     end
+#
+# Assuming the primary key for customers is a column called 'id', this will install
+# the following routes:
+#
+#     options 'customers'
+#     get 'customers'
+#     get 'customers/:id'
+#     post 'customers'
+#     put 'customers'
+#     put 'customers/:id'
+#     delete 'customers'
+#     delete 'customers/:id'
+#
+# The restresources plugin depends on the routing[Strelka::App::Routing],
+# negotiation[Strelka::App::Negotiation], and
+# parameters[Strelka::App::Parameters] plugins, and will load them
+# automatically if they haven't been already.
 #
 # Stuff left to do:
 #
@@ -45,18 +77,18 @@ module Strelka::App::RestResources
 	end
 
 
-	### Class methods to add to classes with REST resources.
-	module ClassMethods
+	# Class methods to add to classes with REST resources.
+	module ClassMethods # :nodoc:
 		include Sequel::Inflections
 
-		# Routes to mounted resources
-		@resource_routes = {}
+		# Set of verbs that are valid for a resource, keyed by the resource path
+		@resource_verbs = Hash.new {|h,k| h[k] = Set.new }
 
 		# Global options
 		@global_options = DEFAULTS.dup
 
 		# The list of REST routes assigned to Sequel::Model objects
-		attr_reader :resource_routes
+		attr_reader :resource_verbs
 
 		# The global resource options hash
 		attr_reader :global_options
@@ -78,9 +110,6 @@ module Strelka::App::RestResources
 			name = options[:name] || rsrcobj.implicit_table_name
 			route = [ options[:prefix], name ].compact.join( '/' )
 
-			# Add the resource for later lookup
-			self.resource_routes[ rsrcobj ] = route
-
 			# Set up parameters
 			self.add_parameters( rsrcobj, options )
 
@@ -101,6 +130,9 @@ module Strelka::App::RestResources
 				self.add_delete_handler( route, rsrcobj, options )
 				self.add_collection_deletion_handler( route, rsrcobj, options )
 			end
+
+			# Add any composite resources based on the +rsrcobj+'s associations
+			self.add_composite_resource_handlers( route, rsrcobj, options )
 		end
 
 
@@ -119,7 +151,20 @@ module Strelka::App::RestResources
 		### OPTIONS /resources
 		def add_options_handler( route, rsrcobj, options )
 			# :TODO: Documentation for HTML mode (possibly using http://swagger.wordnik.com/)
-			Strelka.log.debug "Skipping OPTIONS %s handler for %p" % [ route, rsrcobj ]
+			Strelka.log.debug "Adding OPTIONS handler for %p" % [ route, rsrcobj ]
+			self.add_route( :OPTIONS, route, options ) do |req|
+				verbs = self.class.resource_verbs[ route ].sort
+				res = req.response
+
+				res.header.allowed = verbs.join(', ')
+				res.content_type = 'text/plain'
+				res.body = ''
+				res.status = HTTP::OK
+
+				return res
+			end
+
+			self.resource_verbs[ route ] << :OPTIONS
 		end
 
 
@@ -144,6 +189,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route_prefix ] << :GET << :HEAD
 		end
 
 
@@ -170,6 +217,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route ] << :GET << :HEAD
 		end
 
 
@@ -203,6 +252,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route ] << :POST
 		end
 
 
@@ -236,6 +287,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route_prefix ] << :PUT
 		end
 
 
@@ -267,6 +320,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route ] << :PUT
 		end
 
 
@@ -298,6 +353,8 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route_prefix ] << :DELETE
 		end
 
 
@@ -326,7 +383,113 @@ module Strelka::App::RestResources
 
 				return res
 			end
+
+			self.resource_verbs[ route ] << :DELETE
 		end
+
+
+		### Add routes for any associations +rsrcobj+ has as composite resources.
+		def add_composite_resource_handlers( route_prefix, rsrcobj, options )
+
+			# Add a method for each dataset method that only has a single argument
+			# :TODO: Support multiple args? (customers/by_city_state/{city}/{state})
+			rsrcobj.dataset_methods.each do |name, proc|
+				if proc.parameters.length > 1
+					Strelka.log.debug "  skipping dataset method %p: more than 1 argument" % [ name ]
+					next
+				end
+
+				# Use the name of the dataset block's parameter
+				# :TODO: Handle the case where the parameter name doesn't match a column
+				#        or a parameter-type more gracefully.
+				param = proc.parameters.first[1]
+				route = "%s/%s/:%s" % [ route_prefix, name, param ]
+				Strelka.log.debug "  route for dataset method %s: %s" % [ name, route ]
+				self.add_dataset_read_handler( route, rsrcobj, name, param, options )
+			end
+
+			# Add composite service routes for each association
+			Strelka.log.debug "Adding composite resource routes for %p" % [ rsrcobj ]
+			rsrcobj.association_reflections.each do |name, refl|
+				pkey = rsrcobj.primary_key
+				route = "%s/:%s/%s" % [ route_prefix, pkey, name ]
+				Strelka.log.debug "  route for associated %p objects via the %s association: %s" %
+					[ refl[:class_name], name, route ]
+				self.add_composite_read_handler( route, rsrcobj, name, options )
+			end
+
+		end
+
+
+		### Add a GET route for the dataset method +dsname+ for the given +rsrcobj+ at the
+		### given +path+.
+		def add_dataset_read_handler( path, rsrcobj, dsname, param, options )
+			Strelka.log.debug "Adding dataset method read handler: %s" % [ path ]
+
+			self.add_route( :GET, path, options ) do |req|
+				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
+					req.params.okay?
+
+				# Get the parameter and make the dataset
+				res = req.response
+				arg = req.params[ param ]
+				dataset = rsrcobj.send( dsname, arg )
+
+				# Apply offset and limit if they're present
+				limit, offset = req.params.values_at( :limit, :offset )
+				if limit
+					self.log.debug "Limiting result set to %p records" % [ limit ]
+					dataset = dataset.limit( limit, offset )
+				end
+
+				# Fetch and return the records as JSON or YAML
+				# :TODO: Handle other mediatypes
+				self.log.debug "Returning collection: %s" % [ dataset.sql ]
+				res.for( :json, :yaml ) { dataset.all }
+
+				return res
+			end
+		end
+
+
+		### Add a GET route for the specified +association+ of the +rsrcobj+ at the given
+		### +path+.
+		def add_composite_read_handler( path, rsrcobj, association, options )
+			pkey = rsrcobj.primary_key
+			Strelka.log.debug "Adding composite read handler for association: %s" % [ association ]
+
+			self.add_route( :GET, path, options ) do |req|
+				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
+					req.params.okay?
+
+				# Fetch the primary key from the parameters
+				res = req.response
+				id = req.params[ pkey ]
+
+				# Look up the resource, and if it exists, use it to fetch its associated
+				# objects
+				rsrcobj.db.transaction do
+					resource = rsrcobj[ id ] or
+						finish_with( HTTP::NOT_FOUND, "No such %s [%p]" % [rsrcobj.table_name, id] )
+
+					# Apply limit and offset parameters if they exist
+					limit, offset = req.params.values_at( :limit, :offset )
+					dataset = resource.send( "#{association}_dataset" )
+					if limit
+						self.log.debug "Limiting result set to %p records" % [ limit ]
+						dataset = dataset.limit( limit, offset )
+					end
+
+					# Fetch and return the records as JSON or YAML
+					# :TODO: Handle other mediatypes
+					self.log.debug "Returning collection: %s" % [ dataset.sql ]
+					res.for( :json, :yaml ) { dataset.all }
+				end
+
+				return res
+			end
+		end
+
 
 	end # module ClassMethods
 
