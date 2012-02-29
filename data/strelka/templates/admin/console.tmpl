@@ -37,14 +37,14 @@
 
 			<script id="server-template" type="text/x-jquery-tmpl">
 			<tr class="server">
-{{if uri}}
-				<td data-binding="id"><a href="${uri}">${id}</a></td>
-				<td class="editable" data-binding="uuid"><a href="${uri}">${uuid}</a></td>
-{{else}}
+<%= if ( uri ) { %>
+				<td data-binding="id"><a href="<%= uri %>"><%- id %></a></td>
+				<td class="editable" data-binding="uuid"><a href="<%= uri %>"><%- uuid %></a></td>
+<% } else { %>
 				<td data-binding="id">&nbsp;</td>
-				<td class="editable" data-binding="uuid">${uuid}</td>
-{{/if}}
-				<td class="editable" data-binding="name">${name}</td>
+				<td class="editable" data-binding="uuid"><%- uuid %></td>
+<% }
+				<td class="editable" data-binding="name"><%- name %></td>
 				<td class="editable" data-binding="default_host">${default_host}</td>
 				<td class="editable" data-binding="bind_addr">${bind_addr}</td>
 				<td class="editable" data-binding="port">${port}</td>

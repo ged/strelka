@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+
+require 'configurability'
+require 'strelka'
+require 'uuidtools'
+
+# The Strelka mongrel2 config service app.
+class Strelka::ConfigService < Strelka::App
+	extend Configurability
+
+	# Piggyback on the 
+
+	# The version of this service API -- used in determining the
+	# versioned route. If this changes in a non-backward compatible way,
+	# this should be incremented
+	APIVERSION = 1
+
+	# The 'appid' of the route to point the application at
+	ID = Strelka::CONFIGSERVICE_ID
+
+	# Load some plugins
+	plugins :restresources
+
+	# By default, responses are HTML
+	default_type 'text/html'
+
+	# Templating -- wrap human-viewable stuff in a consistent layout
+	layout 'layout.tmpl'
+	# templates \
+	#	:overview => 'configservice/overview.tmpl'
+
+
+	# GET /uuid -- fetch a plain-text random UUID
+	get '/uuid' do |req|
+		res = req.response
+		uuid = UUIDTools::UUID.random_create.to_s
+
+		res.for( :text, :yaml, :json ) {[ uuid ]}
+		res.for( :html ) do
+			tmpl = self.template( :message )
+			tmpl.message = uuid
+			self.log.debug "Returning message template: %p" % [ tmpl ]
+			tmpl
+		end
+
+		return res
+	end
+
+
+	#
+	# Config Service API
+	#
+
+	def self::configure( * )
+	resource Mongrel2::Config::Server
+	resource Mongrel2::Config::Host
+	resource Mongrel2::Config::Route
+	resource Mongrel2::Config::Setting
+	resource Mongrel2::Config::Filter
+	resource Mongrel2::Config::Mimetype
+
+end # class Strelka::AdminConsole
+
+
+if __FILE__ == $0
+	Strelka.load_config
+	Strelka::ConfigService.run
+end
+
+
+
+

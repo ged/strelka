@@ -15,7 +15,7 @@ class Strelka::AdminConsole < Strelka::App
 	ID = Strelka::ADMINSERVER_ID
 
 	# Load some plugins
-	plugins :templating, :routing, :restresources, :filters
+	plugins :templating, :routing, :filters, :errors
 
 
 	# By default, responses are HTML
@@ -40,8 +40,7 @@ class Strelka::AdminConsole < Strelka::App
 
 	# Add some custom headers to all responses
 	filter( :response ) do |res|
-		Strelka.log.debug "Response is: %p, headers are: %p" % [ res, res.headers ]
-		res.headers[:x_strelka_version] = Strelka.version_string( true )
+		res.headers.x_strelka_version = Strelka.version_string( true )
 	end
 
 
@@ -88,50 +87,20 @@ class Strelka::AdminConsole < Strelka::App
 		return tmpl
 	end
 
-
-	#
-	# Service API -- utility methods
-	#
-
-
-	# GET /uuid -- fetch a plain-text random UUID
-	get '/uuid' do |req|
-		res = req.response
-		uuid = UUIDTools::UUID.random_create.to_s
-
-		res.for( :text, :yaml, :json ) {[ uuid ]}
-		res.for( :html ) do
-			tmpl = self.template( :message )
-			tmpl.message = uuid
-			self.log.debug "Returning message template: %p" % [ tmpl ]
-			tmpl
-		end
-
-		return res
-	end
-
-
-	#
-	# Service API -- Servers
-	#
-
-	resource_prefix '/api/v1'
-
-	# GET /servers[/:id]
-	# POST /servers
-	# PUT /servers/:id
-	# DELETE /servers/:id
-	resource Mongrel2::Config::Server
-	resource Mongrel2::Config::Host
-	resource Mongrel2::Config::Route
-	resource Mongrel2::Config::Setting
-	resource Mongrel2::Config::Filter
-	resource Mongrel2::Config::Mimetype
-
-
-
 end # class Strelka::AdminConsole
 
 
-Strelka::AdminConsole.run if __FILE__ == $0
+if __FILE__ == $0
+	require 'configurability/config'
+
+	# Commonalize all the loggers
+	Mongrel2.logger = Strelka.logger
+	Configurability.logger = Strelka.logger
+	PluginFactory.logger = Strelka.logger
+
+	Inversion.logger.level = Logger::WARN
+
+	Strelka.load_config
+	Strelka::AdminConsole.run
+end
 
