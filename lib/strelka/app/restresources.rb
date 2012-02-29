@@ -427,6 +427,7 @@ module Strelka::App::RestResources
 			Strelka.log.debug "Adding dataset method read handler: %s" % [ path ]
 
 			self.add_route( :GET, path, options ) do |req|
+				self.log.debug "Resource dataset GET request for dataset %s on %p" % [ dsname, rsrcobj ]
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
 
@@ -434,17 +435,18 @@ module Strelka::App::RestResources
 				res = req.response
 				arg = req.params[ param ]
 				dataset = rsrcobj.send( dsname, arg )
+				self.log.debug "  dataset is: %p" % [ dataset ]
 
 				# Apply offset and limit if they're present
 				limit, offset = req.params.values_at( :limit, :offset )
 				if limit
-					self.log.debug "Limiting result set to %p records" % [ limit ]
+					self.log.debug "  limiting result set to %p records" % [ limit ]
 					dataset = dataset.limit( limit, offset )
 				end
 
 				# Fetch and return the records as JSON or YAML
 				# :TODO: Handle other mediatypes
-				self.log.debug "Returning collection: %s" % [ dataset.sql ]
+				self.log.debug "  returning collection: %s" % [ dataset.sql ]
 				res.for( :json, :yaml ) { dataset.all }
 
 				return res

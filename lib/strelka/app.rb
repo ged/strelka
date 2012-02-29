@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'rubygems' # For the Rubygems API
+
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
 
@@ -14,37 +16,149 @@ class Strelka::App < Mongrel2::Handler
 	include Strelka::App::Plugins
 
 
-	@default_type = nil
+	# Glob for matching Strelka apps relative to a gem's data directory
+	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
 
-	### Get/set the Content-type of requests that don't set one. Leaving this unset will
-	### leave the Content-type unset.
-	def self::default_type( newtype=nil )
-		@default_type = newtype if newtype
-		return @default_type
+
+	# Class instance variables
+	@default_type = nil
+	@loading_file = nil
+	@subclasses   = Hash.new {|h,k| h[k] = [] }
+
+
+	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were 
+	# loaded from, or +nil+ if they weren't loaded via ::load.
+	class << self; attr_reader :subclasses; end
+
+
+	### Inheritance callback -- add subclasses to @subclasses so .load can figure out which
+	### classes correspond to which files.
+	def self::inherited( subclass )
+		super
+		@subclasses[ @loading_file ] << subclass if self == Strelka::App
 	end
 
 
-	### Overridden from Mongrel2::Handler -- default the appid to the value of the ID constant
-	### of the class being run if it has one, or the class name with non-alphanumeric
-	### characters collapsed into hyphens if not. Also 
+	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if
+	### one is not specified, and automatically install the config DB if it hasn't been
+	### already.
 	def self::run( appid=nil )
-		if appid.nil?
-			Strelka.log.info "Looking up appid for %p" % [ self.class ]
-			if self.const_defined?( :ID )
-				appid = self.const_get( :ID )
-				Strelka.log.info "  app has an ID: %p" % [ appid ]
-			else
-				appid = ( self.name || "anonymous#{self.object_id}" ).downcase
-				appid.gsub!( /[^[:alnum:]]+/, '-' )
-				Strelka.log.info "  deriving one from the class name: %p" % [ appid ]
-			end
-		end
+		appid ||= self.default_appid
 
 		# Load the universal config unless it's already been loaded
 		Strelka.load_config unless Strelka.config
 		Strelka.logger.level = Logger::DEBUG if $VERBOSE
 
 		super( appid )
+
+	end
+
+
+	### Calculate a default application ID for the class based on either its ID 
+	### constant or its name and return it.
+	def self::default_appid
+		Strelka.log.info "Looking up appid for %p" % [ self.class ]
+		appid = nil
+
+		if self.const_defined?( :ID )
+			appid = self.const_get( :ID )
+			Strelka.log.info "  app has an ID: %p" % [ appid ]
+		else
+			appid = ( self.name || "anonymous#{self.object_id}" ).downcase
+			appid.gsub!( /[^[:alnum:]]+/, '-' )
+			Strelka.log.info "  deriving one from the class name: %p" % [ appid ]
+		end
+
+		return appid
+	end
+
+
+	### Return a Hash of Strelka app files as Pathname objects from installed gems,
+	### keyed by gemspec name .
+	def self::discover_paths
+		appfiles = {}
+
+		# Find all the gems that depend on Strelka
+		gems = Gem::Specification.find_all do |gemspec|
+			gemspec.dependencies.find {|dep| dep.name == 'strelka'}
+		end
+
+		Strelka.log.debug "Found %d gems with a Strelka dependency" % [ gems.length ]
+
+		# Find all the files under those gems' data directories that match the application
+		# pattern
+		gems.sort.reverse.each do |gemspec|
+			# Only look at the latest version of the gem
+			next if appfiles.key?( gemspec.name )
+			appfiles[ gemspec.name ] = []
+
+			Strelka.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
+			pattern = File.join( gemspec.full_gem_path, "data", gemspec.name, APP_GLOB_PATTERN )
+			Strelka.log.debug "    glob pattern is: %p" % [ pattern ]
+			gemapps = Pathname.glob( pattern )
+			Strelka.log.debug "    found %d app files" % [ gemapps.length ]
+			appfiles[ gemspec.name ] += gemapps
+		end
+
+		return appfiles
+	end
+
+
+	### Return an Array of Strelka::App classes loaded from the installed Strelka gems.
+	def self::discover
+		discovered_apps = []
+		app_paths = self.discover_paths
+
+		Strelka.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
+		app_paths.each do |gemname, paths|
+			Strelka.log.debug "  loading gem %s" % [ gemname ]
+			gem( gemname )
+
+			Strelka.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
+			paths.each do |path|
+				classes = begin
+					Strelka::App.load( path )
+				rescue StandardError, ScriptError => err
+					Strelka.log.error "%p while loading Strelka apps from %s: %s" %
+						[ err.class, path, err.message ]
+					Strelka.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
+					[]
+				end
+				Strelka.log.debug "  loaded app classes: %p" % [ classes ]
+
+				discovered_apps += classes
+			end
+		end
+
+		return discovered_apps
+	end
+
+
+	### Load the specified +file+, and return any Strelka::App subclasses that are loaded
+	### as a result.
+	def self::load( file )
+		Strelka.log.debug "Loading application/s from %p" % [ file ]
+		@loading_file = Pathname( file ).expand_path
+		self.subclasses.delete( @loading_file )
+		Kernel.load( @loading_file.to_s )
+		new_subclasses = self.subclasses[ @loading_file ]
+		Strelka.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
+
+		return new_subclasses
+	ensure
+		@loading_file = nil
+	end
+
+
+	#
+	# :section: Application declarative methods
+	#
+
+	### Get/set the Content-type of requests that don't set one. Leaving this unset will
+	### leave the Content-type unset.
+	def self::default_type( newtype=nil )
+		@default_type = newtype if newtype
+		return @default_type
 	end
 
 

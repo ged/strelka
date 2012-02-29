@@ -9,9 +9,12 @@ require 'strelka'
 require 'strelka/constants'
 include Strelka::Constants
 
+# Load the app classes to grab their appids. Only necessary for bootstrapping.
+adminapp = Strelka::App.load( DATADIR + 'apps/strelka-admin' ).first
+helloapp = Strelka::App.load( DATADIR + 'apps/hello-world' ).first
+
 # This is the config that's loaded by 'leash setup' to get the admin server
 # up and running.
-
 server ADMINSERVER_ID do
     name 'Strelka Admin Server'
 	port 8833
@@ -24,9 +27,8 @@ server ADMINSERVER_ID do
 	default_host 'localhost'
 
     host 'localhost' do
-        route '/', handler( 'tcp://127.0.0.1:19999', ADMINSERVER_ID )
-        route '/hello', handler( 'tcp://127.0.0.1:19995', 'hello-world' )
-        route '/plainhello', handler( 'tcp://127.0.0.1:19990', 'helloworld-handler' )
+        route '/', handler( 'tcp://127.0.0.1:19999', adminapp.default_appid )
+        route '/hello', handler( 'tcp://127.0.0.1:19995', helloapp.default_appid )
 
 		route '/css',    directory( 'static/css/', 'base.css', 'text/css' )
 		route '/images', directory( 'static/images/' )

@@ -29,11 +29,11 @@ class Strelka::LeashCommand
 
 	# Make a HighLine color scheme
 	COLOR_SCHEME = HighLine::ColorScheme.new do |scheme|
-		scheme[:header]	   = [ :bold, :yellow ]
+		scheme[:header]    = [ :bold, :yellow ]
 		scheme[:subheader] = [ :bold, :white ]
-		scheme[:key]	   = [ :white ]
-		scheme[:value]	   = [ :bold, :white ]
-		scheme[:error]	   = [ :red ]
+		scheme[:key]       = [ :white ]
+		scheme[:value]     = [ :bold, :white ]
+		scheme[:error]     = [ :red ]
 		scheme[:warning]   = [ :yellow ]
 		scheme[:message]   = [ :reset ]
 	end
@@ -151,7 +151,7 @@ class Strelka::LeashCommand
 			command_table = self.make_command_table
 
 			@option_parser = Trollop::Parser.new do
-				banner "Take your Mongrel(2) for a walk:"
+				banner "Manage Mongrel2 apps"
 
 				text ''
 				command_table.each {|line| text(line) }
@@ -160,6 +160,9 @@ class Strelka::LeashCommand
 				text 'Global Options'
 				opt :config, "Specify the Strelka config file to use.",
 					:default => DEFAULT_ADMIN_CONFIG.to_s
+				opt :config_module,
+					"Specify the name of the config module to use instead of the default.",
+					:type => :string
 				text ''
 
 				text 'Other Options:'
@@ -194,8 +197,6 @@ class Strelka::LeashCommand
 
 		Configurability.logger = Strelka.logger
 		Mongrel2.logger = Strelka.logger
-
-		Strelka.load_config( @options.config )
 	end
 
 
@@ -256,22 +257,39 @@ class Strelka::LeashCommand
 			message( *command_table )
 		end
 
-		Configurability.logger = Strelka.logger
-		Mongrel2.logger = Strelka.logger
-
-		Strelka.load_config( @options.config )
 	end
 	help :help, "Show help for a single COMMAND if given, or list available commands if not"
 	usage :help, "[COMMAND]"
 
 
+	### The 'discover' command
+	def discover_command( *args )
+		header "Discovered Strelka Apps/Handler Files"
+
+		paths = Strelka::App.discover_paths
+		if paths.empty?
+			message "None found."
+		else
+			paths.each do |gemname, paths|
+				subheader "#{gemname}:"
+				paths.each do |path|
+					message "  #{path}"
+				end
+			end
+		end
+	end
+	help :discover, "Show available Strelka applications installed as gems."
+
+
 	### The 'setup' command
 	def setup_command( *args )
+		Strelka.load_config( self.options.config )
+
 		self.setup_bootstrap_config
 		self.setup_adminserver_directory
 
-		if self.prompt.agree( "Start mongrel2 and the admin app? ", true )
-			self.start_command
+		if self.prompt.agree( "Start the admin app? ", true )
+			self.start_command( @options.admin_config )
 		else
 			message "Okay, well stuff is now set up."
 		end
@@ -281,6 +299,8 @@ class Strelka::LeashCommand
 
 	### The 'start' command
 	def start_command( *args )
+		Strelka.load_config( self.options.config )
+
 		message "Starting..."
 
 		m2pid = apppid = nil
@@ -321,6 +341,7 @@ class Strelka::LeashCommand
 			message "Done: %p" % [ results ]
 		end
 	end
+	help :start, "Start the web adminstration app"
 
 
 	### The 'version' command
@@ -346,39 +367,15 @@ class Strelka::LeashCommand
 	end
 
 
+	### Output the given +text+ highlighted as a subheader.
+	def subheader( text )
+		message( self.prompt.color(text, :subheader) )
+	end
+
+
 	### Output the given +text+ highlighted as an error.
 	def error( text )
 		message( self.prompt.color(text, :error) )
-	end
-
-
-	### Read command line history from HISTORY_FILE
-	def read_history
-		histfile = HISTORY_FILE.expand_path
-
-		if histfile.exist?
-			lines = histfile.readlines.collect {|line| line.chomp }
-			self.log.debug "Read %d saved history commands from %s." % [ lines.length, histfile ]
-			Readline::HISTORY.push( *lines )
-		else
-			self.log.debug "History file '%s' was empty or non-existant." % [ histfile ]
-		end
-	end
-
-
-	### Save command line history to HISTORY_FILE
-	def save_history
-		histfile = HISTORY_FILE.expand_path
-
-		lines = Readline::HISTORY.to_a.reverse.uniq.reverse
-		lines = lines[ -DEFAULT_HISTORY_SIZE, DEFAULT_HISTORY_SIZE ] if
-			lines.length > DEFAULT_HISTORY_SIZE
-
-		self.log.debug "Saving %d history lines to %s." % [ lines.length, histfile ]
-
-		histfile.open( File::WRONLY|File::CREAT|File::TRUNC ) do |ofh|
-			ofh.puts( *lines )
-		end
 	end
 
 
@@ -435,13 +432,16 @@ class Strelka::LeashCommand
 			raise ScriptError, "Ack! No server named '#{ADMINSERVER_ID}' in #{Mongrel2::Config.pathname}"
 
 		mongrel2 = ENV['MONGREL2'] || 'mongrel2'
-
 		message "Starting mongrel2 (%s)..." % [ mongrel2 ]
-		cmd = [ mongrel2, 'mongrel2 (Strelka Admin)' ]
-		cfgpath = Mongrel2::Config.pathname.relative_path_from( DATADIR )
+
+		spawnargs = []
+		spawnargs << [ mongrel2, 'mongrel2 (Strelka Admin)' ]
+		spawnargs << Mongrel2::Config.pathname.relative_path_from( DATADIR )
+		spawnargs << server.uuid
+		spawnargs << self.options.config_module if self.options.config_module
 
 		Dir.chdir( DATADIR ) do
-			return spawn( cmd, cfgpath.to_s, server.uuid )
+			return spawn( *spawnargs )
 		end
 	end
 

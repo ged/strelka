@@ -8,16 +8,17 @@ up-to-date if it does.
 
 == Leash
 
-=== Adding Strelka to an Existing Mongrel2 Instance
+Setting up a new server from scratch:
 
-If you already have an existing Mongrel2 environment, leash can also add 
-itself alongside it:
+    $ leash setup
 
-    server1$ leash setup existing.sqlite
-    Adding Strelka to existing config...
-    Starting mongrel2...
-    Start up control app...
-	Okay, point a browser at http://localhost:37772/
+Adding an admin server to an existing server config:
+
+    $ leash setup existing.sqlite
+
+Start all the configured apps for every server in the default config:
+
+    $ leash start
 
 The admin app will then let you examine and edit the configuration for your
 existing mongrel2 server, just as you would with a new server.
@@ -56,4 +57,6 @@ For example, a CMS called "Snipper" might come in a gem called 'snipper'
 
 
 
+
+== Deployment
 
