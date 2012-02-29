@@ -45,8 +45,6 @@ class Strelka::App < Mongrel2::Handler
 	def self::run( appid=nil )
 		appid ||= self.default_appid
 
-		# Load the universal config unless it's already been loaded
-		Strelka.load_config unless Strelka.config
 		Strelka.logger.level = Logger::DEBUG if $VERBOSE
 
 		super( appid )
