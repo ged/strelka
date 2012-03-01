@@ -22,6 +22,10 @@ module Strelka
 	require 'strelka/logging'
 	extend Strelka::Logging
 
+	# Combine Strelka, Mongrel2, and Configurability logging
+	Mongrel2.logger = Strelka.logger
+	Configurability.logger = Strelka.logger
+
 	require 'strelka/constants'
 	include Strelka::Constants
 
