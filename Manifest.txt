@@ -40,7 +40,6 @@ lib/strelka/httpresponse.rb
 lib/strelka/httpresponse/negotiation.rb
 lib/strelka/logging.rb
 lib/strelka/mixins.rb
-lib/strelka/runner.rb
 spec/data/error.tmpl
 spec/data/layout.tmpl
 spec/data/main.tmpl
@@ -67,5 +66,4 @@ spec/strelka/httpresponse/negotiation_spec.rb
 spec/strelka/httpresponse_spec.rb
 spec/strelka/logging_spec.rb
 spec/strelka/mixins_spec.rb
-spec/strelka/runner_spec.rb
 spec/strelka_spec.rb
