@@ -11,6 +11,15 @@ module Strelka::Constants
 	# Import Mongrel2's constants, too
 	include Mongrel2::Constants
 
+	# The data directory in the project if that exists, otherwise the gem datadir
+	DATADIR = if File.directory?( 'data/strelka' )
+			Pathname( 'data/strelka' )
+		elsif path = Gem.datadir('strelka')
+			Pathname( path )
+		else
+			raise ScriptError, "can't find the data directory!"
+		end
+
 	# Extend Mongrel2's HTTP constants collection
 	module HTTP
 		include Mongrel2::Constants::HTTP

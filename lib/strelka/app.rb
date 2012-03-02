@@ -74,7 +74,9 @@ class Strelka::App < Mongrel2::Handler
 	### Return a Hash of Strelka app files as Pathname objects from installed gems,
 	### keyed by gemspec name .
 	def self::discover_paths
-		appfiles = {}
+		appfiles = {
+			'strelka' => Pathname.glob( DATADIR + APP_GLOB_PATTERN )
+		}
 
 		# Find all the gems that depend on Strelka
 		gems = Gem::Specification.find_all do |gemspec|
@@ -110,7 +112,7 @@ class Strelka::App < Mongrel2::Handler
 		Strelka.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
 		app_paths.each do |gemname, paths|
 			Strelka.log.debug "  loading gem %s" % [ gemname ]
-			gem( gemname )
+			gem( gemname ) unless gemname == 'strelka'
 
 			Strelka.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
 			paths.each do |path|
