@@ -244,7 +244,7 @@ class Strelka::LeashCommand
 			message "None found."
 		else
 			paths.each do |gemname, paths|
-				message "Found:"
+				message "\n"
 
 				subheader "#{gemname}:"
 				filenames = paths.map {|path| path.basename.to_s }
