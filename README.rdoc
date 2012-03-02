@@ -39,29 +39,28 @@ To see a list of the available Strelka applications, run
 <tt>leash discover</tt>:
 
     $ leash discover
-	Searching for Strelka applications...
-	Found:
-	
-	hello-world
-	
-	$ gem install strelka-admin
+    Searching for Strelka applications...
+    Found:
+    
+    hello-world
+    
+    $ gem install strelka-admin
     Successfully installed strelka-admin-1.1.0
     1 gem installed
-	
-	$ leash discover
-	Searching for Strelka applications...
-	Found:
-	
-	hello-world     strelka-admin      config-service
+    
+    $ leash discover
+    Searching for Strelka applications...
+    Found:
+    
+    hello-world     strelka-admin      config-service
 
 
 To set up a new application runtime directory, run <tt>leash setup</tt>
 with the path to the directory and the name of the application:
 
-	$ leash setup /usr/local/myapp hello-world
-	Creating directory...
-	Creating barebones config...
-	
+    $ leash setup /usr/local/myapp hello-world
+    Creating directory...
+    Creating barebones config...
 
 
 === The Application Framework
