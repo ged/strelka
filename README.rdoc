@@ -30,39 +30,6 @@ application gems that are installed, setting up an application's
 runtime directory, and starting a Strelka application.
 
 
-=== Leash
-
-Strelka comes with a command-line tool called 'leash' that you can use to
-make setting up and starting a Strelka application backend a little bit easier.
-
-To see a list of the available Strelka applications, run
-<tt>leash discover</tt>:
-
-    $ leash discover
-    Searching for Strelka applications...
-    Found:
-    
-    hello-world
-    
-    $ gem install strelka-admin
-    Successfully installed strelka-admin-1.1.0
-    1 gem installed
-    
-    $ leash discover
-    Searching for Strelka applications...
-    Found:
-    
-    hello-world     strelka-admin      config-service
-
-
-To set up a new application runtime directory, run <tt>leash setup</tt>
-with the path to the directory and the name of the application:
-
-    $ leash setup /usr/local/myapp hello-world
-    Creating directory...
-    Creating barebones config...
-
-
 === The Application Framework
 
 The application framework is primarily geared towards developing web (HTTP)
@@ -138,6 +105,35 @@ easily.
 [restresources[rdoc-ref:Strelka::App::RestResources]]
     Automatically set up RESTful service resources for Sequel::Model-derived
 	classes.
+
+
+== Roadmap
+
+Going forward, we're going to be extracting useful stuff out of our own
+applications as plugins, and finishing up the packaging and deployment
+stories once we've ironed out the details in own environment.
+
+Here's a tentative list of what kinds of stuff we have planned:
+
+=== More Plugins
+
+* CORS -- manage {Cross-Origin Resource Sharing}[http://www.html5rocks.com/en/tutorials/cors/]
+  headers, especially for service applications
+* caching -- utilities for easy HTTP caching
+
+=== Deployment/Packaging
+
+You'll be able to package up your applications as Rubygems for easy deployment.
+The Strelka::App class already supports application discovery, but we
+want to hook that up to the 'leash' command line tool so you can install
+and run them with a minimum of manual monkeying around with directories,
+migrations, etc.
+
+=== New Application Styles
+
+Create some new handler classes for different application styles, similar to those
+in the Tir[http://tir.mongrel2.org/] framework.
+
 
 == Contributing
 
