@@ -14,4 +14,22 @@
 
 Copyright (c) <%= Time.now.strftime("%Y") %>, <%= XIF %>
 All rights reserved.
+<%
 
+# Okay, this is admittedly super-gross, but sow is pretty inflexible
+# about its project templates. C'est la vie.
+require 'pathname'
+projectdir = Pathname( path ).dirname
+olddir =  projectdir + 'data/project'
+datadir = projectdir + 'data' + project
+
+# Rename the datadir to match the project name
+mv olddir, datadir, :verbose => true
+
+# ... then change all of the paths to match before sow moves
+# 'em all.
+paths.each do |path|
+	path.sub!( %r{/project/}, "/#{project}/" )
+end
+
+%>
