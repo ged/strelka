@@ -173,7 +173,7 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search' )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::App::ParamValidator )
+				req.params.should be_a( Strelka::ParamValidator )
 				req.params.should have_errors()
 				req.params.error_messages.should == ["Missing value for 'Username'"]
 			end
@@ -182,7 +182,7 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search?username=anheptoh'.taint )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::App::ParamValidator )
+				req.params.should be_a( Strelka::ParamValidator )
 				req.params.should be_okay()
 				req.params.should_not have_errors()
 				req.params[:username].should == 'anheptoh'

@@ -3,7 +3,7 @@
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/app/plugins'
-require 'strelka/app/paramvalidator'
+require 'strelka/paramvalidator'
 
 
 # Parameter validation and untainting for Strelka apps.
@@ -81,7 +81,7 @@ module Strelka::App::Parameters
 
 		### Declare a parameter with the specified +name+ that will be validated using the given
 		### +constraint+. The +constraint+ can be any of the types supported by 
-		### Strelka::App::ParamValidator.
+		### Strelka::ParamValidator.
 		### :call-seq:
 		#   param( name, *flags )
 		#   param( name, constraint, *flags )
@@ -143,7 +143,7 @@ module Strelka::App::Parameters
 					sub_res = constraint.map( &self.method(:extract_route_from_constraint) )
 					Regexp.union( sub_res )
 				when Symbol
-					re = Strelka::App::ParamValidator.pattern_for_constraint( constraint ) or
+					re = Strelka::ParamValidator.pattern_for_constraint( constraint ) or
 						raise ScriptError, "no pattern for %p constraint" % [ constraint ]
 					/(?<#{name}>#{re})/
 				else
@@ -176,7 +176,7 @@ module Strelka::App::Parameters
 	def handle_request( request, &block )
 		profile = self.make_validator_profile( request )
 		self.log.debug "Applying validator profile: %p" % [ profile ]
-		validator = Strelka::App::ParamValidator.new( profile, request.params )
+		validator = Strelka::ParamValidator.new( profile, request.params )
 		self.log.debug "  validator: %p" % [ validator ]
 
 		request.params = validator
@@ -185,7 +185,7 @@ module Strelka::App::Parameters
 
 
 
-	### Make a validator profile for Strelka::App::ParamValidator for the specified
+	### Make a validator profile for Strelka::ParamValidator for the specified
 	### +request+ using the declared parameters in the App, returning it as a Hash.
 	def make_validator_profile( request )
 		profile = {

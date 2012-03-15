@@ -37,7 +37,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 #	# Create a validator object and pass in a hash of request parameters and the
 #	# profile hash.
-#   validator = Strelka::App::ParamValidator.new
+#   validator = Strelka::ParamValidator.new
 #	validator.validate( req_params, profile )
 #
 #	# Now if there weren't any errors, send the success page
@@ -51,7 +51,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #		return failure_template
 #	end
 #
-class Strelka::App::ParamValidator < ::FormValidator
+class Strelka::ParamValidator < ::FormValidator
 	extend Forwardable
 	include Strelka::Loggable
 
@@ -134,7 +134,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Strelka::App::ParamValidator object.
+	### Create a new Strelka::ParamValidator object.
 	def initialize( profile, params=nil )
 		@form                = {}
 		@raw_form            = {}
@@ -745,7 +745,7 @@ class Strelka::App::ParamValidator < ::FormValidator
 		end
 	end
 
-end # class Strelka::App::ParamValidator
+end # class Strelka::ParamValidator
 
 
 

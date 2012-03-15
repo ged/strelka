@@ -2,10 +2,10 @@
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
-require 'strelka/app/router'
+require 'strelka/router'
 
 # Simple (dumb?) request router for Strelka::App-based applications.
-class Strelka::App::DefaultRouter < Strelka::App::Router
+class Strelka::Router::Default < Strelka::Router
 	include Strelka::Loggable
 
 	### Create a new router that will route requests according to the specified
@@ -101,4 +101,4 @@ class Strelka::App::DefaultRouter < Strelka::App::Router
 
 	end
 
-end # class Strelka::App::DefaultRouter
+end # class Strelka::Router::Default

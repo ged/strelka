@@ -14,20 +14,20 @@ require 'strelka/mixins'
 #
 #     # Create an instance of the default router strategy with the given
 #     # routes and options.
-#     Strelka::App::Router.create( 'default', routes, options )
+#     Strelka::Router.create( 'default', routes, options )
 #
 # To define your own strategy, you'll need to inherit this class, name it
 # <tt>Strelka::App::{Something}Router</tt>, save it in a file named
 # <tt>strelka/app/{something}router.rb</tt>, and be sure to override the
 # #add_route and #route_request methods.
-class Strelka::App::Router
+class Strelka::Router
 	include PluginFactory,
 	        Strelka::Loggable,
 			Strelka::AbstractClass
 
 	### PluginFactory API -- return the Array of directories to search for plugins.
 	def self::derivative_dirs
-		return ['strelka/app']
+		return ['strelka/router']
 	end
 
 
@@ -70,4 +70,4 @@ class Strelka::App::Router
 	# the routing info Hash.
 	pure_virtual :route_request
 
-end # class Strelka::App::Router
+end # class Strelka::Router

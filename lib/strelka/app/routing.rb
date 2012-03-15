@@ -3,14 +3,14 @@
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-require 'strelka/app/router'
+require 'strelka/router'
 require 'strelka/exceptions'
 require 'strelka/app/plugins'
 
 # Sinatra-ish routing logic for Strelka::Apps
 #
 # This plugin adds the ability to declare hooks for requests based on their
-# attributes. The default router (Strelka::App::DefaultRouter) uses only the
+# attributes. The default router (Strelka::Router::Default) uses only the
 # HTTP verb and the path, but you can also define your own router class if
 # you want to include other attributes.
 #
@@ -74,7 +74,7 @@ require 'strelka/app/plugins'
 #
 # == Custom Routers
 #
-# See the Strelka::App::Router for information on how to define your own
+# See the Strelka::Router for information on how to define your own
 # routing strategies.
 #
 module Strelka::App::Routing
@@ -237,7 +237,7 @@ module Strelka::App::Routing
 	### Create a new router object for each class with Routing.
 	def initialize( * )
 		super
-		@router ||= Strelka::App::Router.create( self.class.routerclass, self.class.routes )
+		@router ||= Strelka::Router.create( self.class.routerclass, self.class.routes )
 	end
 
 

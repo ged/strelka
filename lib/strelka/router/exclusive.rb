@@ -3,7 +3,7 @@
 require 'strelka' unless defined?( Strelka )
 require 'strela/app' unless defined?( Strelka::App )
 
-require 'strelka/app/defaultrouter'
+require 'strelka/router/default'
 
 # Alternative (stricter) router strategy for Strelka::App::Routing plugin.
 #
@@ -21,7 +21,7 @@ require 'strelka/app/defaultrouter'
 #
 #     end # class MyApp
 #
-class Strelka::App::ExclusiveRouter < Strelka::App::DefaultRouter
+class Strelka::Router::Exclusive < Strelka::Router::Default
 	include Strelka::Loggable
 
 	######
@@ -37,4 +37,4 @@ class Strelka::App::ExclusiveRouter < Strelka::App::DefaultRouter
 		self.routes[ verb ][ re ] = route
 	end
 
-end # class Strelka::App::DefaultRouter
+end # class Strelka::Router::Default

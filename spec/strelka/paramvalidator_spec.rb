@@ -13,13 +13,13 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/paramvalidator'
+require 'strelka/paramvalidator'
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-describe Strelka::App::ParamValidator do
+describe Strelka::ParamValidator do
 
 	TEST_PROFILE = {
 		:required		=> [ :required ],
@@ -55,7 +55,7 @@ describe Strelka::App::ParamValidator do
 	end
 
 	before(:each) do
-		@validator = Strelka::App::ParamValidator.new( TEST_PROFILE )
+		@validator = Strelka::ParamValidator.new( TEST_PROFILE )
 	end
 
 	after( :all ) do
@@ -83,7 +83,7 @@ describe Strelka::App::ParamValidator do
 					required: $stderr,
 				}
 			}
-			val = Strelka::App::ParamValidator.new( profile )
+			val = Strelka::ParamValidator.new( profile )
 
 			expect {
 				val.validate( required: '1' )

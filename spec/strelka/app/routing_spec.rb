@@ -184,13 +184,13 @@ describe Strelka::App::Routing do
 		end
 
 
-		it "uses the Strelka::App::DefaultRouter as it's router by default" do
+		it "uses the Strelka::Router::Default as it's router by default" do
 			@app.routerclass.should == :default
-			@app.new.router.should be_a( Strelka::App::DefaultRouter )
+			@app.new.router.should be_a( Strelka::Router::Default )
 		end
 
 		it "can specify a different Router class than the default" do
-			class MyRouter < Strelka::App::Router; end
+			class MyRouter < Strelka::Router; end
 			@app.class_eval do
 				router MyRouter
 			end

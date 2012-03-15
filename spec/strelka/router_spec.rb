@@ -11,14 +11,14 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/router'
+require 'strelka/router'
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::Router do
+describe Strelka::Router do
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -30,14 +30,14 @@ describe Strelka::App::Router do
 	end
 
 
-	it "looks for plugins under strelka/app" do
-		Strelka::App::Router.derivative_dirs.should include( 'strelka/app' )
+	it "looks for plugins under strelka/router" do
+		Strelka::Router.derivative_dirs.should include( 'strelka/router' )
 	end
 
 
 	it "is abstract" do
 		expect {
-			Strelka::App::Router.new
+			Strelka::Router.new
 		}.to raise_error()
 	end
 
