@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 }
 
