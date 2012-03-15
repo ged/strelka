@@ -5,14 +5,13 @@ Manifest.txt
 README.rdoc
 Rakefile
 bin/leash
-contrib/hoetemplate/.autotest.erb
 contrib/hoetemplate/History.rdoc.erb
 contrib/hoetemplate/Manifest.txt.erb
 contrib/hoetemplate/README.rdoc.erb
 contrib/hoetemplate/Rakefile.erb
-contrib/hoetemplate/data/file_name/apps/file_name_app
-contrib/hoetemplate/data/file_name/templates/layout.tmpl.erb
-contrib/hoetemplate/data/file_name/templates/top.tmpl.erb
+contrib/hoetemplate/data/project/apps/file_name_app
+contrib/hoetemplate/data/project/templates/layout.tmpl.erb
+contrib/hoetemplate/data/project/templates/top.tmpl.erb
 contrib/hoetemplate/lib/file_name.rb.erb
 contrib/hoetemplate/spec/file_name_spec.rb.erb
 data/strelka/apps/hello-world
@@ -32,6 +31,8 @@ lib/strelka/app/routing.rb
 lib/strelka/app/templating.rb
 lib/strelka/behavior/plugin.rb
 lib/strelka/constants.rb
+lib/strelka/cookie.rb
+lib/strelka/cookieset.rb
 lib/strelka/exceptions.rb
 lib/strelka/httprequest.rb
 lib/strelka/httprequest/acceptparams.rb
@@ -58,6 +59,8 @@ spec/strelka/app/router_spec.rb
 spec/strelka/app/routing_spec.rb
 spec/strelka/app/templating_spec.rb
 spec/strelka/app_spec.rb
+spec/strelka/cookie_spec.rb
+spec/strelka/cookieset_spec.rb
 spec/strelka/exceptions_spec.rb
 spec/strelka/httprequest/acceptparams_spec.rb
 spec/strelka/httprequest/negotiation_spec.rb

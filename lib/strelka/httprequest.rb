@@ -7,6 +7,7 @@ require 'uri'
 require 'mongrel2/httprequest'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/httpresponse'
+require 'strelka/cookieset'
 
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
@@ -30,10 +31,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	### Initialize some additional stuff for Strelka requests.
 	def initialize( * ) # :notnew:
 		super
-		@uri    = nil
-		@verb   = self.headers[:method].to_sym
-		@params = nil
-		@notes  = Hash.new( &method(:autovivify) )
+		@uri     = nil
+		@verb    = self.headers[:method].to_sym
+		@params  = nil
+		@notes   = Hash.new( &method(:autovivify) )
+		@cookies = nil
 	end
 
 
@@ -133,6 +135,14 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		end
 
 		return @params
+	end
+
+
+	### Fetch any cookies that accompanied the request as a Strelka::CookieSet, creating
+	### it if necessary.
+	def cookies
+		@cookies = Strelka::CookieSet.parse( self ) unless @cookies
+		return @cookies
 	end
 
 

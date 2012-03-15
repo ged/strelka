@@ -2,6 +2,7 @@
 
 require 'mongrel2/httpresponse'
 require 'strelka' unless defined?( Strelka )
+require 'strelka/cookieset'
 
 # An HTTP response class.
 class Strelka::HTTPResponse < Mongrel2::HTTPResponse
@@ -16,9 +17,10 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add some instance variables to new HTTPResponses.
 	def initialize( * ) # :notnew:
-		@charset = nil
+		@charset   = nil
 		@languages = []
 		@encodings = []
+		@cookies   = nil
 
 		super
 	end
@@ -58,6 +60,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		self.add_content_type_charset( headers )
 		headers.content_encoding ||= self.encodings.join(', ') unless self.encodings.empty?
 		headers.content_language ||= self.languages.join(', ') unless self.languages.empty?
+		self.add_cookie_headers( headers )
 
 		return headers
 	end
@@ -70,6 +73,14 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		@charset = nil
 		@languages.clear
 		@encodings.clear
+	end
+
+
+	### Returns a Strelka::CookieSet that can be used to manipulate the cookies that are
+	### sent with the response, creating it if necessary.
+	def cookies
+		@cookies = Strelka::CookieSet.new unless @cookies
+		return @cookies
 	end
 
 
@@ -133,6 +144,15 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 		self.log.debug "  Body didn't respond to either #encoding or #external_encoding."
 		return nil
+	end
+
+
+	### Add Set-Cookie members to +headers+ if the response has any cookies.
+	def add_cookie_headers( headers )
+		return unless @cookies
+		@cookies.each do |cookie|
+			headers.append( :set_cookie => cookie.to_s )
+		end
 	end
 
 end # class Strelka::HTTPResponse

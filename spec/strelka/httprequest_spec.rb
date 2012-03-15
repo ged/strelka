@@ -11,6 +11,7 @@ require 'uri'
 require 'rspec'
 require 'spec/lib/helpers'
 require 'strelka/httprequest'
+require 'strelka/cookie'
 
 
 #####################################################################
@@ -236,6 +237,30 @@ describe Strelka::HTTPRequest do
 				@req.params.should == data
 			end
 
+		end
+
+	end
+
+
+	describe "cookie support" do
+
+		before( :each ) do
+			@req = @request_factory.get( '/directory/userinfo/ged' )
+		end
+
+
+		it "parses a single cookie into a cookieset with the cookie in it" do
+			@req.header.cookie = 'foom=chuckUfarly'
+			@req.cookies.should have( 1 ).member
+			@req.cookies['foom'].value.should == 'chuckUfarly'
+		end
+
+		it "parses multiple cookies into a cookieset with multiple cookies in it" do
+			@req.header.cookie = 'foom=chuckUfarly; glarn=hotchinfalcheck'
+
+			@req.cookies.should have( 2 ).members
+			@req.cookies['foom'].value.should == 'chuckUfarly'
+			@req.cookies['glarn'].value.should == 'hotchinfalcheck'
 		end
 
 	end

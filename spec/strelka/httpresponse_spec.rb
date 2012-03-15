@@ -110,5 +110,18 @@ describe Strelka::HTTPResponse do
 		@res.header_data.should =~ /content-language: en, sv-chef\s*$/i
 	end
 
+
+	it "allows cookies to be set via a Hash-like interface" do
+		@res.cookies[:foom] = 'chuckUfarly'
+		@res.header_data.should =~ /set-cookie: foom=chuckufarly/i
+	end
+
+	it "allows cookies to appended" do
+		@res.cookies << Strelka::Cookie.new( 'session', '64a3a92eb7403a8199301e03e8b83810' )
+		@res.cookies << Strelka::Cookie.new( 'cn', '18', :expires => '+1d' )
+		@res.header_data.should =~ /set-cookie: session=64a3a92eb7403a8199301e03e8b83810/i
+		@res.header_data.should =~ /set-cookie: cn=18; expires=/i
+	end
+
 end
 
