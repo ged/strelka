@@ -1,4 +1,7 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
+
 #encoding: utf-8
 
 require 'uri'
@@ -12,7 +15,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 
 # A validator for user parameters.
-# 
+#
 # == Usage
 #
 #   require 'strelka/app/formvalidator'
@@ -24,14 +27,14 @@ require 'strelka/app' unless defined?( Strelka::App )
 #     :filters		=> [:strip, :squeeze],
 #     :untaint_all_constraints => true,
 #     :descriptions	=> {
-#     	:email			=> "Customer Email",
-#     	:description	=> "Issue Description",
-#     	:name			=> "Customer Name",
+#       :email          => "Customer Email",
+#       :description    => "Issue Description",
+#       :name           => "Customer Name",
 #     },
-#     :constraints	=> {
-#     	:email	=> :email,
-#     	:name	=> /^[\x20-\x7f]+$/,
-#     	:description => /^[\x20-\x7f]+$/,
+#     :constraints  => {
+#       :email  => :email,
+#       :name   => /^[\x20-\x7f]+$/,
+#       :description => /^[\x20-\x7f]+$/,
 #     },
 #	}
 #
@@ -64,7 +67,7 @@ class Strelka::ParamValidator < ::FormValidator
 	#
 	# RFC822 Email Address Regex
 	# --------------------------
-	# 
+	#
 	# Originally written by Cal Henderson
 	# c.f. http://iamcal.com/publish/articles/php/parsing_email/
 	#
@@ -72,7 +75,7 @@ class Strelka::ParamValidator < ::FormValidator
 	#
 	# Licensed under a Creative Commons Attribution-ShareAlike 2.5 License
 	# http://creativecommons.org/licenses/by-sa/2.5/
-	# 
+	#
 	RFC822_EMAIL_ADDRESS = begin
 		qtext = '[^\\x0d\\x22\\x5c\\x80-\\xff]'
 		dtext = '[^\\x0d\\x5b-\\x5d\\x80-\\xff]'
@@ -215,7 +218,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 		if additional_profile
 			self.log.debug "Merging additional profile %p" % [additional_profile]
-			profile = @profile.merge( additional_profile ) 
+			profile = @profile.merge( additional_profile )
 		end
 
 		super( params, profile )
@@ -270,8 +273,8 @@ class Strelka::ParamValidator < ::FormValidator
 	### Returns +true+ if the given +field+ is one that should be untainted.
 	def untaint?( field )
 		self.log.debug "Checking to see if %p should be untainted." % [field]
-		rval = ( @untaint_all || 
-			@untaint_fields.include?(field) || 
+		rval = ( @untaint_all ||
+			@untaint_fields.include?(field) ||
 			@untaint_fields.include?(field.to_sym) )
 
 		if rval
@@ -530,7 +533,7 @@ class Strelka::ParamValidator < ::FormValidator
 			when Proc, Method
 				apply_proc_constraint( key, constraint )
 			when Regexp
-				apply_regexp_constraint( key, constraint ) 
+				apply_regexp_constraint( key, constraint )
 			else
 				raise "unknown constraint type %p" % [constraint]
 			end
@@ -585,7 +588,7 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
-	### Apply a constraint that was specified as a Proc to the value for the given 
+	### Apply a constraint that was specified as a Proc to the value for the given
 	### +key+
 	def apply_proc_constraint( key, constraint, *params )
 		value = nil
@@ -642,7 +645,7 @@ class Strelka::ParamValidator < ::FormValidator
 		key.untaint
 
 		# Have to test for nil because valid values might be false.
-		if !value.nil? 
+		if !value.nil?
 			self.log.debug "Setting form value for %p to %p (constraint was %p)" %
 				[ key, value, constraint ]
 			if self.untaint?( key )
@@ -675,7 +678,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Formvalidator hack:
 	### The formvalidator filters method has a bug where he assumes an array
-	###	 when it is in fact a string for multiple values (ie anytime you have a 
+	###	 when it is in fact a string for multiple values (ie anytime you have a
 	###	 text-area with newlines in it).
 	def filters
 		@filters_array = Array(@profile[:filters]) unless(@filters_array)

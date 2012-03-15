@@ -1,4 +1,6 @@
-#!/usr/bin/ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'logger'
 
@@ -118,7 +120,7 @@ module Strelka
 		end
 
 
-		### Colorize the given +string+ with the specified +attributes+ and return it, handling 
+		### Colorize the given +string+ with the specified +attributes+ and return it, handling
 		### line-endings, color reset, etc.
 		def colorize( *args )
 			string = ''

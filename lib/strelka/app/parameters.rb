@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -10,16 +12,16 @@ require 'strelka/paramvalidator'
 #
 # The application can declare parameters globally, and then override them on a
 # per-route basis:
-# 
+#
 # 	class UserManager < Strelka::App
-# 
+#
 #       plugins :routing, :parameters
-# 
+#
 # 		param :username, /\w+/, "User login", :required
 #       param :email
 # 		param :id, /\d+/, "The user's numeric ID"
 #       param :mode, ['add', 'remove']
-# 
+#
 # 		# :username gets validated and merged into query args; URI parameters
 # 		# clobber query params
 # 		get '/info/:username', :params => { :id => /[XRT]\d{4}-\d{8}/ } do |req|
@@ -27,19 +29,19 @@ require 'strelka/paramvalidator'
 # 			req.params[:username]
 # 			req.params.values_at( :id, :username )
 # 			req.params.username
-# 
+#
 # 			req.params.error_messages
 # 		end
-# 
+#
 # 	end # class UserManager
-# 
+#
 #
 # == To-Do
-# 
+#
 # _We may add support for other ways of passing parameters later,
 # e.g., via structured entity bodies like JSON, XML, YAML, etc_.
-# 
-# 
+#
+#
 module Strelka::App::Parameters
 	extend Strelka::App::Plugin
 
@@ -80,7 +82,7 @@ module Strelka::App::Parameters
 
 
 		### Declare a parameter with the specified +name+ that will be validated using the given
-		### +constraint+. The +constraint+ can be any of the types supported by 
+		### +constraint+. The +constraint+ can be any of the types supported by
 		### Strelka::ParamValidator.
 		### :call-seq:
 		#   param( name, *flags )
@@ -98,7 +100,7 @@ module Strelka::App::Parameters
 			# description ||= name.to_s.capitalize
 			flags = args
 
-			# Give a regexp constraint a named capture group for the constraint name if it 
+			# Give a regexp constraint a named capture group for the constraint name if it
 			# doesn't already have one
 			if constraint.is_a?( Regexp )
 				constraint = Regexp.compile( "(?<#{name}>" + constraint.to_s + ")" ) unless

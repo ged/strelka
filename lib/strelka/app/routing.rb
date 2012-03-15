@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -175,7 +177,7 @@ module Strelka::App::Routing
 			patternparts = self.split_route_pattern( pattern )
 			Strelka.log.debug "Split pattern %p into parts: %p" % [ pattern, patternparts ]
 
-			# Make a method name from the directories and the named captures of the patterns 
+			# Make a method name from the directories and the named captures of the patterns
 			# in the route
 			patternparts.each do |part|
 				if part.is_a?( Regexp )
@@ -207,7 +209,7 @@ module Strelka::App::Routing
 		end
 
 
-		### Split the given +pattern+ into its path components and 
+		### Split the given +pattern+ into its path components and
 		def split_route_pattern( pattern )
 			pattern.slice!( 0, 1 ) if pattern.start_with?( '/' )
 

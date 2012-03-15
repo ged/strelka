@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'yajl'
 require 'yaml'
@@ -116,7 +118,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Parse the request parameters and return them as a Hash. For GET requests, these are
-	### take from the query arguments, and for POST requests, from the 
+	### take from the query arguments, and for POST requests, from the
 	###
 	###   # For a handler with a route of '/user', for the request:
 	###   # "GET /user/1/profile?checkbox=1&checkbox=2&text=foo HTTP/1.1"
@@ -150,7 +152,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	protected
 	#########
 
-	### Return a Hash of request query arguments.  
+	### Return a Hash of request query arguments.
 	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
 	def parse_query_args
 		return {} if self.uri.query.nil?

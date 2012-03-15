@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'set'
 require 'tsort'
@@ -22,7 +24,7 @@ class Strelka::App
 		end
 	end
 
-	# The Hash of loaded plugin modules, keyed by their downcased and symbolified 
+	# The Hash of loaded plugin modules, keyed by their downcased and symbolified
 	# name (e.g., Strelka::App::Templating => :templating)
 	class << self; attr_reader :loaded_plugins; end
 	@loaded_plugins = PluginRegistry.new
@@ -37,7 +39,7 @@ class Strelka::App
 		end
 
 
-		### Extension hook -- Extend the given object with methods for setting it 
+		### Extension hook -- Extend the given object with methods for setting it
 		### up as a plugin for Strelka::Apps.
 		def self::extended( object )
 			Strelka.log.debug "Extending %p as a Strelka::App::Plugin" % [ object ]
@@ -73,7 +75,7 @@ class Strelka::App
 		end
 
 
-		### Register the receiver as needing to be run before +other_plugins+ for requests, and 
+		### Register the receiver as needing to be run before +other_plugins+ for requests, and
 		### *after* them for responses.
 		def run_before( *other_plugins )
 			name = self.plugin_name
@@ -91,7 +93,7 @@ class Strelka::App
 		end
 
 
-		### Register the receiver as needing to be run after +other_plugins+ for requests, and 
+		### Register the receiver as needing to be run after +other_plugins+ for requests, and
 		### *before* them for responses.
 		def run_after( *other_plugins )
 			Strelka.log.debug "  %p will run after %p" % [ self, other_plugins ]
@@ -104,7 +106,7 @@ class Strelka::App
 	# Plugin system
 	module Plugins
 
-		### Inclusion callback -- add class methods and instance variables without 
+		### Inclusion callback -- add class methods and instance variables without
 		### needing a separate call to #extend.
 		def self::included( klass )
 			klass.extend( ClassMethods )
@@ -197,7 +199,7 @@ class Strelka::App
 
 		### The main extension-point for the plugin system. Strelka::App supers to this method
 		### with a block that processes the actual request, and the plugins implement this
-		### method to add their own functionality. 
+		### method to add their own functionality.
 		def handle_request( request, &block )
 			raise LocalJumpError,
 				"no block given; plugin supering without preserving arguments?" unless block

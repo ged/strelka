@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -34,9 +36,9 @@ describe Strelka::App::Plugins do
 	RSpec::Matchers.define( :order ) do |item|
 		match do |enumerable|
 			if defined?( @before )
-				enumerable.index( @before ) < enumerable.index( item ) 
+				enumerable.index( @before ) < enumerable.index( item )
 			elsif defined?( @after )
-				enumerable.index( @after ) > enumerable.index( item ) 
+				enumerable.index( @after ) > enumerable.index( item )
 			else
 				raise "No .before or .after to compare against!"
 			end

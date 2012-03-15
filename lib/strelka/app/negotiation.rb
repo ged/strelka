@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -11,7 +13,7 @@ require 'strelka/httpresponse/negotiation'
 # HTTP Content negotiation for Strelka applications.
 #
 # The application can test the request for which types are accepted, set
-# different response blocks for different acceptable content types, provides 
+# different response blocks for different acceptable content types, provides
 # tranformations for entity bodies and set transformations for new content
 # types.
 #
@@ -69,7 +71,7 @@ module Strelka::App::Negotiation
 	end # module ClassMethods
 
 
-	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation 
+	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation
 	### support when this plugin is loaded.
 	def self::included( object )
 		Strelka.log.debug "Extending Request and Response with Negotiation mixins"

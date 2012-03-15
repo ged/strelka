@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/cookie'
@@ -71,7 +73,7 @@ class Strelka::CookieSet
 	alias_method :size, :length
 
 
-	### Index operator method: returns the Strelka::Cookie with the given +name+ if it 
+	### Index operator method: returns the Strelka::Cookie with the given +name+ if it
 	### exists in the cookieset.
 	def []( name )
 		name = name.to_s

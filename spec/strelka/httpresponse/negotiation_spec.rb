@@ -433,7 +433,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.should_not have_acceptable_encoding()
 		end
 
-		it "knows that it is not acceptable if it doesn't have any explicit content codings " + 
+		it "knows that it is not acceptable if it doesn't have any explicit content codings " +
 		   "and 'identity' is explicitly not accepted in its originating request" do
 			@req.headers.accept_encoding = 'gzip;q=1.0, identity; q=0'
 			@res.encodings.clear
@@ -441,7 +441,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.should_not have_acceptable_encoding()
 		end
 
-		it "knows that it is not acceptable if it doesn't have any explicit content codings " + 
+		it "knows that it is not acceptable if it doesn't have any explicit content codings " +
 		   "and 'identity' is explicitly not accepted in its originating request" do
 			@req.headers.accept_encoding = 'gzip;q=1.0, identity; q=0'
 			@res.encodings.clear
@@ -449,7 +449,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.should_not have_acceptable_encoding()
 		end
 
-		it "knows that it is not acceptable if it doesn't have any explicit content codings, " + 
+		it "knows that it is not acceptable if it doesn't have any explicit content codings, " +
 		   "the wildcard content-coding is disallowed, and 'identity' is not explicitly accepted" do
 			@req.headers.accept_encoding = 'gzip;q=1.0, *;q=0'
 			@res.encodings.clear

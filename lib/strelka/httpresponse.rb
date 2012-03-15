@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'mongrel2/httpresponse'
 require 'strelka' unless defined?( Strelka )
@@ -105,9 +107,9 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	### associated with the entity body, then the default external encoding (if it's set). If
 	### none of those are found, this method returns ISO-8859-1.
 	def find_header_charset
-		return ( self.charset || 
+		return ( self.charset ||
 		         self.content_type_charset ||
-		         self.entity_body_charset || 
+		         self.entity_body_charset ||
 		         Encoding.default_external ||
 		         Encoding::ISO_8859_1 )
 	end

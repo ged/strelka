@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'inversion'
 
@@ -28,7 +30,7 @@ module Strelka::App::Templating
 		attr_accessor :layout_template
 
 
-		### Get/set the templates declared for the App. 
+		### Get/set the templates declared for the App.
 		def templates( newhash=nil )
 			if newhash
 				self.template_map.merge!( newhash )
@@ -67,7 +69,7 @@ module Strelka::App::Templating
 
 
 	### Return the template keyed by the given +name+.
-	### :TODO: Add auto-reloading, 
+	### :TODO: Add auto-reloading,
 	def template( name )
 		template = self.template_map[ name ] or
 			raise ArgumentError, "no %p template registered!" % [ name ]

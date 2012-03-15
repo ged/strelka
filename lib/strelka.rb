@@ -1,15 +1,17 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'mongrel2'
 require 'configurability'
 require 'configurability/config'
 
 # An application framework for Ruby-mongrel2
-# 
+#
 # == Author/s
 #
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+#
 module Strelka
 
 	# Library version constant

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby 
+#!/usr/bin/ruby
 #
 # A manual filter to generate links from the Darkfish API.
 #

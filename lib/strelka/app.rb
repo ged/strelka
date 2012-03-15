@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'rubygems' # For the Rubygems API
 
@@ -26,7 +28,7 @@ class Strelka::App < Mongrel2::Handler
 	@subclasses   = Hash.new {|h,k| h[k] = [] }
 
 
-	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were 
+	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were
 	# loaded from, or +nil+ if they weren't loaded via ::load.
 	class << self; attr_reader :subclasses; end
 
@@ -52,7 +54,7 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
-	### Calculate a default application ID for the class based on either its ID 
+	### Calculate a default application ID for the class based on either its ID
 	### constant or its name and return it.
 	def self::default_appid
 		Strelka.log.info "Looking up appid for %p" % [ self.class ]
@@ -216,8 +218,8 @@ class Strelka::App < Mongrel2::Handler
 	protected
 	#########
 
-	### Make any changes to the +request+ that are necessary before handling it and 
-	### return it. This is an alternate extension-point for plugins that 
+	### Make any changes to the +request+ that are necessary before handling it and
+	### return it. This is an alternate extension-point for plugins that
 	### wish to modify or replace the request before the request cycle is
 	### started.
 	def fixup_request( request )
@@ -242,8 +244,8 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
-	### Make any changes to the +response+ that are necessary before handing it to 
-	### Mongrel and return it. This is an alternate extension-point for plugins that 
+	### Make any changes to the +response+ that are necessary before handing it to
+	### Mongrel and return it. This is an alternate extension-point for plugins that
 	### wish to modify or replace the response after the whole request cycle is
 	### completed.
 	def fixup_response( response )
@@ -303,7 +305,7 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
-	### Create a response to specified +request+ based on the specified +status_code+ 
+	### Create a response to specified +request+ based on the specified +status_code+
 	### and +message+.
 	def prepare_status_response( request, status_info )
 		status_code, message = status_info.values_at( :status, :message )

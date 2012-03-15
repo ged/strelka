@@ -1,12 +1,14 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka/mixins'
 require 'strelka/httprequest'
 
 class Strelka::HTTPRequest
 
-	# A parser for request Accept, Accept-encoding, Accept-charset, and Accept-language 
-	# header values. They provide weighted and wildcard comparisions between two values 
+	# A parser for request Accept, Accept-encoding, Accept-charset, and Accept-language
+	# header values. They provide weighted and wildcard comparisions between two values
 	# of the same field.
 	#
 	#   require 'strelka/httprequest/acceptparam'
@@ -200,7 +202,7 @@ class Strelka::HTTPRequest
 	# A mediatype parameter such as one you'd find in an Accept header.
 	class MediaType < Strelka::HTTPRequest::AcceptParam
 
-		### Parse the given +accept_param+ as a mediatype and return a 
+		### Parse the given +accept_param+ as a mediatype and return a
 		### Strelka::HTTPRequest::MediaType object for it.
 		def self::parse( accept_param )
 			raise ArgumentError, "Bad Accept param: no media-range in %p" % [accept_param] unless
@@ -239,7 +241,7 @@ class Strelka::HTTPRequest
 	# Accept-Language header.
 	class Language < Strelka::HTTPRequest::AcceptParam
 
-		### Parse the given +accept_param+ as a language range and return a 
+		### Parse the given +accept_param+ as a language range and return a
 		### Strelka::HTTPRequest::Language object for it.
 		def self::parse( accept_param )
 			language_range, *stuff = accept_param.split( /\s*;\s*/ )
@@ -262,7 +264,7 @@ class Strelka::HTTPRequest
 			return [ self.primary_tag, self.subtag ].compact.join( '-' )
 		end
 
-		### Return the parameter as a String suitable for inclusion in an 
+		### Return the parameter as a String suitable for inclusion in an
 		### Accept-language header.
 		def to_s
 			return [
@@ -278,7 +280,7 @@ class Strelka::HTTPRequest
 	# A content encoding parameter, such as one you'd find in an Accept-Encoding header.
 	class Encoding < Strelka::HTTPRequest::AcceptParam
 
-		### Parse the given +accept_param+ as a content coding and return a 
+		### Parse the given +accept_param+ as a content coding and return a
 		### Strelka::HTTPRequest::Encoding object for it.
 		def self::parse( accept_param )
 			content_coding, *stuff = accept_param.split( /\s*;\s*/ )
@@ -295,7 +297,7 @@ class Strelka::HTTPRequest
 		alias_method :content_coding, :type
 
 
-		### Return the parameter as a String suitable for inclusion in an 
+		### Return the parameter as a String suitable for inclusion in an
 		### Accept-language header.
 		def to_s
 			return [
@@ -311,7 +313,7 @@ class Strelka::HTTPRequest
 	# A content character-set parameter, such as one you'd find in an Accept-Charset header.
 	class Charset < Strelka::HTTPRequest::AcceptParam
 
-		### Parse the given +accept_param+ as a charset and return a 
+		### Parse the given +accept_param+ as a charset and return a
 		### Strelka::HTTPRequest::Charset object for it.
 		def self::parse( accept_param )
 			charset, *stuff = accept_param.split( /\s*;\s*/ )
@@ -328,7 +330,7 @@ class Strelka::HTTPRequest
 		alias_method :name, :type
 
 
-		### Return the parameter as a String suitable for inclusion in an 
+		### Return the parameter as a String suitable for inclusion in an
 		### Accept-language header.
 		def to_s
 			return [
