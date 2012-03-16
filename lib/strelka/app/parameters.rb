@@ -13,27 +13,27 @@ require 'strelka/paramvalidator'
 # The application can declare parameters globally, and then override them on a
 # per-route basis:
 #
-# 	class UserManager < Strelka::App
+#   class UserManager < Strelka::App
 #
 #       plugins :routing, :parameters
 #
-# 		param :username, /\w+/, "User login", :required
+#       param :username, /\w+/, "User login", :required
 #       param :email
-# 		param :id, /\d+/, "The user's numeric ID"
+#       param :id, /\d+/, "The user's numeric ID"
 #       param :mode, ['add', 'remove']
 #
-# 		# :username gets validated and merged into query args; URI parameters
-# 		# clobber query params
-# 		get '/info/:username', :params => { :id => /[XRT]\d{4}-\d{8}/ } do |req|
-# 			req.params.okay?
-# 			req.params[:username]
-# 			req.params.values_at( :id, :username )
-# 			req.params.username
+#       # :username gets validated and merged into query args; URI parameters
+#       # clobber query params
+#       get '/info/:username', :params => { :id => /[XRT]\d{4}-\d{8}/ } do |req|
+#           req.params.okay?
+#           req.params[:username]
+#           req.params.values_at( :id, :username )
+#           req.params.username
 #
-# 			req.params.error_messages
-# 		end
+#           req.params.error_messages
+#       end
 #
-# 	end # class UserManager
+#   end # class UserManager
 #
 #
 # == To-Do
