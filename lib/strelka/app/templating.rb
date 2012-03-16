@@ -143,6 +143,7 @@ module Strelka::App::Templating
 
 		# Wrap the template in a layout if there is one
 		if self.layout
+			self.layout.reload if self.layout.changed?
 			l_template = self.layout.dup
 			self.log.debug "  wrapping response in layout %p" % [ l_template ]
 			l_template.body = template
