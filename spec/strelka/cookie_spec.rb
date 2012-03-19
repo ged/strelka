@@ -145,7 +145,7 @@ describe Strelka::Cookie do
 
 		it "still stringifies correctly with two values" do
 			@cookie.values += ['brer lapin']
-			@cookie.to_s.should == %{by_rickirac=9917eb&brer%20lapin}
+			@cookie.to_s.should == "by_rickirac=9917eb&brer+lapin"
 		end
 
 		it "stringifies with a version number if its version is set to something other than 0" do
@@ -166,7 +166,7 @@ describe Strelka::Cookie do
 		it "stringifies correctly even if one of its values contains a semicolon" do
 			@cookie.values += [%{"modern technology"; ain't it a paradox?}]
 			@cookie.to_s.should ==
-				%{by_rickirac=9917eb&%22modern%20technology%22%3B%20ain't%20it%20a%20paradox%3F}
+				"by_rickirac=9917eb&%22modern+technology%22%3B+ain%27t+it+a+paradox%3F"
 		end
 
 		it "stringifies with an expires date if one is set" do

@@ -90,7 +90,7 @@ class Strelka::Cookie
 		return [] unless valstr
 		valstr = dequote( valstr )
 
-		return valstr.split('&').collect{|str| URI.unescape(str) }
+		return valstr.split('&').collect{|str| URI.decode_www_form_component(str) }
 	end
 
 
@@ -336,9 +336,10 @@ class Strelka::Cookie
 		return Time.parse( time )
 	end
 
+
 	### Make a uri-escaped value string for the given +values+
 	def make_valuestring( values )
-		return values.collect {|val| URI.escape(val, NON_TOKEN_CHAR) }.join('&')
+		return values.collect {|val| URI.encode_www_form_component(val) }.join('&')
 	end
 
 
