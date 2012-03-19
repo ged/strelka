@@ -6,10 +6,12 @@ require 'rubygems' # For the Rubygems API
 
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
+require 'strelka/mixins'
 
 
 # The application base class.
 class Strelka::App < Mongrel2::Handler
+	extend Strelka::MethodUtilities
 	include Strelka::Loggable,
 	        Strelka::Constants
 
@@ -28,9 +30,10 @@ class Strelka::App < Mongrel2::Handler
 	@subclasses   = Hash.new {|h,k| h[k] = [] }
 
 
+	##
 	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were
 	# loaded from, or +nil+ if they weren't loaded via ::load.
-	class << self; attr_reader :subclasses; end
+	singleton_attr_reader :subclasses
 
 
 	### Inheritance callback -- add subclasses to @subclasses so .load can figure out which

@@ -7,8 +7,10 @@ require 'tsort'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
+require 'strelka/mixins'
 
 class Strelka::App
+	extend Strelka::MethodUtilities
 
 	# A topologically-sorted hash for plugin management
 	class PluginRegistry < Hash
@@ -24,9 +26,11 @@ class Strelka::App
 		end
 	end
 
+
+	##
 	# The Hash of loaded plugin modules, keyed by their downcased and symbolified
 	# name (e.g., Strelka::App::Templating => :templating)
-	class << self; attr_reader :loaded_plugins; end
+	singleton_attr_reader :loaded_plugins
 	@loaded_plugins = PluginRegistry.new
 
 
