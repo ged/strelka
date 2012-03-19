@@ -48,7 +48,7 @@ class Strelka::App < Mongrel2::Handler
 		appid ||= self.default_appid
 
 		Strelka.logger.level = Logger::DEBUG if $VERBOSE
-		Strelka.logger.formatter = Strelka::Logger::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
+		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
 
 		super( appid )
 
