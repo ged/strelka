@@ -101,79 +101,57 @@ describe Strelka::App::Errors do
 			res.body.should =~ /internal server error/i
 		end
 
-		context "instance with a callback-style handler for all error statuses" do
+		it "calls a callback-style handler for any status when finished with BAD_REQUEST" do
+			@app.class_eval do
+				on_status do |res, info|
+					res.body = '(%d) Filthy banana' % [ info[:status] ]
+					return res
+				end
 
-			before( :each ) do
-				@app.class_eval do
-					on_status do |res, _|
-						res.body = 'Filthy banana'
-						return res
-					end
-
-					get do |req|
-						finish_with HTTP::BAD_REQUEST, "Your sandwich is missing something."
-					end
+				get do |req|
+					finish_with HTTP::BAD_REQUEST, "Your sandwich is missing something."
 				end
 			end
 
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
 
-			it "calls the appropriate callback when the response is an error status" do
-				req = @request_factory.get( '/foom' )
-				res = @app.new.handle( req )
-
-				res.status.should == HTTP::BAD_REQUEST
-				res.body.should == 'Filthy banana'
-			end
-
+			res.status.should == HTTP::BAD_REQUEST
+			res.body.should == '(400) Filthy banana'
 		end
 
 
-		context "instance with a callback-style handler for NOT_FOUND" do
-
-			before( :each ) do
-				@app.class_eval do
-					on_status HTTP::NOT_FOUND do |res, _|
-						res.body = 'NOPE!'
-						return res
-					end
+		it "calls a callback-style handler for NOT_FOUND when the response is NOT_FOUND" do
+			@app.class_eval do
+				on_status HTTP::NOT_FOUND do |res, _|
+					res.body = 'NOPE!'
+					return res
 				end
 			end
 
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
 
-			it "calls the appropriate callback when the response is of the associated status" do
-				req = @request_factory.get( '/foom' )
-				res = @app.new.handle( req )
-
-				res.body.should == 'NOPE!'
-			end
-
+			res.body.should == 'NOPE!'
 		end
 
 
-		context "instance with a callback-style handler for all 400-level statuses" do
-
-			before( :each ) do
-				@app.class_eval do
-					on_status 400..499 do |res, _|
-						res.body = 'Error:  JAMBA'
-						return res
-					end
+		it "calls a callback-style handler for all 400-level statuses when the response is NOT_FOUND" do
+			@app.class_eval do
+				on_status 400..499 do |res, _|
+					res.body = 'Error:  JAMBA'
+					return res
 				end
 			end
 
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
 
-			it "calls the appropriate callback when the response is of the associated status" do
-				req = @request_factory.get( '/foom' )
-				res = @app.new.handle( req )
-
-				res.body.should == 'Error:  JAMBA'
-			end
-
+			res.body.should == 'Error:  JAMBA'
 		end
 
 
-		context "instance with a template-style handler for SERVER_ERROR" do
-
+		context "template-style handlers" do
 
 			before( :all ) do
 				basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent

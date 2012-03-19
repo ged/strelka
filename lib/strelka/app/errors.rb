@@ -15,23 +15,26 @@ require 'strelka/app' unless defined?( Strelka::App )
 #    class MyApp < Strelka::App
 #        plugins :errors
 #
-#        on_status HTTP::NOT_FOUND do |res|
+#        # Send an email when an app is going to return a 500 error
+#        on_status HTTP::SERVER_ERROR do |res, status|
+#            require 'mail'
+#            Mail.deliver do
+#                from    'app@example.com'
+#                to      'team@example.com'
+#                subject "SERVER_ERROR: %p [%s]" %
+#                        [ self.class, self.class.version_string ]
+#                body    "Server error while running %p [%s]: %s" %
+#                        [ self.class, self.conn, status.message ]
+#            end
+#        end
+#
+#        def handle( req )
+#            finish_with( HTTP::SERVER_ERROR, "Oops, that doesn't exist on this server." )
 #        end
 #
 #    end # class MyApp
 #
-# With the templating plugin, you can also handle it via a custom template.
-#
-#    class MyApp < Strelka::App
-#        plugins :errors, :templating
-#
-#        layout 'layout.tmpl'
-#        templates :missing => 'errors/missing.tmpl'
-#
-#        on_status HTTP::NOT_FOUND, :missing
-#
-#    end # class MyApp
-#
+# See the documentation for ClassMethods.on_status for more details.
 module Strelka::App::Errors
 	extend Strelka::App::Plugin
 
@@ -41,16 +44,53 @@ module Strelka::App::Errors
 
 
 	# Class-level functionality
-	module ClassMethods # :nodoc:
+	module ClassMethods
 
 		@status_handlers = {}
 
-		# The registered status handler callbacks, keyed by numeric HTTP status code
+		# The registered status handler callbacks, keyed by Integer Ranges of
+		# status codes to which they apply
 		attr_reader :status_handlers
 
 
-		### Register a callback for responses that have the specified +status_code+.
-		### :TODO: Document all the stuff.
+		### Register a callback for responses whose status code is within the specified
+		### +range+. Range can either be a single integer HTTP status code, or a Range
+		### of the same (e.g., 400..499) for all statuses with that range.
+		###
+		###   # Handle only status 400 errors
+		###   on_status HTTP::BAD_REQUEST do |res, status|
+		###       # Do something on 400 errors
+		###   end
+		###
+		###   # Handle any other error in the 4xx range
+		###   on_status 400..499 do |res, status|
+		###       # Do something on 4xx errors
+		###   end
+		###
+		### If no +range+ is specified, any of the HTTP error statuses will invoke
+		### the callback.
+		###
+		### The block will be called with the response object (a subclass of
+		### Mongrel2::Response appropriate for the request type), and a hash of
+		### status info that will at least contain the following keys:
+		###
+		### [+:status+]   the HTTP status code that was passed to Strelka::App#finish_with
+		### [+:message+]  the message string that was passed to Strelka::App#finish_with
+		###
+		### If you have the <tt>:templating</tt> plugin loaded, you can substitute a
+		### Symbol that corresponds with one of the declared templates instead:
+		#### With the templating plugin, you can also handle it via a custom template.
+		###
+		###   class MyApp < Strelka::App
+		###       plugins :errors, :templating
+		###
+		###       layout 'layout.tmpl'
+		###       templates :missing => 'errors/missing.tmpl'
+		###
+		###       on_status HTTP::NOT_FOUND, :missing
+		###
+		###   end # class MyApp
+		###
 		def on_status( range=DEFAULT_HANDLER_STATUS_RANGE, template=nil, &block )
 			range = Range.new( range, range ) unless range.is_a?( Range )
 			methodname = "for_status_%s" % [ range.begin, range.end ].uniq.join('_to_')
