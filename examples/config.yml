@@ -1,0 +1,3 @@
+mongrel2:
+  configdb: examples/mongrel2.sqlite
+

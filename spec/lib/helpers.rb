@@ -133,6 +133,13 @@ module Strelka::SpecHelpers
 		end
 	end
 
+	# Collection .all? matcher
+	RSpec::Matchers.define( :all_be_a ) do |expected|
+		match do |collection|
+			collection.all? {|obj| obj.is_a?(expected) }
+		end
+	end
+
 end
 
 
