@@ -117,6 +117,7 @@ Here's a tentative list of what kinds of stuff we have planned:
 
 === More Plugins
 
+* Auth -- authentication framework
 * CORS -- manage {Cross-Origin Resource Sharing}[http://www.html5rocks.com/en/tutorials/cors/]
   headers, especially for service applications
 * caching -- utilities for easy HTTP caching
