@@ -29,12 +29,15 @@ server 'examples' do
 
 	host 'localhost' do
 
-		route '/', directory( 'data/strelka/', 'examples.html', 'text/html' )
-		route '/source', directory( 'examples/', 'README.txt', 'text/plain' )
+		route '/', directory( 'examples/', 'examples.html', 'text/html' )
+
+		authdemo = handler( 'tcp://127.0.0.1:9910', 'auth-demo' )
 
 		# Handlers
 		route '/hello', handler( 'tcp://127.0.0.1:9900', 'helloworld-handler' )
 		route '/sessions', handler( 'tcp://127.0.0.1:9905', 'sessions-demo' )
+		route '/auth', authdemo
+		route '/chunkers', authdemo
 
 	end
 

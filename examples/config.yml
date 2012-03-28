@@ -2,7 +2,11 @@ mongrel2:
   configdb: examples/mongrel2.sqlite
 
 auth:
-	passphrase: "5en6G6MezRroT3XKqkdPOmY/BfQ="
+  realm: Examples
+  users:
+    ged: "iEPX+SQWIR3p67lj/0zigSWTKHg="
+    jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
+    kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 
 sessions:
   type: default
