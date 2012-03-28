@@ -244,6 +244,17 @@ module Strelka
 		end
 
 
+		### Define the given +delegated_methods+ as delegators to the like-named class
+		### method.
+		def def_class_delegators( *delegated_methods )
+			delegated_methods.each do |name|
+				define_method( name ) do |*args|
+					self.class.__send__( name, *args )
+				end
+			end
+		end
+
+
 		#######
 		private
 		#######

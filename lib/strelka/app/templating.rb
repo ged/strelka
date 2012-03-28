@@ -20,7 +20,7 @@ module Strelka::App::Templating
 
 
 	# Class methods to add to classes with templating.
-	module ClassMethods # :nodoc:
+	module ClassMethods
 
 		# The map of template names to template file paths.
 		@template_map = {}

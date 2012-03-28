@@ -239,7 +239,6 @@ class Strelka::App < Mongrel2::Handler
 	### for the plugin system. Without being overridden or extended by plugins, this
 	### method just returns the default Mongrel2::HTTPRequest#response.
 	def handle_request( request, &block )
-		self.log.debug "Strelka::App#handle_request"
 		if block
 			return super( request, &block )
 		else
@@ -302,15 +301,17 @@ class Strelka::App < Mongrel2::Handler
 	### Abort the current execution and return a response with the specified
 	### http_status code immediately. The specified +message+ will be logged,
 	### and will be included in any message that is returned as part of the
-	### response. The +otherstuff+ hash can be used to pass headers, etc.
-	def finish_with( http_status, message, otherstuff={} )
-		status_info = otherstuff.merge( :status => http_status, :message => message )
+	### response. The +headers+ hash will be used to set response headers.
+	def finish_with( http_status, message, headers={} )
+		status_info = { :status => http_status, :message => message, :headers => headers }
 		throw :finish, status_info
 	end
 
 
 	### Create a response to specified +request+ based on the specified +status_code+
 	### and +message+.
+	### :TODO: Document and test the :content_type status_info field.
+	### :TODO: Implement a way to set headers from the status_info.
 	def prepare_status_response( request, status_info )
 		status_code, message = status_info.values_at( :status, :message )
 		self.log.info "Non-OK response: %d (%s)" % [ status_code, message ]
@@ -322,8 +323,15 @@ class Strelka::App < Mongrel2::Handler
 		# Some status codes allow explanatory text to be returned; some forbid it. Append the
 		# message for those that allow one.
 		unless request.verb == :HEAD || HTTP::BODILESS_HTTP_RESPONSE_CODES.include?( status_code )
-			response.content_type = status_info[ :content_type ] || 'text/plain'
+			response.content_type = 'text/plain'
 			response.puts( message )
+		end
+
+		# Now assign any headers to the response that are part of the status
+		if status_info.key?( :headers )
+			status_info[:headers].each do |hdr, value|
+				response.headers[ hdr ] = value
+			end
 		end
 
 		return response

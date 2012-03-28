@@ -126,6 +126,11 @@ module Strelka::SpecHelpers
 		return {:action => name.to_sym}
 	end
 
+
+	#
+	# Matchers
+	#
+
 	# Route matcher
 	RSpec::Matchers.define( :match_route ) do |routename|
 		match do |route|
