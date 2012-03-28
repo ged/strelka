@@ -100,6 +100,16 @@ describe Strelka::App::Auth do
 			@app.should_not have_auth_criteria()
 		end
 
+		it "sets the authenticated_user attribute of the request to the credentials of the authenticating user" do
+			app = @app.new
+			req = @request_factory.get( '/api/v1' )
+
+			app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
+			app.auth_provider.should_receive( :authorize ).and_return( true )
+
+			app.handle( req )
+			req.authenticated_user.should == 'anonymous'
+		end
 
 		context "that has negative auth criteria" do
 
@@ -346,6 +356,8 @@ describe Strelka::App::Auth do
 				@app.authz_callback {  }
 			end
 
+			it "yields authorization to the callback if authentication succeeds"
+			it "responds with a 403 Forbidden response if the block doesn't return true"
 
 		end
 

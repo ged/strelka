@@ -451,6 +451,7 @@ module Strelka::App::Auth
 	### Process authentication and authorization for the specified +request+.
 	def authenticate_and_authorize( request )
 		credentials = self.provide_authentication( request )
+		request.authenticated_user = credentials
 		self.provide_authorization( credentials, request )
 	end
 
