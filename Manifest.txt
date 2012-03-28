@@ -20,6 +20,8 @@ examples/auth-demo2.rb
 examples/auth-form.tmpl
 examples/auth-success.tmpl
 examples/config.yml
+examples/examples.css
+examples/examples.html
 examples/gen-config.rb
 examples/layout.tmpl
 examples/sessions-demo.rb
