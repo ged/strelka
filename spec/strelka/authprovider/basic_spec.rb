@@ -39,6 +39,11 @@ describe Strelka::AuthProvider::Basic do
 		}
 	end
 
+	after( :each ) do
+		described_class.users = {}
+		described_class.realm = nil
+	end
+
 	after( :all ) do
 		reset_logging()
 	end
@@ -60,13 +65,13 @@ describe Strelka::AuthProvider::Basic do
 	#
 
 	it "uses the app ID as the basic auth realm if none is explicitly configured" do
-		@provider.realm.should == @app.conn.app_id
+		described_class.realm.should == @app.conn.app_id
 	end
 
 	it "can be configured via the Configurability API" do
-		@provider.configure( @config )
-		@provider.realm.should == @config['realm']
-		@provider.users.should == @config['users']
+		described_class.configure( @config )
+		described_class.realm.should == @config['realm']
+		described_class.users.should == @config['users']
 	end
 
 
@@ -112,7 +117,7 @@ describe Strelka::AuthProvider::Basic do
 					www_authenticate: "Basic realm=Pern"
 				}
 			}
-			@provider.configure( @config )
+			described_class.configure( @config )
 		end
 
 		it "rejects a request with no Authorization header" do

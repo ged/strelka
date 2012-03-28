@@ -30,10 +30,38 @@ require 'strelka/mixins'
 #       kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 #
 class Strelka::AuthProvider::Basic < Strelka::AuthProvider
-	include Configurability,
-	        Strelka::Constants,
-	        Strelka::Loggable,
-	        Strelka::MethodUtilities
+	extend Configurability,
+	       Strelka::MethodUtilities
+	include Strelka::Constants,
+	        Strelka::Loggable
+
+	# Configurability API - set the section of the config
+	config_key :auth
+
+
+	@users = nil
+	@realm = nil
+
+	##
+	# The Hash of users and their SHA1+Base64'ed passwords
+	singleton_attr_accessor :users
+
+	##
+	# The authentication realm
+	singleton_attr_accessor :realm
+
+
+	### Configurability API -- configure the auth provider instance.
+	def self::configure( config=nil )
+		if config
+			Strelka.log.debug "Configuring Basic authprovider: %p" % [ config ]
+			self.realm = config['realm'] if config['realm']
+			self.users = config['users'] if config['users']
+		else
+			self.realm = nil
+			self.users = {}
+		end
+	end
 
 
 	#################################################################
@@ -45,36 +73,21 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 		super
 
 		# Default the authentication realm to the application's ID
-		@default_realm = @realm = self.app.conn.app_id
-		@users = {}
+		unless self.class.realm
+			self.log.warn "No realm configured -- using the app id"
+			self.class.realm = self.app.conn.app_id
+		end
 
-		# Register this instance with Configurability
-		config_key :auth
+		unless self.class.users
+			self.log.warn "No users configured -- using an empty user list"
+			self.class.users = {}
+		end
 	end
 
 
 	######
 	public
 	######
-
-	# The authentication realm
-	attr_accessor :realm
-
-	# The Hash of users and their SHA1+Base64'ed passwords
-	attr_accessor :users
-
-
-	### Configurability API -- configure the auth provider instance.
-	def configure( config=nil )
-		if config
-			self.realm = config['realm'] if config['realm']
-			self.users = config['users'] if config['users']
-		else
-			self.realm = @default_realm
-			self.users.clear
-		end
-	end
-
 
 	# Check the authentication present in +request+ (if any) for validity, returning the
 	# authenticating user's name if authentication succeeds.
@@ -93,7 +106,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 
 		# Split the credentials, check for valid user
 		username, password = credentials.split( ':', 2 )
-		digest = self.users[ username ] or
+		digest = self.class.users[ username ] or
 			self.log_failure "No such user %p." % [ username ]
 
 		# Fail if the password's hash doesn't match
@@ -102,13 +115,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 
 		# Success!
 		self.log.info "Authentication for %p succeeded." % [ username ]
-		return true
-	end
-
-
-	### Always returns true -- authentication is sufficient authorization.
-	def authorize( * )
-		return true
+		return username
 	end
 
 
@@ -120,7 +127,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 	### Log a message at 'info' level and return false.
 	def log_failure( reason )
 		self.log.warn "Auth failure: %s" % [ reason ]
-		header = "Basic realm=%s" % [ self.realm ]
+		header = "Basic realm=%s" % [ self.class.realm ]
 		finish_with( HTTP::AUTH_REQUIRED, "Requires authentication.", www_authenticate: header )
 	end
 
