@@ -54,3 +54,9 @@ gem sandboxing.
   headers
 * caching -- utilities for easy HTTP caching
 
+
+== уток! (woof!)
+
+Make a MacOS X tool like Pow! that makes it easy to run Strelka apps with a
+minimum of setup.
+
