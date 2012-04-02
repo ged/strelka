@@ -1,5 +1,5 @@
 ---
-title: Writing a Strelka App
+title: Getting Started
 layout: default
 index: 2
 filters:
@@ -14,6 +14,45 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
+h3. Initial Mongrel2 Setup
+
+We're going to assume you've already built and installed the Mongrel2 daemon.  If not, please refer to the "Mongrel2 documentation":http://mongrel2.org/wiki/quick_start.html and get that ready.  You can create the Mongrel2 configuration in any fashion you please, but the Mongrel2 ruby module includes a nice DSL for doing so.  Here's the configuration script we'll be using for the entirety of the Strelka examples.
+
+<?example { lang: Ruby, caption: "A Mongrel2 Configuration" } ?>
+#!/usr/bin/env ruby
+
+require 'pathname'
+require 'mongrel2/config'
+include Mongrel2::Config::DSL
+
+%w[ run logs ].each do |dir|
+	dir = Pathname( dir )
+	dir.mkdir unless dir.exist?
+end
+
+Mongrel2::Config.configure( :configdb => 'config.sqlite' )
+Mongrel2::Config.init_database!
+
+server 'strelka-tester' do
+	chroot '.'
+	default_host 'localhost'
+	name 'localhost'
+	port '8080'
+
+	host 'localhost' do
+		route '/', handler( 'tcp://127.0.0.1:9999', 'helloworldapp' )
+	end
+end
+<?end example ?>
+
+Running the above will generate a configuration database for use with Mongrel2 in your current working directory, with the default required directory structure.  Mongrel2 will listen on port 8080, and send all requests (starting at the root URI @/@) to a handler called @helloworldapp@.
+
+You can start Mongrel2 in a variety of ways.  To start it directly with our newly created example configuration, just run @% mongrel2 config.sqlite strelka-tester@ at the command line.
+
+Now that the Mongrel2 daemon is up and running, we can move forward and create our first application!
+
+h3. A Minimal Application
+
 Strelka applications are subclasses of the <?api Strelka::App ?> class. Strelka::App is pretty minimal by itself; it inherits most of its behavior from the basic Mongrel2::Handler class, only adding a few convenience methods for common HTTP tasks.
 
 A minimal application would look something like:
@@ -22,8 +61,8 @@ A minimal application would look something like:
 #!/usr/bin/env ruby
 
 require 'strelka'
+Mongrel2::Config.configure( :configdb => 'config.sqlite' )
 
-# The Strelka admin web console.
 class HelloWorldApp < Strelka::App
 
 	def handle_request( request )
@@ -37,7 +76,6 @@ end # class HelloWorldApp
 
 # Run the app
 HelloWorldApp.run if __FILE__ == $0
-
 <?end example ?>
 
 While functional, this application is pretty dumb, and making it do anything more intelligent on your own would require a bunch of additional code and accompanying tests.  Fortunately, Strelka already has done the heavy lifting. It knows how to read the Mongrel2 configuration and hook your app up with the right sockets to talk to the Mongrel2 front end (providing you follow one of several simple conventions), provides hooks into the lifecycle of an HTTP request, and includes a plugin system that uses these hooks to handle common application tasks. This allows you to mix in the specific framework parts you need, so you get exactly what you want and nothing more.
@@ -47,11 +85,6 @@ h3. Talking to Mongrel2
 Mongrel2 associates handlers with itself via an identifier, which is described in the Mongrel2 manual as a UUID, but can actually be any string consisting of dashes and alphanumeric characters. Strelka reads the Mongrel2 config database, and can automatically configure its apps to talk to the right socket with the right @send_ident@ if it can find them. Its gives you a couple of different ways of doing this. It will default to a string derived from the name of the class, or you can set it yourself by declaring an @ID@ constant in your application class. If you need more control, you can also override the @::run@ class method and @super@ with the right @appid@:
 
 <?example { language: ruby, caption: "Overriding the ::run method" } ?>
-#!/usr/bin/env ruby
-
-require 'strelka'
-require 'socket'
-
 class HelloWorldApp
 	# Run as a tester if not running in the production environment
 	def self::run
@@ -63,18 +96,10 @@ class HelloWorldApp
 
 		super( appid )
 	end
-
-end #class HelloWorldApp
-
+end
 <?end ?>
 
+Because our @config.sqlite@ configuration directs requests to @/@ to be sent to the @helloworldapp@ handler, Strelka will automatically find and pair this route to Mongrel2 when run.
 
-
-h3. Plugins
-
-The plugins system is contained in the Strelka::App::Plugins mixin, which is included in Strelka::App already. This adds the +plugins+ declarative, which you use from your app to load the plugins you want to use.
-
-This app uses the 'routing' plugin, which adds Sinatra-like hooks for matching callbacks to requests. The example app above responds only to 'GET' requests, and ignores the path of the request altogether.
-
-Strelka comes with a few default plugins, but you can define your own fairly easily.
+Run this handler, then point a browser to @http://localhost:8080/@.  If you see the text "Hello, World!", congrats!  We'll build off of this in the next section, the <?link "tutorial":Strelka Tutorial ?>.
 

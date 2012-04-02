@@ -15,15 +15,15 @@ h2. <%= page.config['title'] %>
 
 Strelka is a framework for creating and deploying "Mongrel2":http://mongrel2.org/ web applications in Ruby, and for managing a Mongrel2 cluster.
 
-It's named after the Russian dog who was one of the first space travelers to orbit the Earth and return alive.
+It's named after a lesser known "Russian cosmonaut":http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka who was one of the first canine space travelers to orbit the Earth and return alive.  Her name means "little arrow".
 
-The first part of this manual, <?link Writing a Strelka App ?>, is a step-by-step tutorial on setting up a new Strelka app.
+The first part of this manual, <?link Getting Started ?>, is a step-by-step tutorial on setting up a bare minimum Strelka app.
 
-Then there's a section called <?link Deploying a Strelka App ?> that covers packaging up your app as a gem and deploying it.
+The <?link "tutorial":Strelka Tutorial ?> section builds off of the minimal application, covering the Strelka plugins, along with providing some general tips and tricks.  Most of the heavy lifting is already done for you in Strelka plugins -- this is where the good stuff is when writing a new application!
 
-Then we dive in a little deeper, and show you how you can <?link Write Your Own Strelka Plugin ?> by refactoring common code out of your applications.
+Want to package your app as a gem for distribution and deployment?  There's a section called <?link Deploying a Strelka App ?> that covers that.
 
-Finally, there's a <?link "cookbook":Strelka Cookbook ?>-style section that covers general tips and tricks.
+Then we dive in a little deeper, and show you how you can <?link Write Your Own Strelka Plugin ?> by refactoring common code out of your applications, and hooking into the friendly underbelly of Strelka.  It's okay, Strelka likes her belly rubbed.
 
 
 h3. Authors
