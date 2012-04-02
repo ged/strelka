@@ -117,12 +117,68 @@ module Strelka::Logging
 				return self.format % args
 			end
 		end
-	end # class LogFormatter
+	end # class Formatter
 
 
 	# A ANSI-colorized formatter for Logger instances.
 	class ColorFormatter < Logger::Formatter
-		extend Strelka::ANSIColorUtilities
+
+		# Set some ANSI escape code constants (Shamelessly stolen from Perl's
+		# Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
+		ANSI_ATTRIBUTES = {
+			'clear'      => 0,
+			'reset'      => 0,
+			'bold'       => 1,
+			'dark'       => 2,
+			'underline'  => 4,
+			'underscore' => 4,
+			'blink'      => 5,
+			'reverse'    => 7,
+			'concealed'  => 8,
+
+			'black'      => 30,   'on_black'   => 40,
+			'red'        => 31,   'on_red'     => 41,
+			'green'      => 32,   'on_green'   => 42,
+			'yellow'     => 33,   'on_yellow'  => 43,
+			'blue'       => 34,   'on_blue'    => 44,
+			'magenta'    => 35,   'on_magenta' => 45,
+			'cyan'       => 36,   'on_cyan'    => 46,
+			'white'      => 37,   'on_white'   => 47
+		}
+
+
+		### Create a string that contains the ANSI codes specified and return it
+		def self::ansi_code( *attributes )
+			attributes.flatten!
+			attributes.collect! {|at| at.to_s }
+			return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
+			attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
+
+			if attributes.empty?
+				return ''
+			else
+				return "\e[%sm" % attributes
+			end
+		end
+
+
+		### Colorize the given +string+ with the specified +attributes+ and
+		### return it, handling line-endings, color reset, etc.
+		def self::colorize( *args )
+			string = ''
+
+			if block_given?
+				string = yield
+			else
+				string = args.shift
+			end
+
+			ending = string[/(\s)$/] || ''
+			string = string.rstrip
+
+			return self.ansi_code( args.flatten ) + string + self.ansi_code( 'reset' ) + ending
+		end
+
 
 		# Color settings
 		LEVEL_FORMATS = {
@@ -169,12 +225,14 @@ module Strelka::Logging
 
 			return self.settings[ severity.downcase.to_sym ] % args
 		end
-	end # class LogFormatter
+
+	end # class Formatter
 
 
 	# An alternate formatter for Logger instances that outputs +div+ HTML
 	# fragments.
 	class HtmlFormatter < Logger::Formatter
+		include ERB::Util  # for html_escape()
 
 		# The default HTML fragment that'll be used as the template for each log message.
 		HTML_LOG_FORMAT = %q{
@@ -216,7 +274,7 @@ module Strelka::Logging
 				time.usec,                                                    # %2$d
 				Process.pid,                                                  # %3$d
 				Thread.current == Thread.main ? 'main' : Thread.object_id,    # %4$s
-				severity.downcase,                                            # %5$s
+				severity.downcase,                                                     # %5$s
 				progname,                                                     # %6$s
 				html_escape( msg ).gsub(/\n/, '<br />')                       # %7$s
 			]
@@ -224,23 +282,8 @@ module Strelka::Logging
 			return self.format % args
 		end
 
+	end # class HtmlFormatter
 
-		#######
-		private
-		#######
-
-		### Return a copy of the specified +string+ with HTML special characters escaped as
-		### HTML entities.
-		def html_escape( string )
-			return string.
-				gsub( /&/, '&amp;' ).
-				gsub( /</, '&lt;' ).
-				gsub( />/, '&gt;' )
-		end
-
-	end # class HtmlLogFormatter
 
 end # module Strelka
-
-# vim: set nosta noet ts=4 sw=4:
 

@@ -10,7 +10,17 @@ require 'strelka/constants'
 
 module Strelka
 
-	# Add logging to a Strelka class. Including classes get #log and #log_debug methods.
+	# Add logging to a Strelka class. Including classes get #log and
+	# #log_debug methods.
+	#
+	#   class MyClass
+	#       include Inversion::Loggable
+	#
+	#       def a_method
+	#           self.log.debug "Doing a_method stuff..."
+	#       end
+	#   end
+	#
 	module Loggable
 
 		# A logging proxy class that wraps calls to the logger into calls that include
@@ -74,70 +84,6 @@ module Strelka
 		end
 
 	end # module Loggable
-
-	# A collection of ANSI color utility functions
-	module ANSIColorUtilities
-
-		# Set some ANSI escape code constants (Shamelessly stolen from Perl's
-		# Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
-		ANSI_ATTRIBUTES = {
-			'clear'      => 0,
-			'reset'      => 0,
-			'bold'       => 1,
-			'dark'       => 2,
-			'underline'  => 4,
-			'underscore' => 4,
-			'blink'      => 5,
-			'reverse'    => 7,
-			'concealed'  => 8,
-
-			'black'      => 30,   'on_black'   => 40,
-			'red'        => 31,   'on_red'     => 41,
-			'green'      => 32,   'on_green'   => 42,
-			'yellow'     => 33,   'on_yellow'  => 43,
-			'blue'       => 34,   'on_blue'    => 44,
-			'magenta'    => 35,   'on_magenta' => 45,
-			'cyan'       => 36,   'on_cyan'    => 46,
-			'white'      => 37,   'on_white'   => 47
-		}
-
-		###############
-		module_function
-		###############
-
-		### Create a string that contains the ANSI codes specified and return it
-		def ansi_code( *attributes )
-			attributes.flatten!
-			attributes.collect! {|at| at.to_s }
-			return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
-			attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
-
-			if attributes.empty?
-				return ''
-			else
-				return "\e[%sm" % attributes
-			end
-		end
-
-
-		### Colorize the given +string+ with the specified +attributes+ and return it, handling
-		### line-endings, color reset, etc.
-		def colorize( *args )
-			string = ''
-
-			if block_given?
-				string = yield
-			else
-				string = args.shift
-			end
-
-			ending = string[/(\s)$/] || ''
-			string = string.rstrip
-
-			return ansi_code( args.flatten ) + string + ansi_code( 'reset' ) + ending
-		end
-
-	end # module ANSIColorUtilities
 
 
 	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
@@ -307,6 +253,10 @@ module Strelka
 
 	# A collection of miscellaneous functions that are useful for manipulating
 	# complex data structures.
+	#
+	#   include Strelka::DataUtilities
+	#   newhash = deep_copy( oldhash )
+	#
 	module DataUtilities
 
 		###############
@@ -342,6 +292,15 @@ module Strelka
 
 
 	# A collection of methods for declaring other methods.
+	#
+	#   class MyClass
+	#       include Strelka::MethodUtilities
+	#
+	#       singleton_attr_accessor :types
+	#   end
+	#
+	#   MyClass.types = [ :pheno, :proto, :stereo ]
+	#
 	module MethodUtilities
 
 		### Creates instance variables and corresponding methods that return their
