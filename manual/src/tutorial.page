@@ -238,16 +238,85 @@ The above example shows how to selectively override the @email@ parameter for th
 _TODO_: Named match groups.
 
 
-h3. Accessing Headers Directly
+h3. Accessing Headers
+
+The request and response objects both have a headers object that provides methods for getting and setting header values. You can use it like a Hash:
+
+<?example { lang: Ruby, caption: "Accessing headers like a Hash." } ?>
+remote_host = request.header['X-Forwarded-For']
+response.header['Content-Type'] = 'image/jpeg'
+<?end example ?>
+
+or with a Symbol key (hyphens become underscores):
+
+<?example { lang: Ruby, caption: "Accessing headers like a Hash with Symbol keys." } ?>
+remote_host = request.header[:x_forwarded_for]
+response.header[:content_type] = 'application/pdf'
+<?end example ?>
+
+You can also access it using struct-like methods, with the same pattern as with Symbol keys:
+
+<?example { lang: Ruby, caption: "Accessing headers like a Struct." } ?>
+remote_host = request.header.x_forwarded_for
+response.header.content_type = 'text/html'
+<?end example ?>
+
+Keep in mind that some headers can appear multiple times, so what you get back could be an Array, too.
+
 
 h3. Setting Response Status
 
-	- normally
-	- bailing early
+Responses start out with a @204 No Content@ status, and will automatically switch to @200 OK@ if you add a body to it.
+
+You can, of course, set the status yourself:
+
+<?example { lang: Ruby, caption: "Setting the response status directly." } ?>
+response.status = HTTP::NOT_FOUND
+<?end example ?>
+
+If you set it directly, however, the response will still go back through all of your loaded plugins, which is probably not what you want. In that case you can finish a request early using the 
+<?api "finish_with helper":Strelka::App#finish_with ?>:
+
+<?example { lang: Ruby, caption: "Finishing a response immediately." } ?>
+finish_with HTTP::NOT_FOUND, "That user doesn't exist."
+<?end example ?>
+
+Using @finish_with@ stops additional processing immediately and returns a response with the specified status and message. You can also include additional headers:
+
+<?example { lang: Ruby, caption: "Finishing a response immediately with custom headers." } ?>
+new_location = "http://example.com/somewhere/else"
+finish_with HTTP::REDIRECT,
+	"That resource has moved here: #{new_location}.",
+	headers: { location: new_location }
+<?end example ?>
+
 
 h3. Using Templates
 
-http://deveiate.org/code/Inversion-manual/
+Most web frameworks come with some kind of templating built in, but Strelka doesn't have any preconceived assumptions about what you might want to use for your applications. As long as your templates implement @#to_s@, you can set them as the response body and your app will work fine:
+
+<?example { lang: Ruby, caption: "Using Erubis templates." } ?>
+require 'erubis'
+
+class HelloWorldApp < Strelka::App
+
+	plugins :routing
+
+	default_type 'text/html'
+
+	get '/' do |req|
+		res = req.response
+		template = Erubis::Eruby.load_file( 'template1.rhtml' )
+		res.body = template.evaluate( :greeting => "Why hello!" )
+		return res
+	end
+
+end
+<?end example ?>
+
+Strelka comes with a @:templating@ plugin that provides your application with the ability to use the "Inversion templating system":http://deveiate.org/code/Inversion-manual/ to build the response body.
+
+
 
 	- return template symbol
 	- return response with a template body
@@ -260,4 +329,10 @@ h3. Filtering Every Request and/or Response
 h3. Altering Error Display
 
 h3. Sessions
+
+h3. Authentication and Authorization
+
+h3. HTTP Content Negotiation
+
+h3. REST Services
 
