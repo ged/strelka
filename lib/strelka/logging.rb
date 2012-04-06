@@ -232,7 +232,6 @@ module Strelka::Logging
 	# An alternate formatter for Logger instances that outputs +div+ HTML
 	# fragments.
 	class HtmlFormatter < Logger::Formatter
-		include ERB::Util  # for html_escape()
 
 		# The default HTML fragment that'll be used as the template for each log message.
 		HTML_LOG_FORMAT = %q{
@@ -276,10 +275,23 @@ module Strelka::Logging
 				Thread.current == Thread.main ? 'main' : Thread.object_id,    # %4$s
 				severity.downcase,                                                     # %5$s
 				progname,                                                     # %6$s
-				html_escape( msg ).gsub(/\n/, '<br />')                       # %7$s
+				escape_html( msg ).gsub(/\n/, '<br />')                       # %7$s
 			]
 
 			return self.format % args
+		end
+
+
+		#######
+		private
+		#######
+
+		### Escape any HTML special characters in +string+.
+		def escape_html( string )
+			return string.
+				gsub( '&', '&amp;' ).
+				gsub( '<', '&lt;'  ).
+				gsub( '>', '&gt;'  )
 		end
 
 	end # class HtmlFormatter
