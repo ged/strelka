@@ -6,6 +6,7 @@ require 'forwardable'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
+require 'strelka/cookie'
 require 'strelka/session'
 require 'strelka/mixins'
 
@@ -23,24 +24,25 @@ class Strelka::Session::Default < Strelka::Session
 
 	# Class-instance variables
 	@sessions = {}
-	@cookie_name = DEFAULT_COOKIE_NAME
+	@cookie_options = {
+		:name => 'strelka-session'
+	}
 
 	class << self
 		# Persist sessions in memory
 		attr_reader :sessions
 
-		# The name of the cookie that stores the session ID
-		attr_accessor :cookie_name
+		# The configured session cookie parameters
+		attr_accessor :cookie_options
 	end
 
 
 	### Configure the session class with the given +options+, which should be a
-	### Hash or an object that has a Hash-like interface. Sets the cookie name
-	### the session ID is stored in in responses if the +:cookie_name+ key
-	### is set.
+	### Hash or an object that has a Hash-like interface. Sets cookie options
+	### for the session if the +:cookie+ key is set.
 	def self::configure( options )
 		if options
-			self.cookie_name = options[:cookie_name] if options[:cookie_name]
+			self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
 		end
 	end
 
@@ -70,7 +72,7 @@ class Strelka::Session::Default < Strelka::Session
 		id = nil
 
 		# Fetch and untaint the existing ID if it exists and looks valid
-		if request && (cookie = request.cookies[ self.cookie_name ])
+		if request && (cookie = request.cookies[ self.cookie_options[:name] ])
 			id = $1.untaint if cookie.value =~ /^([[:xdigit:]]+)$/i
 		end
 
@@ -132,7 +134,14 @@ class Strelka::Session::Default < Strelka::Session
 		self.log.debug "Saving session %s" % [ self.session_id ]
 		self.class.save_session_data( self.session_id, @hash )
 		self.log.debug "Adding session cookie to the request."
-		response.cookies[ self.class.cookie_name ] = self.session_id
+
+		session_cookie = Strelka::Cookie.new(
+			self.class.cookie_options[ :name ],
+			self.session_id,
+			self.class.cookie_options
+		)
+
+		response.cookies << session_cookie
 	end
 
 

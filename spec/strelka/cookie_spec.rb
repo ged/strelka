@@ -171,7 +171,7 @@ describe Strelka::Cookie do
 
 		it "stringifies with an expires date if one is set" do
 			@cookie.expires = Time.at( 1331761184 )
-			@cookie.to_s.should == 'by_rickirac=9917eb; Expires=Wed, 14-Mar-2012 21:39:44 GMT'
+			@cookie.to_s.should == 'by_rickirac=9917eb; Expires=Wed, 14 Mar 2012 21:39:44 GMT'
 		end
 
 		it "hashes the same as another cookie with the same name, regardless of value" do

@@ -18,10 +18,12 @@ class Strelka::Session::Db < Strelka::Session::Default
 	extend Forwardable
 
 	# Class-instance variables
-	@cookie_name  = DEFAULT_COOKIE_NAME
 	@table_name   = :sessions
 	@db           = nil
 	@dataset      = nil
+	@cookie_options = {
+		:name => 'strelka-session'
+	}
 
 	class << self
 		# The Sequel dataset connection
@@ -30,8 +32,8 @@ class Strelka::Session::Db < Strelka::Session::Default
 		# The Sequel dataset for the sessions table
 		attr_reader :dataset
 
-		# The name of the cookie that stores the session ID
-		attr_accessor :cookie_name
+		# The configured session cookie parameters
+		attr_accessor :cookie_options
 	end
 
 
@@ -43,13 +45,13 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### Hash or an object that has a Hash-like interface.
 	###
 	### Valid options:
-	###    cookie_name  -> Set the name of the session cookie
-	###    connect      -> The Sequel connection string
-	###    table_name   -> The name of the sessions table
+	###    cookie     -> A hash that contains valid Strelka::Cookie options
+	###    connect    -> The Sequel connection string
+	###    table_name -> The name of the sessions table
 	def self::configure( options={} )
 		options ||= {}
 
-		self.cookie_name = options[:cookie_name] || DEFAULT_COOKIE_NAME
+		self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
 		@table_name      = options[:table_name]  || :sessions
 
 		@db = options[ :connect ].nil? ? Sequel.sqlite : Sequel.connect( options[:connect] )

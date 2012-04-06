@@ -85,9 +85,7 @@ module Strelka::App::Sessions
 	        Strelka::Constants
 
 	# Default options to pass to the session object
-	DEFAULT_OPTIONS = {
-		:cookie_name => 'strelka-session',
-	}
+	DEFAULT_OPTIONS = {}
 
 	# Configurability API -- specify which section of the config this class gets
 	config_key :sessions
@@ -135,7 +133,11 @@ module Strelka::App::Sessions
 		if config
 			self.session_class = Strelka::Session.get_subclass( config[:session_class] ) if
 				config.key?( :session_class )
-			options.merge!( config[:options] ) if config[:options]
+			if config[:options]
+				options.merge!( config[:options] ) do |key, oldval, newval|
+					oldval.merge( newval )
+				end
+			end
 		else
 			self.session_class = Strelka::Session.get_subclass( :default )
 		end

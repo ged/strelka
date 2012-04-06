@@ -34,7 +34,7 @@ describe Strelka::Session::Db do
 	end
 
 	before( :each ) do
-		described_class.cookie_name = described_class::DEFAULT_COOKIE_NAME
+		@cookie_name = described_class.cookie_options[:name]
 		described_class.configure
 	end
 
@@ -80,6 +80,6 @@ describe Strelka::Session::Db do
 		row[ :session_id ].should   == @session_id
 		row[ :session ].should      =~ /hurrrg: true/
 		row[ :created ].to_s.should =~ /\d{4}-\d{2}-\d{2}/
-		response.header_data.should =~ /Set-Cookie: #{described_class::DEFAULT_COOKIE_NAME}=#{@session_id}/i
+		response.header_data.should =~ /Set-Cookie: #{@cookie_name}=#{@session_id}/i
 	end
 end

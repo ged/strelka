@@ -27,7 +27,7 @@ describe Strelka::Session::Default do
 	end
 
 	before( :each ) do
-		described_class.cookie_name = described_class::DEFAULT_COOKIE_NAME
+		@cookie_name = described_class.cookie_options[:name]
 	end
 
 	after( :each ) do
@@ -47,8 +47,8 @@ describe Strelka::Session::Default do
 
 
 	it "can be configured to store its session ID in a different cookie" do
-		described_class.configure( :cookie_name => 'buh-mahlon' )
-		described_class.cookie_name.should == 'buh-mahlon'
+		described_class.configure( :cookie => {:name => 'buh-mahlon'} )
+		described_class.cookie_options[:name].should == 'buh-mahlon'
 	end
 
 	it "can load sessions from and save sessions to its in-memory store" do
@@ -73,7 +73,7 @@ describe Strelka::Session::Default do
 
 	it "accepts and reuses an existing valid session-id" do
 		session_id = '3422067061a5790be374c81118d9ed3f'
-		session_cookie = "strelka-sessionid=%s" % [ session_id ]
+		session_cookie = "buh-mahlon=%s" % [ session_id ]
 		req = @request_factory.get( '/hungry/what-is-in-a-fruit-bowl?', :cookie => session_cookie )
 		described_class.get_session_id( req ).should == session_id
 	end
@@ -89,7 +89,7 @@ describe Strelka::Session::Default do
 		session.save( response )
 
 		described_class.sessions.should == { session_id => session_data }
-		response.header_data.should =~ /Set-Cookie: #{described_class::DEFAULT_COOKIE_NAME}=#{session_id}/i
+		response.header_data.should =~ /Set-Cookie: #{@cookie_name}=#{session_id}/i
 	end
 
 	describe "with no namespace set (the 'nil' namespace)" do
