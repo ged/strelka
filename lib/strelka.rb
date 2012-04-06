@@ -12,6 +12,9 @@ require 'configurability/config'
 #
 # * Michael Granger <ged@FaerieMUD.org>
 #
+# :title: Strelka Web Application Framework
+# :main: README.rdoc
+#
 module Strelka
 
 	# Library version constant
