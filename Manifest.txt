@@ -1,4 +1,5 @@
 .gemtest
+ChangeLog
 History.rdoc
 IDEAS.rdoc
 Manifest.txt
@@ -60,8 +61,8 @@ lib/strelka/router.rb
 lib/strelka/router/default.rb
 lib/strelka/router/exclusive.rb
 lib/strelka/session.rb
-lib/strelka/session/default.rb
 lib/strelka/session/db.rb
+lib/strelka/session/default.rb
 spec/data/error.tmpl
 spec/data/layout.tmpl
 spec/data/main.tmpl
@@ -97,7 +98,7 @@ spec/strelka/paramvalidator_spec.rb
 spec/strelka/router/default_spec.rb
 spec/strelka/router/exclusive_spec.rb
 spec/strelka/router_spec.rb
-spec/strelka/session/default_spec.rb
 spec/strelka/session/db_spec.rb
+spec/strelka/session/default_spec.rb
 spec/strelka/session_spec.rb
 spec/strelka_spec.rb
