@@ -10,7 +10,82 @@ require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/app/plugins'
 
 
-# Templating plugin for Strelka::Apps.
+# A templated content-generation plugin for Strelka::Apps. It uses the
+# Inversion[http://deveiate.org/projects/Inversion] templating system.
+#
+# It adds:
+#
+# * a preloaded/cached template table
+# * a mechanism for fetching templates from the table
+# * a global layout template which is automatically wrapped around responses
+#
+# == Usage
+#
+# To use it, just load the <tt>:templating</tt> plugin in your app:
+#
+#   plugins :templating
+#
+# and declare one or more templates that your application will use:
+#
+#   templates :console =>   'views/console.tmpl',
+#             :proctable => 'partials/proctable.tmpl'
+#
+# Then, inside your app, you can fetch a copy of one or more of the templates and
+# return it as the reponse:
+#
+#   def handle_request( req )
+#       super do
+#           res = request.response
+#
+#           proctable = template :proctable
+#           proctable.processes = ProcessList.fetch
+#
+#           tmpl = template :console
+#           tmpl.message = "Everything's up."
+#           tmpl.proctable = proctable
+#           res.body = tmpl
+#
+#           return res
+#       end
+#   end
+#
+# You can also just return the template if you don't need to do anything else to the
+# response.
+#
+# When returning a template, either in the body of the response or directly, it will
+# automatically set a few attributes for commonly-used objects:
+#
+# request ::          The current Strelka::HTTPRequest
+# strelka_version ::  Strelka.version_string( true )
+# mongrel2_version :: Mongrel2.version_string( true )
+# route ::            If the :routing plugin is loaded, this will be set to the
+#                     'routing_info' of the chosen route. See
+#                     Strelka::Router#add_route for details.
+#
+# If your app will *only* be loading and returning a template without doing anything
+# with it, you can return just its name:
+#
+#   def handle_request( req )
+#       super { :console }
+#   end
+#
+# It will be loaded, set as the response body, and the above common objects added to it.
+#
+# === Layouts
+#
+# Very often, you'll want your app to share a common page layout. To accomplish this, you
+# can declare a special layout template:
+#
+#   layout 'layout.tmpl'
+#
+# Any template that you return will be set as the 'body' attribute of this layout
+# template, and the layout rendered as the body of the response.
+#
+# Note that if you want any of the "common objects" from above with a layout template,
+# you must use the <tt><?import ?></tt> directive to import them:
+#
+#   <?import request, strelka_version, route ?>
+#
 module Strelka::App::Templating
 	include Strelka::Constants
 	extend Strelka::App::Plugin
@@ -97,21 +172,7 @@ module Strelka::App::Templating
 
 
 	### Intercept responses on the way back out and turn them into a Mongrel2::HTTPResponse
-	### with a String for its entity body. It will take action if the response is one of:
-	###
-	### 1. A Mongrel2::Response with an Inversion::Template as its body.
-	### 2. An Inversion::Template by itself.
-	### 3. A Symbol that matches one of the keys of the registered templates.
-	###
-	### In all three of these cases, the return value will be a Mongrel2::Response with a
-	### body set to the rendered value of the template in question, and with its status
-	### set to '200 OK' unless it is already set to something else.
-	###
-	### If there is a registered layout template, and any of the three cases is true, the
-	### layout template is loaded, its #body attributes set to the content template,
-	### and its rendered output set as the body of the response instead.
-	###
-	### Every other response is returned without modification.
+	### with a String for its entity body.
 	def handle_request( request, &block )
 		response = super
 
