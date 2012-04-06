@@ -1,4 +1,4 @@
-#! -*- ruby -*-
+# -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
 
 require 'digest/sha1'
@@ -46,6 +46,8 @@ class Strelka::Session
 	        Strelka::Loggable,
 			Strelka::AbstractClass
 
+	# The default name of the cookie that stores the session ID
+	DEFAULT_COOKIE_NAME = 'strelka-sessionid'
 
 	### PluginFactory API -- return the Array of directories to search for concrete
 	### Session classes.

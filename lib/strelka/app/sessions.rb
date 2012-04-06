@@ -101,7 +101,7 @@ module Strelka::App::Sessions
 	singleton_attr_writer :session_class
 
 
-	# Class methods and instance variables to add to classes with routing.
+	# Class methods and instance variables to add to classes with sessions.
 	module ClassMethods # :nodoc:
 
 		# The namespace of the session that will be exposed to instances of this
@@ -150,6 +150,7 @@ module Strelka::App::Sessions
 	def self::included( object )
 		Strelka.log.debug "Extending Request with Session mixin"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Session }
+		Strelka.log.debug "Extending Response with Session mixin"
 		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Session }
 		super
 	end
@@ -168,7 +169,6 @@ module Strelka::App::Sessions
 		response.save_session
 		return super
 	end
-
 
 end # module Strelka::App::Sessions
 

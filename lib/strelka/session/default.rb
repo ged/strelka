@@ -14,25 +14,12 @@ require 'strelka/mixins'
 # == Hash Interface
 #
 # The following methods are delegated to the inner Hash via the #namespaced_hash method:
-# #&, #==, #[], #[]=, #assoc, #case, #clear, #compare_by_identity,
-# #compare_by_identity?, #default, # #default=, #default_proc, #default_proc=,
-# #delete, #delete_if, #each, #each_key, #each_pair, #each_value,
-# #empty?, #eql?, #fetch, #flatten, #has_key?, #has_value?, #hash, #include?,
-# #index, #inspect, #invert, #keep_if, #key, #key?, #keys, #length, #member?,
-# #merge, #merge!, #pretty_print, #pretty_print_cycle, #rassoc, #rehash, #reject,
-# #reject!, #replace, #select, #select!, #shift, #size, #sql_expr, #sql_negate,
-# #sql_or, #store, #to_a, #to_hash, #to_s, #update, #value?, #values, #values_at,
-# #|, #~
+# #[], #[]=, #delete, #key?
 class Strelka::Session::Default < Strelka::Session
 	extend Forwardable,
 	       Strelka::Delegation
-	include Enumerable,
-	        Strelka::Loggable,
+	include Strelka::Loggable,
 			Strelka::DataUtilities
-
-
-	# The default name of the cookie that stores the session ID
-	DEFAULT_COOKIE_NAME = 'strelka-sessionid'
 
 	# Class-instance variables
 	@sessions = {}
@@ -59,8 +46,7 @@ class Strelka::Session::Default < Strelka::Session
 
 
 	### Load a session instance from storage using the given +session_id+ and return
-	### it. Returns +nil+ if no session could be loaded. You should probably override
-	### this, as the default just returns +nil+.
+	### it. Returns +nil+ if no session could be loaded.
 	def self::load_session_data( session_id )
 		return Strelka::DataUtilities.deep_copy( self.sessions[session_id] )
 	end
@@ -79,16 +65,13 @@ class Strelka::Session::Default < Strelka::Session
 
 
 	### Fetch the session ID from the given +request+, or create a new one if the
-	### request doesn't have the necessary attributes. You should override this,
-	### as the default implementation just returns +nil+.
+	### request doesn't have the necessary attributes.
 	def self::get_session_id( request=nil )
 		id = nil
 
 		# Fetch and untaint the existing ID if it exists and looks valid
 		if request && (cookie = request.cookies[ self.cookie_name ])
-			Strelka.log.debug "Cookie value: %p" % [ cookie.value ]
 			id = $1.untaint if cookie.value =~ /^([[:xdigit:]]+)$/i
-			Strelka.log.debug "Hmm?  %p" % [ $1 ]
 		end
 
 		return id || SecureRandom.random_bytes.unpack( 'H*' ).join
@@ -99,8 +82,7 @@ class Strelka::Session::Default < Strelka::Session
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Mongrel2::Table using the given +hash+ for initial
-	### values.
+	### Create a new session store using the given +hash+ for initial values.
 	def initialize( session_id=nil, initial_values={} )
 		session_id ||= self.class.get_session_id
 
@@ -134,7 +116,7 @@ class Strelka::Session::Default < Strelka::Session
 	attr_reader :namespace
 
 	# Delegate Hash methods to whichever Hash is the current namespace
-	def_method_delegators :namespaced_hash, *Hash.instance_methods( false )
+	def_method_delegators :namespaced_hash, :[], :[]=, :delete, :key?
 
 
 	### Set the current namespace for session values to +namespace+. Setting
@@ -154,6 +136,20 @@ class Strelka::Session::Default < Strelka::Session
 	end
 
 
+	### Return the Hash that corresponds with the current namespace's storage. If no
+	### namespace is currently set, returns the entire session store as a Hash of Hashes
+	### keyed by namespaces as Symbols.
+	def namespaced_hash
+		if @namespace
+			self.log.debug "Returning namespaced hash: %p" % [ @namespace ]
+			return @hash[ @namespace ]
+		else
+			self.log.debug "Returning toplevel namespace"
+			return @hash
+		end
+	end
+
+
 	#########
 	protected
 	#########
@@ -169,10 +165,8 @@ class Strelka::Session::Default < Strelka::Session
 
 		method_body = nil
 		if assignment
-			self.log.debug "Makin' a setter for %p" % [ key ]
 			method_body = self.make_setter( key )
 		else
-			self.log.debug "Makin' a getter for %p" % [ key ]
 			method_body = self.make_getter( key )
 		end
 
@@ -190,20 +184,6 @@ class Strelka::Session::Default < Strelka::Session
 	### Create a Proc that will act as a getter for the given key
 	def make_getter( key )
 		return Proc.new { self.namespaced_hash[key.to_sym] }
-	end
-
-
-	### Return the Hash that corresponds with the current namespace's storage. If no
-	### namespace is currently set, returns the entire session store as a Hash of Hashes
-	### keyed by namespaces as Symbols.
-	def namespaced_hash
-		if @namespace
-			self.log.debug "Returning namespaced hash: %p" % [ @namespace ]
-			return @hash[ @namespace ]
-		else
-			self.log.debug "Returning toplevel namespace"
-			return @hash
-		end
 	end
 
 end # class Strelka::Session::Default
