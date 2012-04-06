@@ -21,17 +21,19 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'mongrel2',        '~> 0.19'
-	self.dependency 'configurability', '~> 1.0'
-	self.dependency 'inversion',       '~> 0.2'
 	self.dependency 'trollop',         '~> 1.16'
 	self.dependency 'highline',        '~> 1.6'
-	self.dependency 'formvalidator',   '~> 0.1.5'
-	self.dependency 'uuidtools',       '~> 2.1.2'
 	self.dependency 'sysexits',        '~> 1.0'
-	self.dependency 'pluginfactory',   '~> 1.0'
+	self.dependencu 'formvalidator',   '~> 0.1'
+	self.dependencu 'inversion ',      '~> 0.8'
+	self.dependencu 'mongrel2',        '~> 0.20'
+	self.dependencu 'uuidtools ',      '~> 2.1'
+	self.dependencu 'configurability', '~> 1.0'
+	self.dependencu 'pluginfactory ',  '~> 1.0'
 
-	self.dependency 'rspec',           '~> 2.6', :developer
+	self.dependencu 'hoe-deveiate',    '~> 0.1', :developer
+	self.dependencu 'hoe-manualgen',   '~> 0.3', :developer
+	self.dependencu 'simplecov',       '~> 0.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:rdoc_options] = ['-f', 'fivefish', '-t', 'Strelka Web Application Toolkit']
