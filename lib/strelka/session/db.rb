@@ -54,7 +54,9 @@ class Strelka::Session::Db < Strelka::Session::Default
 		self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
 		@table_name      = options[:table_name]  || :sessions
 
-		@db = options[ :connect ].nil? ? Sequel.sqlite : Sequel.connect( options[:connect] )
+		@db = options[ :connect ].nil? ?
+			 Mongrel2::Config.in_memory_db :
+			 Sequel.connect( options[:connect] )
 		@db.logger = Strelka.logger
 
 		self.initialize_sessions_table
