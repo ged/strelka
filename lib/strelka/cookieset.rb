@@ -82,7 +82,7 @@ class Strelka::CookieSet
 
 
 	### Index set operator method: set the cookie that corresponds to the given +name+
-	### to +value+. If +value+ is not an Strelka::Cookie, one with be created and its
+	### to +value+. If +value+ is not an Strelka::Cookie, one is created and its
 	### value set to +value+.
 	def []=( name, value )
 		value = Strelka::Cookie.new( name.to_s, value ) unless value.is_a?( Strelka::Cookie )

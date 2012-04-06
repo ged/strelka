@@ -85,9 +85,7 @@ module Strelka::App::Sessions
 	        Strelka::Constants
 
 	# Default options to pass to the session object
-	DEFAULT_OPTIONS = {
-		:cookie_name => 'strelka-session',
-	}
+	DEFAULT_OPTIONS = {}
 
 	# Configurability API -- specify which section of the config this class gets
 	config_key :sessions
@@ -101,7 +99,7 @@ module Strelka::App::Sessions
 	singleton_attr_writer :session_class
 
 
-	# Class methods and instance variables to add to classes with routing.
+	# Class methods and instance variables to add to classes with sessions.
 	module ClassMethods # :nodoc:
 
 		# The namespace of the session that will be exposed to instances of this
@@ -135,7 +133,11 @@ module Strelka::App::Sessions
 		if config
 			self.session_class = Strelka::Session.get_subclass( config[:session_class] ) if
 				config.key?( :session_class )
-			options.merge!( config[:options] ) if config[:options]
+			if config[:options]
+				options.merge!( config[:options] ) do |key, oldval, newval|
+					oldval.merge( newval )
+				end
+			end
 		else
 			self.session_class = Strelka::Session.get_subclass( :default )
 		end
@@ -150,6 +152,7 @@ module Strelka::App::Sessions
 	def self::included( object )
 		Strelka.log.debug "Extending Request with Session mixin"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Session }
+		Strelka.log.debug "Extending Response with Session mixin"
 		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Session }
 		super
 	end
@@ -168,7 +171,6 @@ module Strelka::App::Sessions
 		response.save_session
 		return super
 	end
-
 
 end # module Strelka::App::Sessions
 

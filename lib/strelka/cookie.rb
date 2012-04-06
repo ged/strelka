@@ -24,7 +24,7 @@ class Strelka::Cookie
 	include Strelka::Loggable
 
 	# The format of the date field
-	COOKIE_DATE_FORMAT = '%a, %d-%b-%Y %H:%M:%S GMT'
+	COOKIE_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 
 	### RFC 2109: HTTP State Management Mechanism
 	# When it sends a request to an origin server, the user agent sends a
