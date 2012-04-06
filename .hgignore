@@ -7,3 +7,4 @@
 ^static/
 \.DS_Store
 manual/output/
+ChangeLog
