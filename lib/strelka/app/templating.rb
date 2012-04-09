@@ -90,7 +90,7 @@ module Strelka::App::Templating
 	include Strelka::Constants
 	extend Strelka::App::Plugin
 
-	run_before :routing, :negotiation
+	run_before :routing, :negotiation, :errors
 	run_after :filters
 
 
