@@ -103,7 +103,7 @@ class Strelka::LeashCommand
 				text ''
 
 				text 'Global Options'
-				opt :config, "Specify the config file to load."
+				opt :config, "Specify the config file to load.", :type => :string
 				text ''
 
 				text 'Other Options:'
@@ -163,7 +163,7 @@ class Strelka::LeashCommand
 	### Create a new instance of the command and set it up with the given
 	### +options+.
 	def initialize( options )
-		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger )
+		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
 		@options = options
 
 		if @options.debug
@@ -196,8 +196,8 @@ class Strelka::LeashCommand
 
 		begin
 			cmd_method = self.method( "#{command}_command" )
-		rescue NoMethodError => err
-			error "No such command"
+		rescue NameError => err
+			error "No such command %p" % [ command ]
 			exit :usage
 		end
 
@@ -264,8 +264,19 @@ class Strelka::LeashCommand
 
 	### The 'start' command
 	def start_command( *args )
+		path, appname, gemname = self.find_specified_app( *args )
+
+		header "Starting the %s app from the %s gem" % [ appname, gemname ]
+		fork do
+			self.log.debug "  in the child."
+			Strelka.load_config( self.options.config ) if self.options.config
+			Kernel.load( path )
+		end
+
+		message "started. Waiting for shutdown."
+		Process.wait
 	end
-	help :start, "Start the web adminstration app"
+	help :start, "Start a Strelka app"
 
 
 	### The 'version' command
@@ -276,36 +287,48 @@ class Strelka::LeashCommand
 
 
 	#
-	# Command functions
+	# Helper methods
 	#
 
-	### Install a bootstrap config database for the admin server.
-	def setup_bootstrap_config
-		Mongrel2::Config.init_database
+	### Find the app specified in the specified +args+ and return the Pathname to it and the
+	### name of the gem it belongs to. Raises a RuntimeError if the +args+ didn't contain a
+	### valid application specification.
+	def find_specified_app( *args )
+		appname = args.pop
+		gemname = args.pop
+		discovered_apps = Strelka::App.discover_paths
 
-		if Mongrel2::Config::Server.by_uuid( ADMINSERVER_ID ).first
-			message "Admin server is already configured"
-			if !self.prompt.agree( "Replace the existing config? ", true )
-				message "Okay, keeping the existing config."
-				return
+		path = nil
+		if gemname
+			discovered_apps[ gemname ].each do |apppath|
+				self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
+				if apppath.basename('.rb').to_s == appname
+					path = apppath
+					break
+				end
+			end
+		else
+			self.log.debug "No gem name; searching them all:"
+			discovered_apps.each do |disc_gemname, paths|
+				self.log.debug "  %s: %d paths" % [ disc_gemname, paths.length ]
+				path = paths.find do |apppath|
+					self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
+					self.log.debug "    %p vs. %p" % [ apppath.basename('.rb').to_s, appname ]
+					apppath.basename('.rb').to_s == appname
+				end or next
+				gemname = disc_gemname
+				break
 			end
 		end
 
-		configfile = DATADIR + 'bootstrap-config.rb'
-		runspace = Module.new do
-			extend Mongrel2::Config::DSL, FileUtils::Verbose
+		unless path
+			msg = "Couldn't find an app named '#{appname}'"
+			msg << " in the #{gemname} gem" if gemname
+			raise( msg )
 		end
+		self.log.debug "  found: %s" % [ path ]
 
-		header "Installing admin server config from #{configfile}"
-		source = configfile.read
-		runspace.module_eval( source, configfile.to_s, 1 )
-	end
-
-
-	### Set up the mongrel2 chroot directory for Strelka's adminserver by copying static 
-	### files, and creating the necessary directories. This depends on the configuration
-	### being installed.
-	def setup_runtime_directory
+		return path, appname, gemname
 	end
 
 

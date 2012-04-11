@@ -12,7 +12,9 @@ module Strelka::Constants
 	include Mongrel2::Constants
 
 	# The data directory in the project if that exists, otherwise the gem datadir
-	DATADIR = if File.directory?( 'data/strelka' )
+	DATADIR = if ENV['STRELKA_DATADIR']
+			Pathname( ENV['STRELKA_DATADIR'] )
+		elsif File.directory?( 'data/strelka' )
 			Pathname( 'data/strelka' )
 		elsif path = Gem.datadir('strelka')
 			Pathname( path )

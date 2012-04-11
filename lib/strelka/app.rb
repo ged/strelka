@@ -181,6 +181,8 @@ class Strelka::App < Mongrel2::Handler
 		procname = "%p %s" % [ self.class, self.conn ]
 		$0 = procname
 
+		self.dump_application_stack
+
 		super
 	end
 
@@ -335,6 +337,19 @@ class Strelka::App < Mongrel2::Handler
 		end
 
 		return response
+	end
+
+
+	### Output the application stack into the logfile.
+	def dump_application_stack
+		stack = self.class.ancestors.
+			reverse.
+			drop_while {|mod| mod != Strelka::App }.
+			select {|mod| mod.respond_to?(:plugin_name) }.
+			reverse.
+			collect {|mod| mod.plugin_name }
+
+		self.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
 	end
 
 end # class Strelka::App

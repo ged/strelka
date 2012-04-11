@@ -118,15 +118,38 @@ class Strelka::App
 		end
 
 
-		### Extension callback -- add instance variables to extending objects.
-		def self::extended( object )
-			super
-			object.instance_variable_set( :@plugins, {} )
-		end
-
-
 		### Class methods to add to classes with plugins.
 		module ClassMethods
+
+			### Extension callback -- add instance variables to extending objects.
+			def inherited( subclass )
+				super
+				subclass.instance_variable_set( :@plugins, [] )
+			end
+
+
+			### Load the plugins with the given +names+ and install them.
+			def plugins( *names )
+
+				# Load the associated Plugin Module objects
+				names.flatten.each {|name| self.load_plugin(name) }
+
+				# Add the name to the list of mixins to apply on startup
+				@plugins += names
+
+				# Install the declarative half of the plugin immediately
+				Strelka::App.loaded_plugins.each do |name, plugin|
+					Strelka.log.debug "Considering %p" % [ name ]
+					if names.include?( name ) || names.include?( plugin )
+						Strelka.log.debug "  installing"
+						self.register_plugin( plugin )
+					else
+						Strelka.log.debug "  not used by this app; skipping"
+					end
+				end
+			end
+			alias_method :plugin, :plugins
+
 
 			### Load the plugin with the given +name+
 			def load_plugin( name )
@@ -146,11 +169,10 @@ class Strelka::App
 			end
 
 
-			### Install the plugin +mod+ in the receiving class.
-			def install_plugin( mod )
-				Strelka.log.debug "  adding %p to %p" % [ mod, self ]
-				include( mod )
-
+			### Register the plugin +mod+ in the receiving class. This adds any
+			### declaratives and class-level data necessary for configuring the
+			### plugin.
+			def register_plugin( mod )
 				if mod.const_defined?( :ClassMethods )
 					cm_mod = mod.const_get(:ClassMethods)
 					Strelka.log.debug "  adding class methods from %p" % [ cm_mod ]
@@ -172,27 +194,31 @@ class Strelka::App
 			end
 
 
-			### Load the plugins with the given +names+ and install them.
-			def plugins( *names )
-				# Load the associated Plugin Module objects
-				names.flatten.each {|name| self.load_plugin(name) }
+			### Install the mixin part of plugins immediately before startup.
+			def run( * )
+				self.install_plugins( @plugins )
+				super
+			end
 
+
+			### Install the mixin part of the plugin, in the order determined by
+			### the plugin registry based on the run_before and run_after specifications
+			### of the plugins themselves.
+			def install_plugins( names )
 				sorted_plugins = Strelka::App.loaded_plugins.tsort.reverse
-				Strelka.log.debug "Sorted plugins: app -> %p <- Mongrel2" % [ sorted_plugins ]
 
-				# Install the plugins in reverse-sorted order
+				Strelka.log.info "Installing plugins: %p..." % [ names ]
 				sorted_plugins.each do |name|
-					plugin = Strelka::App.loaded_plugins[ name ]
-					Strelka.log.debug "Considering %p" % [ name ]
-					if names.include?( name ) || names.include?( plugin )
-						Strelka.log.debug "  installing"
-						self.install_plugin( plugin )
-					else
-						Strelka.log.debug "  not used by this app; skipping"
+					unless names.include?( name )
+						Strelka.log.debug "  skipping %s" % [ name ]
+						next
 					end
+
+					mod = Strelka::App.loaded_plugins[ name ]
+					Strelka.log.info "  including %p." % [ mod ]
+					include( mod )
 				end
 			end
-			alias_method :plugin, :plugins
 
 		end # module ClassMethods
 

@@ -396,7 +396,7 @@ module Strelka::App::Auth
 
 	### Returns +true+ if the given +request+ requires authentication.
 	def request_should_auth?( request )
-		self.log.debug "Checking to see if Auth(entication/orization) should be applied for %s" %
+		self.log.debug "Checking to see if Auth(entication/orization) should be applied for %p" %
 			[ request.app_path ]
 
 		# If there are positive criteria, return true if the request matches any of them,

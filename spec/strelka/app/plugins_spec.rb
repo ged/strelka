@@ -170,6 +170,8 @@ describe Strelka::App::Plugins do
 			klass.ancestors.should include( Strelka::App::Routing, Strelka::App::Templating )
 		end
 
+		it "warns if plugins are installed more than once for the same application"
+
 	end
 
 end
