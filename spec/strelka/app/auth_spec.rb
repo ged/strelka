@@ -83,6 +83,10 @@ describe Strelka::App::Auth do
 			end
 		end
 
+		after( :each ) do
+			@app = nil
+		end
+
 
 		it "applies auth to every request by default" do
 			app = @app.new
@@ -109,6 +113,38 @@ describe Strelka::App::Auth do
 
 			app.handle( req )
 			req.authenticated_user.should == 'anonymous'
+		end
+
+		context "that has negative auth criteria for the root" do
+
+			before( :each ) do
+				@app.no_auth_for( '/' )
+			end
+
+			it "knows that it has auth criteria" do
+				@app.should have_auth_criteria()
+			end
+
+			it "doesn't pass a request for the root path through auth" do
+				req = @request_factory.get( '/api/v1/' )
+
+				app = @app.new
+				app.auth_provider.should_not_receive( :authenticate )
+				app.auth_provider.should_not_receive( :authorize )
+
+				app.handle( req )
+			end
+
+			it "passes a request for a path other than the root through auth" do
+				req = @request_factory.get( '/api/v1/console' )
+
+				app = @app.new
+				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
+				app.auth_provider.should_receive( :authorize ).and_return( true )
+
+				app.handle( req )
+			end
+
 		end
 
 		context "that has negative auth criteria" do

@@ -31,7 +31,7 @@ require 'strelka/authprovider'
 #
 # == Applying Authentication
 #
-# The default authentication policy is to require authentification from every
+# The default authentication policy is to require authentication from every
 # request, but sometimes you may wish to narrow the restrictions a bit.
 #
 # === Relaxing \Auth for A Few Methods
@@ -51,7 +51,8 @@ require 'strelka/authprovider'
 # A String or a Regexp argument will be used to match against the request's
 # {#app_path}[rdoc-ref:Strelka::HTTPRequest#app_path] (the path of the request
 # URI with the Mongrel2 route omitted), and any requests which match are sent
-# along as-is.
+# along as-is. A String will match the path exactly, with any leading or trailing
+# '/' characters removed, and a Regexp will be tested against the \#app_path as-is.
 #
 # If you require some more-complex criteria for determining if the request should
 # skip the auth plugin, you can provide a block to +no_auth_for+ instead.
@@ -325,10 +326,12 @@ module Strelka::App::Auth
 					"defining both positive and negative auth criteria is unsupported."
 			end
 
-			criteria << '' if criteria.empty?
+			criteria << nil if criteria.empty?
 			block ||= Proc.new { true }
 
 			criteria.each do |pattern|
+				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+				Strelka.log.debug "  adding require_auth for %p" % [ pattern ]
 				self.positive_auth_criteria[ pattern ] = block
 			end
 		end
@@ -342,10 +345,12 @@ module Strelka::App::Auth
 					"defining both positive and negative auth criteria is unsupported."
 			end
 
-			criteria << '' if criteria.empty?
+			criteria << nil if criteria.empty?
 			block ||= Proc.new { true }
 
 			criteria.each do |pattern|
+				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+				Strelka.log.debug "  adding no_auth for %p" % [ pattern ]
 				self.negative_auth_criteria[ pattern ] = block
 			end
 		end
@@ -430,6 +435,10 @@ module Strelka::App::Auth
 	### at least one of them.
 	def request_matches_criteria( request, pattern )
 		case pattern
+		when nil
+			self.log.debug "  no pattern; calling the block"
+			return yield( request )
+
 		when Regexp
 			self.log.debug "  matching app_path with regexp: %p" % [ pattern ]
 			matchdata = pattern.match( request.app_path ) or return false
@@ -437,8 +446,8 @@ module Strelka::App::Auth
 			return yield( request, matchdata )
 
 		when String
-			self.log.debug "  matching app_path prefix: %p" % [ pattern ]
-			request.app_path.start_with?( pattern ) or return false
+			self.log.debug "  matching app_path: %p" % [ pattern ]
+			request.app_path.gsub( %r{^/+|/+$}, '' ) == pattern or return false
 			self.log.debug "  calling the block"
 			return yield( request )
 
@@ -474,6 +483,7 @@ module Strelka::App::Auth
 		self.log.info "Authorizing using credentials: %p, callback: %p" % [ credentials, callback ]
 		provider.authorize( credentials, request, &callback )
 	end
+
 
 end # module Strelka::App::Auth
 

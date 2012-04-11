@@ -3,7 +3,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 }
 
@@ -21,45 +21,17 @@ require 'strelka/paramvalidator'
 #####################################################################
 describe Strelka::ParamValidator do
 
-	TEST_PROFILE = {
-		:required		=> [ :required ],
-		:optional		=> %w{
-			optional number int_constraint float_constraint bool_constraint email_constraint
-            host_constraint regexp_w_captures regexp_w_one_capture regexp_w_named_captures
-            alpha_constraint alphanumeric_constraint printable_constraint proc_constraint
-            uri_constraint word_constraint date_constraint
-		},
-		:constraints	=> {
-			:number                  => /^\d+$/,
-			:regexp_w_captures       => /(\w+)(\S+)?/,
-			:regexp_w_one_capture    => /(\w+)/,
-			:regexp_w_named_captures => /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/,
-			:int_constraint          => :integer,
-			:float_constraint        => :float,
-			:bool_constraint         => :boolean,
-			:email_constraint        => :email,
-			:uri_constraint          => :uri,
-			:host_constraint         => :hostname,
-			:alpha_constraint        => :alpha,
-			:alphanumeric_constraint => :alphanumeric,
-			:printable_constraint    => :printable,
-			:word_constraint         => :word,
-			:proc_constraint         => Date.method( :parse ),
-			:date_constraint         => :date,
-		},
-	}
-
-
 	before( :all ) do
 		setup_logging( :fatal )
 	end
 
-	before(:each) do
-		@validator = Strelka::ParamValidator.new( TEST_PROFILE )
-	end
-
 	after( :all ) do
 		reset_logging()
+	end
+
+
+	before(:each) do
+		@validator = Strelka::ParamValidator.new
 	end
 
 
@@ -69,64 +41,76 @@ describe Strelka::ParamValidator do
 	end
 
 	it "is no longer empty if at least one set of parameters has been validated" do
-		@validator.validate( {'required' => "1"} )
+		@validator.add( :foo, :integer )
+
+		@validator.validate( {'foo' => "1"} )
 
 		@validator.should_not be_empty()
 		@validator.should have_args()
 	end
 
-	it "raises an exception on an unknown constraint type" do
-		pending "figure out why this isn't working" do
-			profile = {
-				required: [:required],
-				constraints: {
-					required: $stderr,
-				}
-			}
-			val = Strelka::ParamValidator.new( profile )
-
-			expect {
-				val.validate( required: '1' )
-			}.to raise_error( /unknown constraint type IO/ )
-		end
+	it "allows constraints to be added" do
+		@validator.add( :a_field, :string )
+		@validator.param_names.should include( :a_field )
 	end
 
-	# Test index operator interface
+	it "doesn't allow a parameter to be added twice" do
+		@validator.add( :a_field, :string )
+		expect {
+			@validator.add( :a_field, :string )
+		}.to raise_error( /parameter :a_field is already defined/i )
+		@validator.param_names.should include( :a_field )
+	end
+
+	it "allows an existing constraint to be overridden" do
+		@validator.add( :a_field, :string )
+		@validator.override( :a_field, :integer )
+		@validator.param_names.should include( :a_field )
+		@validator.validate( 'a_field' => 'a string!' )
+		@validator.should have_errors()
+		@validator.should_not be_okay()
+		@validator.error_messages.should include( "Invalid value for 'A Field'" )
+	end
+
+	it "doesn't allow a non-existant parameter to be overridden" do
+		expect {
+			@validator.override( :a_field, :string )
+		}.to raise_error( /no parameter :a_field defined/i )
+		@validator.param_names.should_not include( :a_field )
+	end
+
+	it "raises an exception on an unknown constraint type" do
+		expect {
+			@validator.add( :foo, $stderr )
+		}.to raise_error( /no builtin :foo validator/ )
+	end
+
+	it "retains its parameters through a copy" do
+		@validator.add( :foo, :string, :required )
+		dup = @validator.dup
+		@validator.validate( {} )
+		@validator.should_not be_okay()
+		@validator.should have_errors()
+		@validator.error_messages.should == ["Missing value for 'Foo'"]
+	end
+
 	it "provides read and write access to valid args via the index operator" do
-		rval = nil
+		@validator.add( :foo, /^\d+$/ )
 
-		@validator.validate( {'required' => "1"} )
-		@validator[:required].should == "1"
+		@validator.validate( {'foo' => "1"} )
+		@validator[:foo].should == "1"
 
-		@validator[:required] = "bar"
-		@validator["required"].should == "bar"
+		@validator[:foo] = "bar"
+		@validator["foo"].should == "bar"
 	end
 
 
 	it "untaints valid args if told to do so" do
-		rval = nil
 		tainted_one = "1"
 		tainted_one.taint
 
-		@validator.validate( {'required' => 1, 'number' => tainted_one},
-			:untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
-
-		@validator[:number].should == "1"
-		@validator[:number].tainted?.should be_false()
-	end
-
-
-	it "untaints field names" do
-		rval = nil
-		tainted_one = "1"
-		tainted_one.taint
-
-		@validator.validate( {'required' => 1, 'number' => tainted_one},
-			:untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
+		@validator.add( :number, /^\d+$/, :untaint )
+		@validator.validate( 'number' => tainted_one )
 
 		@validator[:number].should == "1"
 		@validator[:number].tainted?.should be_false()
@@ -134,65 +118,48 @@ describe Strelka::ParamValidator do
 
 
 	it "returns the capture from a regexp constraint if it has only one" do
-		rval = nil
-		params = { 'required' => 1, 'regexp_w_one_capture' => "   ygdrassil   " }
-
-		@validator.validate( params, :untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
-
-		@validator[:regexp_w_one_capture].should == 'ygdrassil'
+		@validator.add( :treename, /(\w+)/ )
+		@validator.validate( 'treename' => "   ygdrassil   " )
+		@validator[:treename].should == 'ygdrassil'
 	end
 
 	it "returns the captures from a regexp constraint as an array if it has more than one" do
-		rval = nil
-		params = { 'required' => 1, 'regexp_w_captures' => "   the1tree(!)   " }
-
-		@validator.validate( params, :untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
-
-		@validator[:regexp_w_captures].should == ['the1tree', '(!)']
+		@validator.add( :stuff, /(\w+)(\S+)?/ )
+		@validator.validate( 'stuff' => "   the1tree(!)   " )
+		@validator[:stuff].should == ['the1tree', '(!)']
 	end
 
 	it "returns the captures from a regexp constraint with named captures as a Hash" do
-		rval = nil
-		params = { 'required' => 1, 'regexp_w_named_captures' => "   JVV-886451300133   ".taint }
+		@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/, :untaint )
+		@validator.validate( 'order_number' => "   JVV-886451300133   ".taint )
 
-		@validator.validate( params, :untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
-
-		@validator[:regexp_w_named_captures].should == {:category => 'JVV', :sku => '886451300133'}
-		@validator[:regexp_w_named_captures][:category].should_not be_tainted()
-		@validator[:regexp_w_named_captures][:sku].should_not be_tainted()
+		@validator[:order_number].should == {:category => 'JVV', :sku => '886451300133'}
+		@validator[:order_number][:category].should_not be_tainted()
+		@validator[:order_number][:sku].should_not be_tainted()
 	end
 
 	it "returns the captures from a regexp constraint as an array " +
 		"even if an optional capture doesn't match anything" do
-		rval = nil
-		params = { 'required' => 1, 'regexp_w_captures' => "   the1tree   " }
+		@validator.add( :amount, /^([\-+])?(\d+(?:\.\d+)?)/ )
+		@validator.validate( 'amount' => '2.28' )
 
-		@validator.validate( params, :untaint_all_constraints => true )
-
-		Strelka.log.debug "Validator: %p" % [@validator]
-
-		@validator[:regexp_w_captures].should == ['the1tree', nil]
+		@validator[:amount].should == [ nil, '2.28' ]
 	end
 
 	it "knows the names of fields that were required but missing from the parameters" do
+		@validator.add( :id, :integer, :required )
 		@validator.validate( {} )
 
 		@validator.should have_errors()
 		@validator.should_not be_okay()
 
 		@validator.missing.should have(1).members
-		@validator.missing.should == ['required']
+		@validator.missing.should == ['id']
 	end
 
 	it "knows the names of fields that did not meet their constraints" do
-		params = {'number' => 'rhinoceros'}
-		@validator.validate( params )
+		@validator.add( :number, :integer, :required )
+		@validator.validate( 'number' => 'rhinoceros' )
 
 		@validator.should have_errors()
 		@validator.should_not be_okay()
@@ -203,44 +170,45 @@ describe Strelka::ParamValidator do
 
 	it "can return a combined list of all problem parameters, which includes " +
 		" both missing and invalid fields" do
-		params = {'number' => 'rhinoceros'}
-		@validator.validate( params )
+		@validator.add( :number, :integer )
+		@validator.add( :id, /^(\w{20})$/, :required )
+
+		@validator.validate( 'number' => 'rhinoceros' )
 
 		@validator.should have_errors()
 		@validator.should_not be_okay()
 
 		@validator.error_fields.should have(2).members
 		@validator.error_fields.should include('number')
-		@validator.error_fields.should include('required')
+		@validator.error_fields.should include('id')
 	end
 
 	it "can return human descriptions of validation errors" do
-		params = {'number' => 'rhinoceros', 'unknown' => "1"}
-		@validator.validate( params )
+		@validator.add( :number, :integer )
+		@validator.add( :id, /^(\w{20})$/, :required )
+		@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
 		@validator.error_messages.should have(2).members
-		@validator.error_messages.should include("Missing value for 'Required'")
+		@validator.error_messages.should include("Missing value for 'Id'")
 		@validator.error_messages.should include("Invalid value for 'Number'")
 	end
 
 	it "can include unknown fields in its human descriptions of validation errors" do
-		params = {'number' => 'rhinoceros', 'unknown' => "1"}
-		@validator.validate( params )
+		@validator.add( :number, :integer )
+		@validator.add( :id, /^(\w{20})$/, :required )
+		@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
 		@validator.error_messages(true).should have(3).members
-		@validator.error_messages(true).should include("Missing value for 'Required'")
+		@validator.error_messages(true).should include("Missing value for 'Id'")
 		@validator.error_messages(true).should include("Invalid value for 'Number'")
 		@validator.error_messages(true).should include("Unknown parameter 'Unknown'")
 	end
 
 	it "can use provided descriptions of parameters when constructing human " +
 		"validation error messages" do
-		descs = {
-			:number => "Numeral",
-			:required => "Test Name",
-		}
-		params = {'number' => 'rhinoceros', 'unknown' => "1"}
-		@validator.validate( params, :descriptions => descs )
+		@validator.add( :number, :integer, "Numeral" )
+		@validator.add( :id, /^(\w{20})$/, "Test Name", :required )
+		@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
 		@validator.error_messages.should have(2).members
 		@validator.error_messages.should include("Missing value for 'Test Name'")
@@ -248,13 +216,14 @@ describe Strelka::ParamValidator do
 	end
 
 	it "can get and set the profile's descriptions directly" do
-		params = {'number' => 'rhinoceros', 'unknown' => "1"}
+		@validator.add( :number, :integer )
+		@validator.add( :id, /^(\w{20})$/, :required )
 
 		@validator.descriptions = {
 			number: 'Numeral',
-			required: 'Test Name'
+			id:     'Test Name'
 		}
-		@validator.validate( params )
+		@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
 		@validator.descriptions.should have( 2 ).members
 		@validator.error_messages.should have( 2 ).members
@@ -279,26 +248,24 @@ describe Strelka::ParamValidator do
 	end
 
 	it "coalesces simple hash fields into a hash of validated values" do
-		@validator.validate( {'rodent[size]' => 'unusual'}, :optional => ['rodent[size]'] )
+		@validator.add( 'rodent[size]', :string )
+		@validator.validate( 'rodent[size]' => 'unusual' )
 
 		@validator.valid.should == {'rodent' => {'size' => 'unusual'}}
 	end
 
 	it "coalesces complex hash fields into a nested hash of validated values" do
-		profile = {
-			:optional => [
-				'recipe[ingredient][name]',
-				'recipe[ingredient][cost]',
-				'recipe[yield]'
-			]
-		}
+		@validator.add( 'recipe[ingredient][name]', :string )
+		@validator.add( 'recipe[ingredient][cost]', :string )
+		@validator.add( 'recipe[yield]', :string )
+
 		args = {
 			'recipe[ingredient][name]' => 'nutmeg',
 			'recipe[ingredient][cost]' => '$0.18',
 			'recipe[yield]' => '2 loaves',
 		}
+		@validator.validate( args )
 
-		@validator.validate( args, profile )
 		@validator.valid.should == {
 			'recipe' => {
 				'ingredient' => { 'name' => 'nutmeg', 'cost' => '$0.18' },
@@ -308,28 +275,19 @@ describe Strelka::ParamValidator do
 	end
 
 	it "untaints both keys and values in complex hash fields if untainting is turned on" do
-		profile = {
-			:required => [
-				'recipe[ingredient][rarity]',
-			],
-			:optional => [
-				'recipe[ingredient][name]',
-				'recipe[ingredient][cost]',
-				'recipe[yield]'
-			],
-			:constraints	=> {
-				'recipe[ingredient][rarity]' => /^([\w\-]+)$/,
-			},
-			:untaint_all_constraints => true,
-		}
+		@validator.add( 'recipe[ingredient][rarity]', /^([\w\-]+)$/, :required )
+		@validator.add( 'recipe[ingredient][name]', :string )
+		@validator.add( 'recipe[ingredient][cost]', :string )
+		@validator.add( 'recipe[yield]', :string )
+		@validator.untaint_all_constraints
+
 		args = {
 			'recipe[ingredient][rarity]'.taint => 'super-rare'.taint,
 			'recipe[ingredient][name]'.taint => 'nutmeg'.taint,
 			'recipe[ingredient][cost]'.taint => '$0.18'.taint,
 			'recipe[yield]'.taint => '2 loaves'.taint,
 		}
-
-		@validator.validate( args, profile )
+		@validator.validate( args )
 
 		@validator.valid.should == {
 			'recipe' => {
@@ -349,335 +307,306 @@ describe Strelka::ParamValidator do
 	end
 
 	it "accepts the value 'true' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'true'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'true' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_true()
+		@validator[:enabled].should be_true()
 	end
 
 	it "accepts the value 't' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 't'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 't' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_true()
+		@validator[:enabled].should be_true()
 	end
 
 	it "accepts the value 'yes' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'yes'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'yes' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_true()
+		@validator[:enabled].should be_true()
 	end
 
 	it "accepts the value 'y' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'y'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'y' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_true()
+		@validator[:enabled].should be_true()
 	end
 
 	it "accepts the value '1' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => '1'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => '1' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_true()
+		@validator[:enabled].should be_true()
 	end
 
 	it "accepts the value 'false' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'false'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'false' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_false()
+		@validator[:enabled].should be_false()
 	end
 
 	it "accepts the value 'f' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'f'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'f' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_false()
+		@validator[:enabled].should be_false()
 	end
 
 	it "accepts the value 'no' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'no'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'no' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_false()
+		@validator[:enabled].should be_false()
 	end
 
 	it "accepts the value 'n' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'n'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'n' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_false()
+		@validator[:enabled].should be_false()
 	end
 
 	it "accepts the value '0' for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => '0'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => '0' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:bool_constraint].should be_false()
+		@validator[:enabled].should be_false()
 	end
 
 	it "rejects non-boolean parameters for fields with boolean constraints" do
-		params = {'required' => '1', 'bool_constraint' => 'peanut'}
-
-		@validator.validate( params )
+		@validator.add( :enabled, :boolean )
+		@validator.validate( 'enabled' => 'peanut' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:bool_constraint].should be_nil()
+		@validator[:enabled].should be_nil()
 	end
 
 	it "accepts simple integers for fields with integer constraints" do
-		params = {'required' => '1', 'int_constraint' => '11'}
-
-		@validator.validate( params )
+		@validator.add( :count, :integer )
+		@validator.validate( 'count' => '11' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:int_constraint].should == 11
+		@validator[:count].should == 11
 	end
 
 	it "accepts '0' for fields with integer constraints" do
-		params = {'required' => '1', 'int_constraint' => '0'}
-
-		@validator.validate( params )
+		@validator.add( :count, :integer )
+		@validator.validate( 'count' => '0' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:int_constraint].should == 0
+		@validator[:count].should == 0
 	end
 
 	it "accepts negative integers for fields with integer constraints" do
-		params = {'required' => '1', 'int_constraint' => '-407'}
-
-		@validator.validate( params )
+		@validator.add( :count, :integer )
+		@validator.validate( 'count' => '-407' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:int_constraint].should == -407
+		@validator[:count].should == -407
 	end
 
 	it "rejects non-integers for fields with integer constraints" do
-		params = {'required' => '1', 'int_constraint' => '11.1'}
-
-		@validator.validate( params )
+		@validator.add( :count, :integer )
+		@validator.validate( 'count' => '11.1' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:int_constraint].should be_nil()
+		@validator[:count].should be_nil()
 	end
 
 	it "rejects integer values with other cruft in them for fields with integer constraints" do
-		params = {'required' => '1', 'int_constraint' => '88licks'}
-
-		@validator.validate( params )
+		@validator.add( :count, :integer )
+		@validator.validate( 'count' => '88licks' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:int_constraint].should be_nil()
+		@validator[:count].should be_nil()
 	end
 
 	it "accepts simple floats for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '3.14'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '3.14' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 3.14
+		@validator[:amount].should == 3.14
 	end
 
 	it "accepts negative floats for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '-3.14'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '-3.14' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == -3.14
+		@validator[:amount].should == -3.14
 	end
 
 	it "accepts positive floats for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '+3.14'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '+3.14' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 3.14
+		@validator[:amount].should == 3.14
 	end
 
 	it "accepts floats that begin with '.' for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '.1418'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '.1418' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 0.1418
+		@validator[:amount].should == 0.1418
 	end
 
 	it "accepts negative floats that begin with '.' for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '-.171'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '-.171' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == -0.171
+		@validator[:amount].should == -0.171
 	end
 
 	it "accepts positive floats that begin with '.' for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '+.86668001'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '+.86668001' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 0.86668001
+		@validator[:amount].should == 0.86668001
 	end
 
 	it "accepts floats in exponential notation for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '1756e-5'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '1756e-5' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 0.01756
+		@validator[:amount].should == 1756e-5
 	end
 
 	it "accepts negative floats in exponential notation for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '-28e8'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '-28e8' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == -28e8
+		@validator[:amount].should == -28e8
 	end
 
 	it "accepts floats that start with '.' in exponential notation for fields with float " +
 	   "constraints" do
-		params = {'required' => '1', 'float_constraint' => '.5552e-10'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '.5552e-10' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 0.5552e-10
+		@validator[:amount].should == 0.5552e-10
 	end
 
 	it "accepts negative floats that start with '.' in exponential notation for fields with " +
 	   "float constraints" do
-		params = {'required' => '1', 'float_constraint' => '-.288088e18'}
+	   @validator.add( :amount, :float )
+	   @validator.validate( 'amount' => '-.288088e18' )
 
-		@validator.validate( params )
+	   @validator.should be_okay()
+	   @validator.should_not have_errors()
 
-		@validator.should be_okay()
-		@validator.should_not have_errors()
-
-		@validator[:float_constraint].should == -0.288088e18
+	   @validator[:amount].should == -0.288088e18
 	end
 
 	it "accepts integers for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '288'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '288' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 288.0
+		@validator[:amount].should == 288.0
 	end
 
 	it "accepts negative integers for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '-1606'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '-1606' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == -1606.0
+		@validator[:amount].should == -1606.0
 	end
 
 	it "accepts positive integers for fields with float constraints" do
-		params = {'required' => '1', 'float_constraint' => '+2600'}
-
-		@validator.validate( params )
+		@validator.add( :amount, :float )
+		@validator.validate( 'amount' => '2600' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:float_constraint].should == 2600.0
+		@validator[:amount].should == 2600.0
 	end
 
-	it "accepts dates for fields with date constraints" do
-		params = {'required' => '1', 'date_constraint' => '2008-11-18'}
 
-		@validator.validate( params )
+	it "accepts dates for fields with date constraints" do
+		@validator.add( :expires, :date )
+		@validator.validate( 'expires' => '2008-11-18' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:date_constraint].should == Date.parse( '2008-11-18' )
+		@validator[:expires].should == Date.parse( '2008-11-18' )
 	end
 
 
@@ -716,15 +645,14 @@ describe Strelka::ParamValidator do
 
 	VALID_URIS.each do |uri_string|
 		it "accepts #{uri_string} for fields with URI constraints" do
-			params = {'required' => '1', 'uri_constraint' => uri_string}
-
-			@validator.validate( params )
+			@validator.add( :homepage, :uri )
+			@validator.validate( 'homepage' => uri_string )
 
 			@validator.should be_okay()
 			@validator.should_not have_errors()
 
-			@validator[:uri_constraint].should be_a_kind_of( URI::Generic )
-			@validator[:uri_constraint].to_s.should == uri_string
+			@validator[:homepage].should be_a_kind_of( URI::Generic )
+			@validator[:homepage].to_s.should == uri_string
 		end
 	end
 
@@ -760,39 +688,34 @@ describe Strelka::ParamValidator do
 
 	INVALID_URIS.each do |uri_string|
 		it "rejects #{uri_string} for fields with URI constraints" do
-			params = {'required' => '1', 'uri_constraint' => uri_string}
-
-			# lambda {
-				@validator.validate( params )
-			# }.should_not raise_error()
+			@validator.add( :homepage, :uri )
+			@validator.validate( 'homepage' => uri_string )
 
 			@validator.should_not be_okay()
 			@validator.should have_errors()
 
-			@validator[:uri_constraint].should be_nil()
+			@validator[:homepage].should be_nil()
 		end
 	end
 
 	it "accepts simple RFC822 addresses for fields with email constraints" do
-		params = {'required' => '1', 'email_constraint' => 'jrandom@hacker.ie'}
-
-		@validator.validate( params )
+		@validator.add( :email )
+		@validator.validate( 'email' => 'jrandom@hacker.ie' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:email_constraint].should == 'jrandom@hacker.ie'
+		@validator[:email].should == 'jrandom@hacker.ie'
 	end
 
 	it "accepts hyphenated domains in RFC822 addresses for fields with email constraints" do
-		params = {'required' => '1', 'email_constraint' => 'jrandom@just-another-hacquer.fr'}
-
-		@validator.validate( params )
+		@validator.add( :email )
+		@validator.validate( 'email' => 'jrandom@just-another-hacquer.fr' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:email_constraint].should == 'jrandom@just-another-hacquer.fr'
+		@validator[:email].should == 'jrandom@just-another-hacquer.fr'
 	end
 
 	COMPLEX_ADDRESSES = [
@@ -803,14 +726,13 @@ describe Strelka::ParamValidator do
 	]
 	COMPLEX_ADDRESSES.each do |addy|
 		it "accepts #{addy} for fields with email constraints" do
-			params = {'required' => '1', 'email_constraint' => addy}
-
-			@validator.validate( params )
+			@validator.add( :mail, :email )
+			@validator.validate( 'mail' => addy )
 
 			@validator.should be_okay()
 			@validator.should_not have_errors()
 
-			@validator[:email_constraint].should == addy
+			@validator[:mail].should == addy
 		end
 	end
 
@@ -824,37 +746,34 @@ describe Strelka::ParamValidator do
 	]
 	BOGUS_ADDRESSES.each do |addy|
 		it "rejects #{addy} for fields with email constraints" do
-			params = {'required' => '1', 'email_constraint' => addy}
-
-			@validator.validate( params )
+			@validator.add( :mail, :email )
+			@validator.validate( 'mail' => addy )
 
 			@validator.should_not be_okay()
 			@validator.should have_errors()
 
-			@validator[:email_constraint].should be_nil()
+			@validator[:mail].should be_nil()
 		end
 	end
 
 	it "accepts simple hosts for fields with host constraints" do
-		params = {'required' => '1', 'host_constraint' => 'deveiate.org'}
-
-		@validator.validate( params )
+		@validator.add( :host, :hostname )
+		@validator.validate( 'host' => 'deveiate.org' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:host_constraint].should == 'deveiate.org'
+		@validator[:host].should == 'deveiate.org'
 	end
 
 	it "accepts hyphenated hosts for fields with host constraints" do
-		params = {'required' => '1', 'host_constraint' => 'your-characters-can-fly.kr'}
-
-		@validator.validate( params )
+		@validator.add( :hostname )
+		@validator.validate( 'hostname' => 'your-characters-can-fly.kr' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:host_constraint].should == 'your-characters-can-fly.kr'
+		@validator[:hostname].should == 'your-characters-can-fly.kr'
 	end
 
 	BOGUS_HOSTS = [
@@ -867,60 +786,55 @@ describe Strelka::ParamValidator do
 
 	BOGUS_HOSTS.each do |hostname|
 		it "rejects #{hostname} for fields with host constraints" do
-			params = {'required' => '1', 'host_constraint' => hostname}
-
-			@validator.validate( params )
+			@validator.add( :hostname )
+			@validator.validate( 'hostname' => hostname )
 
 			@validator.should_not be_okay()
 			@validator.should have_errors()
 
-			@validator[:host_constraint].should be_nil()
+			@validator[:hostname].should be_nil()
 		end
 	end
 
 	it "accepts alpha characters for fields with alpha constraints" do
-		params = {'required' => '1', 'alpha_constraint' => 'abelincoln'}
-
-		@validator.validate( params )
+		@validator.add( :alpha )
+		@validator.validate( 'alpha' => 'abelincoln' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:alpha_constraint].should == 'abelincoln'
+		@validator[:alpha].should == 'abelincoln'
 	end
 
 	it "rejects non-alpha characters for fields with alpha constraints" do
-		params = {'required' => '1', 'alpha_constraint' => 'duck45'}
-
-		@validator.validate( params )
+		@validator.add( :alpha )
+		@validator.validate( 'alpha' => 'duck45' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:alpha_constraint].should be_nil()
+		@validator[:alpha].should be_nil()
 	end
 
 	### 'alphanumeric'
 	it "accepts alphanumeric characters for fields with alphanumeric constraints" do
-		params = {'required' => '1', 'alphanumeric_constraint' => 'zombieabe11'}
-
-		@validator.validate( params )
+		@validator.add( :username, :alphanumeric )
+		@validator.validate( 'username' => 'zombieabe11' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:alphanumeric_constraint].should == 'zombieabe11'
+		@validator[:username].should == 'zombieabe11'
 	end
 
 	it "rejects non-alphanumeric characters for fields with alphanumeric constraints" do
-		params = {'required' => '1', 'alphanumeric_constraint' => 'duck!ling'}
-
-		@validator.validate( params )
+		@validator.add( :username, :alphanumeric )
+		@validator.validate( 'username' => 'duck!ling' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:alphanumeric_constraint].should be_nil()
+		@validator[:username].should be_nil()
 	end
 
 	### 'printable'
@@ -931,70 +845,64 @@ describe Strelka::ParamValidator do
         spider, carrying you into the aether with a humming, crackling sound.
 		EOF
 
-		params = {
-			'required' => '1',
-			'printable_constraint' => test_content
-		}
-
-		@validator.validate( params )
+		@validator.add( :prologue, :printable )
+		@validator.validate( 'prologue' => test_content )
 
 		@validator.should be_okay()
-		@validator[:printable_constraint].should == test_content
+		@validator[:prologue].should == test_content
 	end
 
 	it "rejects non-printable characters for fields with 'printable' constraints" do
-		params = {'required' => '1', 'printable_constraint' => %{\0Something cold\0}}
-
-		@validator.validate( params )
+		@validator.add( :prologue, :printable )
+		@validator.validate( 'prologue' => %{\0Something cold\0} )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:printable_constraint].should be_nil()
+		@validator[:prologue].should be_nil()
 	end
 
 
 	it "accepts any word characters for fields with 'word' constraints" do
-		params = {
-			'required' => '1',
-			'word_constraint' => "Собака"
-		}
-
-		@validator.validate( params )
+		@validator.add( :vocab_word, :word )
+		@validator.validate( 'vocab_word' => "Собака" )
 
 		@validator.should_not have_errors()
 		@validator.should be_okay()
 
-		@validator[:word_constraint].should == params['word_constraint']
+		@validator[:vocab_word].should == "Собака"
 	end
 
 	it "accepts parameters for fields with Proc constraints if the Proc returns a true value" do
 		test_date = '2007-07-17'
-		params = {'required' => '1', 'proc_constraint' => test_date}
 
-		@validator.validate( params )
+		@validator.add( :creation_date ) do |input|
+			Date.parse( input )
+		end
+		@validator.validate( 'creation_date' => test_date )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:proc_constraint].should == Date.parse( test_date )
+		@validator[:creation_date].should == Date.parse( test_date )
 	end
 
 	it "rejects parameters for fields with Proc constraints if the Proc returns a false value" do
-		params = {'required' => '1', 'proc_constraint' => %{::::}}
-
-		@validator.validate( params )
+		@validator.add( :creation_date ) do |input|
+			Date.parse( input )
+		end
+		@validator.validate( 'creation_date' => '::::' )
 
 		@validator.should_not be_okay()
 		@validator.should have_errors()
 
-		@validator[:proc_constraint].should be_nil()
+		@validator[:creation_date].should be_nil()
 	end
 
 	it "can be merged with another set of parameters" do
-		params = {}
-		@validator.validate( params )
-		newval = @validator.merge( 'required' => '1' )
+		@validator.add( :foo, :integer, :required )
+		@validator.validate( {} )
+		newval = @validator.merge( 'foo' => '1' )
 
 		newval.should_not equal( @validator )
 
@@ -1003,57 +911,58 @@ describe Strelka::ParamValidator do
 		newval.should be_okay()
 		newval.should_not have_errors()
 
-		@validator[:required].should == nil
-		newval[:required].should == '1'
+		@validator[:foo].should == nil
+		newval[:foo].should == 1
 	end
 
 	it "can have required parameters merged into it after the initial validation" do
-		params = {}
-		@validator.validate( params )
-		@validator.merge!( 'required' => '1' )
+		@validator.add( :foo, :integer, :required )
+		@validator.validate( {} )
+		@validator.merge!( 'foo' => '1' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:required].should == '1'
+		@validator[:foo].should == 1
 	end
 
 	it "can have optional parameters merged into it after the initial validation" do
-		params = { 'required' => '1' }
-		@validator.validate( params )
-		@validator.merge!( 'optional' => 'yep.' )
+		@validator.add( :foom, /^\d+$/ )
+		@validator.validate( {} )
+		@validator.merge!( 'foom' => '5' )
 
 		@validator.should be_okay()
 		@validator.should_not have_errors()
 
-		@validator[:optional].should == 'yep.'
+		@validator[:foom].should == '5'
 	end
 
-	it "rejects invalid parameters when they're merged after initial validation" do
-		params = { 'required' => '1', 'number' => '88' }
-		@validator.validate( params )
-		@validator.merge!( 'number' => 'buckwheat noodles' )
+    it "rejects invalid parameters when they're merged after initial validation" do
+            @validator.add( :foom, /^\d+$/ )
+            @validator.add( :bewm, /^\d+$/ )
+            @validator.validate( 'foom' => "1" )
 
-		@validator.should_not be_okay()
-		@validator.should have_errors()
+            @validator.merge!( 'bewm' => 'buckwheat noodles' )
 
-		@validator[:number].should be_nil()
-	end
+            @validator.should_not be_okay()
+            @validator.should have_errors()
+            @validator[:bewm].should == nil
+    end
 
-	it "allows valid parameters to be fetched en masse" do
-		params = { 'required' => '1', 'number' => '88' }
-		@validator.validate( params )
-		@validator.values_at( :required, :number ).should == [ '1', '88' ]
-	end
+    it "allows valid parameters to be fetched en masse" do
+            @validator.add( :foom, /^\d+$/ )
+            @validator.add( :bewm, /^\d+$/ )
+            @validator.validate( 'foom' => "1", "bewm" => "2" )
+            @validator.values_at( :foom, :bewm ).should == [ '1', '2' ]
+    end
 
-	it "treats ArgumentErrors in builtin constraints as validation failures" do
-		params = { 'required' => '1', 'number' => 'jalopy' }
-		@validator.validate( params )
-		@validator.should_not be_okay()
-		@validator.should have_errors()
-		@validator.error_messages.should == ["Invalid value for 'Number'"]
-		@validator[:number].should == nil
-	end
+    it "treats ArgumentErrors in builtin constraints as validation failures" do
+            @validator.add( :integer )
+            @validator.validate( 'integer' => 'jalopy' )
+            @validator.should_not be_okay()
+            @validator.should have_errors()
+            @validator[:integer].should be_nil()
+    end
 
 end
 

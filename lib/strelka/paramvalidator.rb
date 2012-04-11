@@ -20,49 +20,43 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 #   require 'strelka/app/formvalidator'
 #
-#	# Profile specifies validation criteria for input
-#	profile = {
-#     :required		=> :name,
-#     :optional		=> [:email, :description],
-#     :filters		=> [:strip, :squeeze],
-#     :untaint_all_constraints => true,
-#     :descriptions	=> {
-#       :email          => "Customer Email",
-#       :description    => "Issue Description",
-#       :name           => "Customer Name",
-#     },
-#     :constraints  => {
-#       :email  => :email,
-#       :name   => /^[\x20-\x7f]+$/,
-#       :description => /^[\x20-\x7f]+$/,
-#     },
-#	}
-#
-#	# Create a validator object and pass in a hash of request parameters and the
-#	# profile hash.
 #   validator = Strelka::ParamValidator.new
-#	validator.validate( req_params, profile )
 #
-#	# Now if there weren't any errors, send the success page
+#	# Add validation criteria for input parameters
+#	validator.add( :name, /^(?<lastname>\S+), (?<firstname>\S+)$/, "Customer Name" )
+#	validator.add( :email, "Customer Email" )
+#	validator.add( :feedback, :printable, "Customer Feedback" )
+#
+#   # Untaint all parameter values which match their constraints
+#   validate.untaint_all_constraints = true
+#
+#	# Now pass in tainted values in a hash (e.g., from an HTML form)
+#	validator.validate( req.params )
+#
+#	# Now if there weren't any errors, use some form values to fill out the
+#   # success page template
 #	if validator.okay?
-#		return success_template
+#		tmpl = template :success
+#       tmpl.firstname = validator[:name][:firstname]
+#       tmpl.lastname  = validator[:name][:lastname]
+#       tmpl.email     = validator[:email]
+#       tmpl.feedback  = validator[:feedback]
+#       return tmpl
 #
 #	# Otherwise fill in the error template with auto-generated error messages
 #	# and return that instead.
 #	else
-#		failure_template.errors( validator.error_messages )
-#		return failure_template
+#       tmpl = template :feedback_form
+#		tmpl.errors = validator.error_messages
+#		return tmpl
 #	end
 #
 class Strelka::ParamValidator < ::FormValidator
 	extend Forwardable
 	include Strelka::Loggable
 
-
-	# Validation default config
-	DEFAULT_PROFILE = {
-		:descriptions => {},
-	}
+	# Options that are passed as Symbols to .param
+	FLAGS = [ :required, :untaint ]
 
 	#
 	# RFC822 Email Address Regex
@@ -110,6 +104,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 	# The Hash of builtin constraints that are validated against a regular
 	# expression.
+	# :TODO: Document that these are the built-in constraints that can be used in a route
 	BUILTIN_CONSTRAINT_PATTERNS = {
 		:boolean      => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
 		:integer      => /^(?<integer>[\-\+]?\d+)$/,
@@ -123,6 +118,11 @@ class Strelka::ParamValidator < ::FormValidator
 		:hostname     => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
 		:uri          => /^(?<uri>#{URI::URI_REF})$/,
 	}
+
+	# Pattern to use to strip binding operators from parameter patterns so they
+	# can be used in the middle of routing Regexps.
+	PARAMETER_PATTERN_STRIP_RE = Regexp.union( '^', '$', '\\A', '\\z', '\\Z' )
+
 
 
 	### Return a Regex for the built-in constraint associated with the given +name+. If
@@ -138,11 +138,19 @@ class Strelka::ParamValidator < ::FormValidator
 	#################################################################
 
 	### Create a new Strelka::ParamValidator object.
-	def initialize( profile, params=nil )
+	def initialize( profile={} )
+		@profile = {
+			descriptions:              {},
+			required:                  [],
+			optional:                  [],
+			descriptions:              {},
+			constraints:               {},
+			untaint_constraint_fields: [],
+		}.merge( profile )
+
 		@form                = {}
 		@raw_form            = {}
-		@profile             = DEFAULT_PROFILE.merge( profile )
-		@invalid_fields      = []
+		@invalid_fields      = {}
 		@missing_fields      = []
 		@unknown_fields      = []
 		@required_fields     = []
@@ -150,18 +158,22 @@ class Strelka::ParamValidator < ::FormValidator
 		@optional_fields     = []
 		@filters_array       = []
 		@untaint_fields      = []
+		@untaint_all         = false
 
 		@parsed_params       = nil
-
-		self.validate( params ) if params
 	end
 
 
 	### Copy constructor.
 	def initialize_copy( original )
+		super
+
+		@profile = original.profile.dup
+		@profile.each_key {|k| @profile[k] = @profile[k].clone }
+		self.log.debug "Copied validator profile: %p" % [ @profile ]
+
 		@form                = @form.clone
 		@raw_form            = @form.clone
-		@profile             = @profile.clone
 		@invalid_fields      = @invalid_fields.clone
 		@missing_fields      = @missing_fields.clone
 		@unknown_fields      = @unknown_fields.clone
@@ -170,6 +182,7 @@ class Strelka::ParamValidator < ::FormValidator
 		@optional_fields     = @optional_fields.clone
 		@filters_array       = @filters_array.clone
 		@untaint_fields      = @untaint_fields.clone
+		@untaint_all         = original.untaint_all?
 
 		@parsed_params       = @parsed_params.clone if @parsed_params
 	end
@@ -180,11 +193,102 @@ class Strelka::ParamValidator < ::FormValidator
 	public
 	######
 
+	# The profile hash
+	attr_reader :profile
+
 	# The raw form data Hash
 	attr_reader :raw_form
 
 	# The validated form data Hash
 	attr_reader :form
+
+	# Global untainting flag
+	attr_accessor :untaint_all
+	alias_method :untaint_all_constraints=, :untaint_all=
+	alias_method :untaint_all?, :untaint_all
+	alias_method :untaint_all_constraints, :untaint_all
+	alias_method :untaint_all_constraints?, :untaint_all
+
+
+
+	### Return the Array of declared parameter validations.
+	def param_names
+		return self.profile[:required] | self.profile[:optional]
+	end
+
+
+	### Fetch the constraint/s that apply to the parameter with the given
+	### +name+.
+	def constraint_for( name )
+		constraint = self.profile[:constraints][ name.to_sym ] or
+			raise ScriptError, "no parameter %p defined" % [ name ]
+		return constraint
+	end
+
+
+	### Fetch the constraint/s that apply to the parameter named +name+ as a
+	### Regexp, if possible.
+	def constraint_regexp_for( name )
+		self.log.debug "  searching for a constraint for %p" % [ name ]
+
+		# Munge the constraint into a Regexp
+		constraint = self.constraint_for( name )
+		re = case constraint
+			when Regexp
+				self.log.debug "  regex constraint is: %p" % [ constraint ]
+				constraint
+			when Array
+				sub_res = constraint.map( &self.method(:extract_route_from_constraint) )
+				Regexp.union( sub_res )
+			when Symbol
+				self.class.pattern_for_constraint( constraint ) or
+					raise ScriptError, "no pattern for built-in %p constraint" % [ constraint ]
+			else
+				raise ScriptError,
+					"can't route on a parameter with a %p constraint %p" % [ constraint.class ]
+			end
+
+		self.log.debug "  bounded constraint is: %p" % [ re ]
+
+		# Unbind the pattern from beginning or end of line.
+		# :TODO: This is pretty ugly. Find a better way of modifying the regex.
+		re_str = re.to_s.
+			sub( %r{\(\?[\-mix]+:(.*)\)}, '\\1' ).
+			gsub( PARAMETER_PATTERN_STRIP_RE, '' )
+		self.log.debug "  stripped constraint pattern down to: %p" % [ re_str ]
+
+		return Regexp.new( "(?<#{name}>#{re_str})", re.options )
+	end
+
+
+	### :call-seq:
+	###    param( name, *flags )
+	###    param( name, constraint, *flags )
+	###    param( name, description, *flags )
+	###    param( name, constraint, description, *flags )
+	###
+	### Add a validation for a parameter with the specified +name+. The +args+ can include
+	### a constraint, a description, and one or more flags.
+	def add( name, *args, &block )
+		name = name.to_sym
+		raise ArgumentError,
+			"parameter %p is already defined; perhaps you meant to use #override?" % [name] if
+			self.param_names.include?( name )
+
+		self.set_param( name, *args, &block )
+	end
+
+
+	### Replace the existing parameter with the specified +name+. The +args+ replace
+	### the existing description, constraints, and flags. See #add for details.
+	def override( name, *args, &block )
+		name = name.to_sym
+		raise ArgumentError,
+			"no parameter %p defined; perhaps you meant to use #add?" % [name] unless
+			self.param_names.include?( name )
+
+		self.set_param( name, *args, &block )
+	end
 
 
 	### Stringified description of the validator
@@ -194,6 +298,26 @@ class Strelka::ParamValidator < ::FormValidator
 			self.form.size,
 			self.invalid.size,
 			self.missing.size,
+		]
+	end
+
+
+	### Return a human-readable representation of the validator, suitable for debugging.
+	def inspect
+		required = self.profile[:required].collect do |field|
+			"%s (%p)" % [ field, self.profile[:constraints][field] ]
+		end.join( ',' )
+		optional = self.profile[:optional].collect do |field|
+			"%s (%p)" % [ field, self.profile[:constraints][field] ]
+		end.join( ',' )
+
+		return "#<%p:0x%016x %s, profile: [required: %s, optional: %s] global untaint: %s>" % [
+			self.class,
+			self.object_id / 2,
+			self.to_s,
+			required.empty? ? "(none)" : required,
+			optional.empty? ? "(none)" : optional,
+			self.untaint_all? ? "enabled" : "disabled",
 		]
 	end
 
@@ -212,16 +336,67 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Validate the input in +params+. If the optional +additional_profile+ is
 	### given, merge it with the validator's default profile before validating.
-	def validate( params, additional_profile=nil )
+	def validate( params=nil, additional_profile=nil )
+		params ||= {}
+
+		self.log.info "Validating request params: %p with profile: %p" %
+			[ params, @profile ]
 		@raw_form = params.dup
 		profile = @profile
 
 		if additional_profile
-			self.log.debug "Merging additional profile %p" % [additional_profile]
+			self.log.debug "  merging additional profile %p" % [ additional_profile ]
 			profile = @profile.merge( additional_profile )
 		end
 
+		self.log.debug "Calling superclass's validate: %p" % [ self ]
 		super( params, profile )
+	end
+
+
+	protected :convert_profile
+
+    # Load profile with a hash describing valid input.
+	def setup(form_data, profile)
+		@form    = form_data
+		@profile = self.convert_profile( @profile )
+	end
+
+
+	### Set the parameter +name+ in the profile to validate using the given +args+,
+	### which are the same as the ones passed to #add and #override.
+	def set_param( name, *args, &block )
+		args.unshift( block ) if block
+
+		# Custom validator -- either a callback or a regex
+		if args.first.is_a?( Regexp ) || args.first.respond_to?( :call )
+			self.profile[:constraints][ name ] = args.shift
+
+		# Builtin match validator, either explicit or implied by the name
+		else
+			constraint = args.shift if args.first.is_a?( Symbol ) && !FLAGS.include?( args.first )
+			constraint ||= name
+
+			raise ArgumentError, "no builtin %p validator" % [ constraint ] unless
+				self.respond_to?( "match_#{constraint}" )
+			self.profile[:constraints][ name ] = constraint
+		end
+
+		self.profile[:descriptions][ name ] = args.shift if args.first.is_a?( String )
+
+		if args.include?( :required )
+			self.profile[:required] |= [ name ]
+			self.profile[:optional].delete( name )
+		else
+			self.profile[:required].delete( name )
+			self.profile[:optional] |= [ name ]
+		end
+
+		if args.include?( :untaint )
+			self.profile[:untaint_constraint_fields] |= [ name ]
+		else
+			self.profile[:untaint_constraint_fields].delete( :name )
+		end
 	end
 
 
@@ -273,26 +448,19 @@ class Strelka::ParamValidator < ::FormValidator
 	### Returns +true+ if the given +field+ is one that should be untainted.
 	def untaint?( field )
 		self.log.debug "Checking to see if %p should be untainted." % [field]
-		rval = ( @untaint_all ||
+		rval = ( self.untaint_all? ||
 			@untaint_fields.include?(field) ||
 			@untaint_fields.include?(field.to_sym) )
 
 		if rval
 			self.log.debug "  ...yep it should."
 		else
-			self.log.debug "  ...nope; untaint fields is: %p" % [ @untaint_fields ]
+			self.log.debug "  ...nope; untaint_all is: %p, untaint fields is: %p" %
+				[ @untaint_all, @untaint_fields ]
 		end
 
 		return rval
 	end
-
-
-	### Overridden so that the presence of :untaint_constraint_fields doesn't
-	### disable the :untaint_all_constraints flag.
-	def untaint_all_constraints
-		@untaint_all = @profile[:untaint_all_constraints] ? true : false
-	end
-
 
 
 	### Return an array of field names which had some kind of error associated
@@ -412,8 +580,12 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
+	#########
+	protected
+	#########
+
 	#
-	# :section: Constraint methods
+	# :section: Builtin Match Constraints
 	#
 
 	### Try to match the specified +val+ using the built-in constraint pattern
@@ -521,9 +693,14 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
+	#
+	# :section: Constraint method
+	#
+
 	### Apply one or more +constraints+ to the field value/s corresponding to
 	### +key+.
 	def do_constraint( key, constraints )
+		self.log.debug "Applying constraints %p to field %p" % [ constraints, key ]
 		constraints.each do |constraint|
 			case constraint
 			when String
@@ -640,7 +817,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Set the form value for the given +key+. If +value+ is false, add it to
 	### the list of invalid fields with a description derived from the specified
-	### +constraint+.
+	### +constraint+. Called by constraint methods when they succeed.
 	def set_form_value( key, value, constraint )
 		key.untaint
 
@@ -680,30 +857,30 @@ class Strelka::ParamValidator < ::FormValidator
 	### The formvalidator filters method has a bug where he assumes an array
 	###	 when it is in fact a string for multiple values (ie anytime you have a
 	###	 text-area with newlines in it).
-	def filters
-		@filters_array = Array(@profile[:filters]) unless(@filters_array)
-		@filters_array.each do |filter|
-
-			if respond_to?( "filter_#{filter}" )
-				@form.keys.each do |field|
-					# If a key has multiple elements, apply filter to each element
-					@field_array = Array( @form[field] )
-
-					if @field_array.length > 1
-						@field_array.each_index do |i|
-							elem = @field_array[i]
-							@field_array[i] = self.send("filter_#{filter}", elem)
-						end
-					else
-						if not @form[field].to_s.empty?
-							@form[field] = self.send("filter_#{filter}", @form[field].to_s)
-						end
-					end
-				end
-			end
-		end
-		@form
-	end
+	# def filters
+	# 	@filters_array = Array(@profile[:filters]) unless(@filters_array)
+	# 	@filters_array.each do |filter|
+	# 
+	# 		if respond_to?( "filter_#{filter}" )
+	# 			@form.keys.each do |field|
+	# 				# If a key has multiple elements, apply filter to each element
+	# 				@field_array = Array( @form[field] )
+	# 
+	# 				if @field_array.length > 1
+	# 					@field_array.each_index do |i|
+	# 						elem = @field_array[i]
+	# 						@field_array[i] = self.send("filter_#{filter}", elem)
+	# 					end
+	# 				else
+	# 					if not @form[field].to_s.empty?
+	# 						@form[field] = self.send("filter_#{filter}", @form[field].to_s)
+	# 					end
+	# 				end
+	# 			end
+	# 		end
+	# 	end
+	# 	@form
+	# end
 
 
 	#######

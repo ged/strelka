@@ -216,10 +216,12 @@ module Strelka::App::Routing
 			return pattern.split( '/' ).collect do |component|
 
 				if component.start_with?( ':' )
+					Strelka.log.debug "translating parameter component %p to a regexp" % [component]
 					raise ScriptError,
 						"parameter-based routing not supported without a 'parameters' plugin" unless
-						self.respond_to?( :extract_route_from_constraint )
-					self.extract_route_from_constraint( component )
+						self.respond_to?( :paramvalidator )
+					component = component.slice( 1..-1 )
+					self.paramvalidator.constraint_regexp_for( component )
 				else
 					component
 				end

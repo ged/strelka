@@ -236,7 +236,7 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
 					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
@@ -248,7 +248,7 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
 					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
@@ -260,7 +260,7 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
 					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
@@ -272,7 +272,7 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
 					  {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
 			end
 
