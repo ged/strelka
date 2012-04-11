@@ -6,11 +6,11 @@ planned for a future release.
 Everything here is subject to change, but we'll try to keep this document
 up-to-date if it does.
 
-== Leash
+== /bin/strelka CLI App
 
 Show a list of installed applications:
 
-    $ leash discover
+    $ strelka discover
     Searching for Strelka applications...
     
     strelka:
@@ -27,7 +27,7 @@ mongrel2 config database:
 
     $ mkdir /service/cms
 	$ cd /service/cms
-    $ leash -c /usr/local/etc/mongrel2.sqlite setup strelka-cms content-manager
+    $ strelka -c /usr/local/etc/mongrel2.sqlite setup strelka-cms content-manager
 
 The application can register pre- and post-install hooks that run migrations,
 prompt for config values, etc.
@@ -35,7 +35,7 @@ prompt for config values, etc.
 Then, to start the app:
 
     $ cd /service/cms
-    $ leash --sudo start
+    $ strelka --sudo start
 
 This stuff will probably use Isolate[https://github.com/jbarnette/isolate] for
 gem sandboxing.

@@ -35,6 +35,8 @@ module Strelka
 	include Strelka::Constants
 
 	require 'strelka/exceptions'
+	require 'strelka/mixins'
+	extend Strelka::MethodUtilities
 
 
 	### Get the library version. If +include_buildnum+ is true, the version string will
@@ -45,8 +47,16 @@ module Strelka
 		return vstring
 	end
 
+
+	##
+	# The Pathname of the directory that will be searched for default applications,
+	# config, etc.
+	singleton_attr_accessor :datadir
+	self.datadir = DEFAULT_DATADIR
+
 	require 'strelka/app'
 	require 'strelka/httprequest'
+	require 'strelka/httpresponse'
 
 
 	# The installed Configurability::Config object

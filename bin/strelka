@@ -10,8 +10,8 @@ gem 'sysexits'
 require 'sysexits'
 
 
-# A tool for setting up and controlling a Mongrel2 cluster.
-class Strelka::LeashCommand
+# A tool for setting up and running Strelka apps
+class Strelka::CLICommand
 	extend ::Sysexits
 	include Sysexits,
 	        Strelka::Loggable,
@@ -104,6 +104,8 @@ class Strelka::LeashCommand
 
 				text 'Global Options'
 				opt :config, "Specify the config file to load.", :type => :string
+				opt :datadir, "Override the Strelka data directory.", :type => :string,
+					:short => :D
 				text ''
 
 				text 'Other Options:'
@@ -193,6 +195,9 @@ class Strelka::LeashCommand
 	def run( command, *args )
 		command ||= 'shell'
 		cmd_method = nil
+
+		# Set the datadir override if it's given
+		Strelka.datadir = Pathname( options.datadir ) if self.options.datadir
 
 		begin
 			cmd_method = self.method( "#{command}_command" )
@@ -365,8 +370,8 @@ class Strelka::LeashCommand
 		message( self.prompt.list(items.flatten.compact.map(&:to_s), :columns_down) )
 	end
 
-end # class Strelka::LeashCommand
+end # class Strelka::CLICommand
 
 
-Strelka::LeashCommand.run( ARGV.dup )
+Strelka::CLICommand.run( ARGV.dup )
 

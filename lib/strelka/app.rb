@@ -81,7 +81,7 @@ class Strelka::App < Mongrel2::Handler
 	### keyed by gemspec name .
 	def self::discover_paths
 		appfiles = {
-			'strelka' => Pathname.glob( DATADIR + APP_GLOB_PATTERN )
+			'strelka' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
 		}
 
 		# Find all the gems that depend on Strelka

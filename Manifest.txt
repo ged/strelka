@@ -5,7 +5,7 @@ IDEAS.rdoc
 Manifest.txt
 README.rdoc
 Rakefile
-bin/leash
+bin/strelka
 contrib/hoetemplate/History.rdoc.erb
 contrib/hoetemplate/Manifest.txt.erb
 contrib/hoetemplate/README.rdoc.erb
