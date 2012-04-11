@@ -172,6 +172,13 @@ module Strelka::App::Sessions
 		return super
 	end
 
+
+	### This is just here for logging.
+	def handle_request( * ) # :nodoc:
+		self.log.debug "[:sessions] Adding sessions to the transaction."
+		super
+	end
+
 end # module Strelka::App::Sessions
 
 

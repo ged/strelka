@@ -48,7 +48,7 @@ describe Strelka::App::Filters do
 					super
 				end
 			end
-			Strelka.log.debug "  new instance is: %p, filters array: 0x%016x" %
+			Strelka.log.debug "  App class is: %p, filters array: 0x%016x" %
 				[ @app, @app.filters.object_id * 2 ]
 		end
 

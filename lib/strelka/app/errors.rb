@@ -113,6 +113,7 @@ module Strelka::App::Errors
 
 	### Check for a status response that is hooked, and run the hook if one is found.
 	def handle_request( request )
+		self.log.debug "[:errors] Wrapping request in custom error-handling."
 		response = nil
 
 		# Catch a finish_with; the status_response will only be non-nil
@@ -126,7 +127,7 @@ module Strelka::App::Errors
 		if status_response
 			response = request.response
 			status = status_response[:status]
-			self.log.info "Handling a status response: %d" % [ status ]
+			self.log.info "[:errors] Handling a status response: %d" % [ status ]
 
 			# If we can't find a custom handler for this status, re-throw
 			# to the default handler instead
@@ -145,7 +146,7 @@ module Strelka::App::Errors
 
 	### Find a status handler for the given +status_code+ and return it as an UnboundMethod.
 	def status_handler_for( status_code )
-		self.log.debug "Looking for a status handler for %d responses" % [ status_code ]
+		self.log.debug "[:errors] Looking for a status handler for %d responses" % [ status_code ]
 		handlers = self.class.status_handlers
 		ranges = handlers.keys
 

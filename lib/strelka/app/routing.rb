@@ -251,6 +251,8 @@ module Strelka::App::Routing
 
 	### Dispatch the request using the Router.
 	def handle_request( request, &block )
+		self.log.debug "[:routing] Routing request using %p" % [ self.router.class ]
+
 		if route = self.router.route_request( request )
 			# Track which route was chosen for later plugins
 			request.notes[:routing][:route] = route
@@ -259,6 +261,8 @@ module Strelka::App::Routing
 		else
 			finish_with HTTP::NOT_FOUND, "The requested resource was not found on this server."
 		end
+
+		self.log.debug "[:routing] Done with routing."
 	end
 
 end # module Strelka::App::Routing

@@ -48,7 +48,7 @@ describe Strelka::App::Routing do
 					super
 				end
 			end
-			Strelka.log.debug "  new instance is: %p, routes array: 0x%016x" %
+			Strelka.log.debug "  App class is: %p, routes array: 0x%016x" %
 				[ @app, @app.routes.object_id * 2 ]
 		end
 

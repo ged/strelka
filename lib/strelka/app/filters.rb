@@ -51,6 +51,8 @@ module Strelka::App::Filters
 	### Apply filters to the given +request+ before yielding back to the App, then apply
 	### filters to the response that comes back.
 	def handle_request( request )
+		self.log.debug "[:filters] Wrapping request with request/response filters."
+
 		self.apply_request_filters( request )
 		response = super
 		self.apply_response_filters( response )

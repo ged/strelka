@@ -160,7 +160,9 @@ describe Strelka::App::RestResources do
 			end
 
 			context "OPTIONS routes" do
+
 				it "responds to a top-level OPTIONS request with a resource description (JSON Schema?)"
+
 				it "responds to an OPTIONS request for a particular resource with details about it" do
 					req = @request_factory.options( '/api/v1/servers' )
 					res = @app.new.handle( req )
@@ -168,6 +170,7 @@ describe Strelka::App::RestResources do
 					res.status.should == HTTP::OK
 					res.headers.allowed.split( /\s*,\s*/ ).should include(*%w[GET HEAD POST PUT DELETE])
 				end
+
 			end # OPTIONS routes
 
 

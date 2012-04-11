@@ -52,6 +52,7 @@ describe Strelka::App::Auth do
 		app = Class.new( Strelka::App ) do
 			plugins :auth
 		end
+		app.install_plugins
 
 		@request_factory.get( '/api/v1/verify' ).should respond_to( :authenticated? )
 	end

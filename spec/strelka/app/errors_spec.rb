@@ -42,14 +42,12 @@ describe Strelka::App::Errors do
 	describe "an including App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :errors, :routing
 				def initialize( appid='params-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
 				end
 			end
-			Strelka.log.debug "  new instance is: %p" % [ @app ]
 		end
 
 		it "doesn't alter normal responses" do

@@ -387,7 +387,7 @@ module Strelka::App::Auth
 	### Check authentication and authorization for requests that need it before
 	### sending them on.
 	def handle_request( request, &block )
-		self.log.debug "AuthProvider: %p" % [ self.auth_provider ]
+		self.log.debug "[:auth] Wrapping request in auth with a %p" % [ self.auth_provider ]
 
 		self.authenticate_and_authorize( request ) if self.request_should_auth?( request )
 
@@ -401,7 +401,7 @@ module Strelka::App::Auth
 
 	### Returns +true+ if the given +request+ requires authentication.
 	def request_should_auth?( request )
-		self.log.debug "Checking to see if Auth(entication/orization) should be applied for %p" %
+		self.log.debug "Checking to see if Auth(entication/orization) should be applied for app_path: %p" %
 			[ request.app_path ]
 
 		# If there are positive criteria, return true if the request matches any of them,

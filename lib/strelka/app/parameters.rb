@@ -87,12 +87,10 @@ module Strelka::App::Parameters
 
 	### Add a ParamValidator to the given +request+ before passing it on.
 	def handle_request( request, &block )
-		self.log.debug "  cloning the class's validator: %p" % [ self.class.paramvalidator ]
-		validator = self.class.paramvalidator.dup
-		self.log.debug "  duplicated validator: %p" % [ validator ]
-		validator.validate( request.params )
+		self.log.debug "[:parameters] Wrapping request with parameter validation."
 
-		self.log.debug "  replacing raw params hash with validator: %p" % [ validator ]
+		validator = self.class.paramvalidator.dup
+		validator.validate( request.params )
 		request.params = validator
 
 		super

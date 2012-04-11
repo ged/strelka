@@ -121,31 +121,51 @@ class Strelka::App
 		### Class methods to add to classes with plugins.
 		module ClassMethods
 
+			##
+			# If plugins have already been installed, this will be the call frame
+			# they were first installed from. This is used to warn about installing
+			# plugins twice.
+			attr_accessor :plugins_installed_from
+
+
+			### Returns +true+ if the plugins for the extended app class have already
+			### been installed.
+			def plugins_installed?
+				return !self.plugins_installed_from.nil?
+			end
+
+
 			### Extension callback -- add instance variables to extending objects.
 			def inherited( subclass )
 				super
-				subclass.instance_variable_set( :@plugins, [] )
+				@plugins ||= []
+				subclass.instance_variable_set( :@plugins, @plugins.dup )
+				subclass.instance_variable_set( :@plugins_installed_from, nil )
 			end
 
 
 			### Load the plugins with the given +names+ and install them.
 			def plugins( *names )
+				Strelka.log.info "Adding plugins: %s" % [ names.flatten.map(&:to_s).join(', ') ]
 
 				# Load the associated Plugin Module objects
 				names.flatten.each {|name| self.load_plugin(name) }
 
-				# Add the name to the list of mixins to apply on startup
-				@plugins += names
+				# Add the name/s to the list of mixins to apply on startup
+				@plugins |= names
 
 				# Install the declarative half of the plugin immediately
-				Strelka::App.loaded_plugins.each do |name, plugin|
-					Strelka.log.debug "Considering %p" % [ name ]
-					if names.include?( name ) || names.include?( plugin )
-						Strelka.log.debug "  installing"
-						self.register_plugin( plugin )
+				names.each do |name|
+					plugin = nil
+
+					if name.is_a?( Module )
+						plugin = name
 					else
-						Strelka.log.debug "  not used by this app; skipping"
+						plugin = Strelka::App.loaded_plugins[ name ]
 					end
+
+					Strelka.log.debug "  registering %p" % [ name ]
+					self.register_plugin( plugin )
 				end
 			end
 			alias_method :plugin, :plugins
@@ -194,9 +214,10 @@ class Strelka::App
 			end
 
 
-			### Install the mixin part of plugins immediately before startup.
-			def run( * )
-				self.install_plugins( @plugins )
+			### Install the mixin part of plugins immediately before the first instance
+			### is created.
+			def new( * )
+				self.install_plugins unless self.plugins_installed?
 				super
 			end
 
@@ -204,20 +225,31 @@ class Strelka::App
 			### Install the mixin part of the plugin, in the order determined by
 			### the plugin registry based on the run_before and run_after specifications
 			### of the plugins themselves.
-			def install_plugins( names )
+			def install_plugins
+				if self.plugins_installed?
+					Strelka.log.warn "Plugins were already installed for %p from %p" %
+						[ self, self.plugins_installed_from ]
+					Strelka.log.info "I'll attempt to install any new ones, but plugin ordering"
+					Strelka.log.info "and other functionality might exhibit strange behavior."
+				else
+					Strelka.log.info "Installing plugins for %p." % [ self ]
+				end
+
 				sorted_plugins = Strelka::App.loaded_plugins.tsort.reverse
 
-				Strelka.log.info "Installing plugins: %p..." % [ names ]
 				sorted_plugins.each do |name|
-					unless names.include?( name )
+					mod = Strelka::App.loaded_plugins[ name ]
+
+					unless @plugins.include?( name ) || @plugins.include?( mod )
 						Strelka.log.debug "  skipping %s" % [ name ]
 						next
 					end
 
-					mod = Strelka::App.loaded_plugins[ name ]
 					Strelka.log.info "  including %p." % [ mod ]
 					include( mod )
 				end
+
+				self.plugins_installed_from = caller( 1 ).first
 			end
 
 		end # module ClassMethods

@@ -33,11 +33,22 @@ describe Strelka::App::Plugins do
 		reset_logging()
 	end
 
+	after( :each ) do
+		Strelka::App.loaded_plugins.delete_if {|mod| mod =~ /anonymous/ }
+	end
+
 	RSpec::Matchers.define( :order ) do |item|
 		match do |enumerable|
+			raise "%p doesn't include %p" % [ enumerable, item ] unless
+				enumerable.include?( item )
 			if defined?( @before )
+				raise "%p doesn't include %p" % [ enumerable, @before ] unless
+					enumerable.include?( @before )
 				enumerable.index( @before ) < enumerable.index( item )
 			elsif defined?( @after )
+				raise "%p doesn't include %p" % [ enumerable, @after ] unless
+					enumerable.include?( @after )
+				Strelka.log.debug "Enumerable is: %p" % [ enumerable ]
 				enumerable.index( @after ) > enumerable.index( item )
 			else
 				raise "No .before or .after to compare against!"
@@ -85,6 +96,7 @@ describe Strelka::App::Plugins do
 				end
 			end
 
+
 			it "sorts before it in the plugin registry" do
 				Strelka::App.loaded_plugins.tsort.
 					should order( @other_mod.plugin_name ).before( @before_mod.plugin_name )
@@ -124,7 +136,7 @@ describe Strelka::App::Plugins do
 			end
 
 			app = Class.new( Strelka::App )
-			app.install_plugin( plugin )
+			app.register_plugin( plugin )
 
 			app.a_class_method.should == "yep."
 		end
@@ -139,7 +151,7 @@ describe Strelka::App::Plugins do
 			end
 
 			app = Class.new( Strelka::App )
-			app.install_plugin( plugin )
+			app.register_plugin( plugin )
 
 			app.testing_value.should == :default
 			app.testing_value = :not_the_default
@@ -158,6 +170,7 @@ describe Strelka::App::Plugins do
 			klass = Class.new( @including_class ) do
 				plugin :routing
 			end
+			klass.install_plugins
 
 			klass.ancestors.should include( Strelka::App::Routing )
 		end
@@ -166,11 +179,58 @@ describe Strelka::App::Plugins do
 			klass = Class.new( @including_class ) do
 				plugins :templating, :routing
 			end
+			klass.install_plugins
 
 			klass.ancestors.should include( Strelka::App::Routing, Strelka::App::Templating )
 		end
 
-		it "warns if plugins are installed more than once for the same application"
+		it "installs the plugins in the right order even if they're loaded at separate times" do
+			superclass = Class.new( @including_class ) do
+				plugin :routing
+			end
+			subclass = Class.new( superclass ) do
+				plugin :templating
+			end
+			subclass.install_plugins
+
+			subclass.ancestors.should order( Strelka::App::Templating ).after( Strelka::App::Routing )
+		end
+
+		it "adds information about where plugins were installed from when they're installed" do
+			klass = Class.new( @including_class ) do
+				plugin :routing
+			end
+			klass.plugins_installed_from.should be_nil()
+			klass.install_plugins
+			klass.plugins_installed_from.should =~ /#{__FILE__}:#{__LINE__ - 1}/
+		end
+
+	end
+
+
+	context "Plugins loaded in a superclass" do
+
+		before( :each ) do
+			@base_class = Class.new { include Strelka::App::Plugins }
+			@superclass = Class.new( @base_class ) do
+				plugin :routing
+			end
+		end
+
+
+		it "are inherited by subclasses" do
+			subclass = Class.new( @superclass ) do
+				get 'foom' do |req|
+					res = req.response
+					res.puts( "Yep, it worked." )
+					return res
+				end
+			end
+
+			subclass.routes.should == [
+				[ :GET, ['foom'], {action: subclass.instance_method(:GET_foom), options: {}} ]
+			]
+		end
 
 	end
 

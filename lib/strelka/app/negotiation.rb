@@ -83,6 +83,8 @@ module Strelka::App::Negotiation
 
 	### Start content-negotiation when the response has returned.
 	def handle_request( request )
+		self.log.debug "[:negotiation] Wrapping response with HTTP content negotiation."
+
 		response = super
 		response.negotiate
 

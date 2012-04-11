@@ -53,8 +53,8 @@ class Strelka::App < Mongrel2::Handler
 		Strelka.logger.level = Logger::DEBUG if $VERBOSE
 		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
 
+		Strelka.log.info "Starting up with appid %p." % [ appid ]
 		super( appid )
-
 	end
 
 
@@ -172,6 +172,13 @@ class Strelka::App < Mongrel2::Handler
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
+	### Dump the application stack when a new instance is created.
+	def initialize( * )
+		self.dump_application_stack
+		super
+	end
+
+
 	######
 	public
 	######
@@ -180,8 +187,6 @@ class Strelka::App < Mongrel2::Handler
 	def run
 		procname = "%p %s" % [ self.class, self.conn ]
 		$0 = procname
-
-		self.dump_application_stack
 
 		super
 	end
@@ -194,11 +199,15 @@ class Strelka::App < Mongrel2::Handler
 
 		# Dispatch the request after allowing plugins to to their thing
 		status_info = catch( :finish ) do
+			self.log.debug "Starting dispatch of request %p" % [ request ]
 
 			# Run fixup hooks on the request
 			request = self.fixup_request( request )
+			self.log.debug "  done with request fixup"
 			response = self.handle_request( request )
+			self.log.debug "  done with handler"
 			response = self.fixup_response( response )
+			self.log.debug "  done with response fixup"
 
 			nil # rvalue for the catch
 		end

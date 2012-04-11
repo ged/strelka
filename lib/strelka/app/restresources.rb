@@ -62,23 +62,6 @@ module Strelka::App::RestResources
 	}.freeze
 
 
-	### Inclusion callback -- overridden to also install dependencies.
-	def self::included( mod )
-		super
-
-		# Load the plugins this one depends on if they aren't already
-		mod.plugins :routing, :negotiation, :parameters
-
-		# Add validations for the limit and offset parameters
-		mod.param :limit, :integer
-		mod.param :offset, :integer
-
-		# Use the 'exclusive' router instead of the more-flexible
-		# Mongrel2-style default one
-		mod.router :exclusive
-	end
-
-
 	# Class methods to add to classes with REST resources.
 	module ClassMethods # :nodoc:
 		include Sequel::Inflections
@@ -94,6 +77,23 @@ module Strelka::App::RestResources
 
 		# The global resource options hash
 		attr_reader :global_options
+
+
+		### Extension callback -- overridden to also install dependencies.
+		def self::extended( obj )
+			super
+
+			# Load the plugins this one depends on if they aren't already
+			obj.plugins :routing, :negotiation, :parameters
+
+			# Add validations for the limit and offset parameters
+			obj.param :limit, :integer
+			obj.param :offset, :integer
+
+			# Use the 'exclusive' router instead of the more-flexible
+			# Mongrel2-style default one
+			obj.router :exclusive
+		end
 
 
 		### Set the prefix for all following resource routes to +route+.
@@ -155,9 +155,11 @@ module Strelka::App::RestResources
 			# :TODO: Documentation for HTML mode (possibly using http://swagger.wordnik.com/)
 			Strelka.log.debug "Adding OPTIONS handler for %p" % [ route, rsrcobj ]
 			self.add_route( :OPTIONS, route, options ) do |req|
+				self.log.debug "OPTIONS handler!"
 				verbs = self.class.resource_verbs[ route ].sort
 				res = req.response
 
+				self.log.debug "  making a reply with Allowed: %s" % [ verbs.join(', ') ]
 				res.header.allowed = verbs.join(', ')
 				res.content_type = 'text/plain'
 				res.body = ''
@@ -497,5 +499,11 @@ module Strelka::App::RestResources
 
 	end # module ClassMethods
 
+
+	### This is just here for logging.
+	def handle_request( * ) # :nodoc:
+		self.log.debug "[:restresources] handling request for REST resource."
+		super
+	end
 
 end # module Strelka::App::RestResources
