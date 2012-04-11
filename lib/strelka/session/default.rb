@@ -76,7 +76,7 @@ class Strelka::Session::Default < Strelka::Session
 			id = $1.untaint if cookie.value =~ /^([[:xdigit:]]+)$/i
 		end
 
-		return id || SecureRandom.random_bytes.unpack( 'H*' ).join
+		return id || SecureRandom.hex
 	end
 
 
