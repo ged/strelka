@@ -58,6 +58,14 @@ module Strelka::App::Negotiation
 		attr_reader :transform_names
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@content_type_transforms, @content_type_transforms.dup )
+			subclass.instance_variable_set( :@transform_names, @transform_names.dup )
+		end
+
+
 		### Define a new media-type associated with the specified +name+ and +mimetype+. Responses
 		### whose requests accept content of the given +mimetype+ will pass their response to the
 		### specified +transform_block+, which should re-write the response's entity body if it can

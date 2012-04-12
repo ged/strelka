@@ -50,6 +50,15 @@ describe Strelka::App::Errors do
 			end
 		end
 
+		it "has its auth config inherited by subclasses" do
+			@app.on_status HTTP::OK do
+				'blap'
+			end
+			subclass = Class.new( @app )
+			subclass.status_handlers.should == @app.status_handlers
+			subclass.status_handlers.should_not equal( @app.status_handlers )
+		end
+
 		it "doesn't alter normal responses" do
 			@app.class_eval do
 				get do |req|

@@ -52,6 +52,14 @@ describe Strelka::App::Parameters do
 			@app = nil
 		end
 
+		it "has its config inherited by subclasses" do
+			@app.param :string
+			subclass = Class.new( @app )
+
+			subclass.paramvalidator.param_names.should == @app.paramvalidator.param_names
+			subclass.paramvalidator.should_not equal( @app.paramvalidator )
+		end
+
 		it "has a ParamValidator" do
 			@app.paramvalidator.should be_a( Strelka::ParamValidator )
 		end

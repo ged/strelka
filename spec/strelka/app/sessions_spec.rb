@@ -88,6 +88,12 @@ describe Strelka::App::Sessions do
 			end
 		end
 
+		it "has its config inherited by subclasses" do
+			@app.session_namespace :indian_gurbles
+			subclass = Class.new( @app )
+
+			subclass.session_namespace.should == @app.session_namespace
+		end
 
 		it "has a default session key that's the same as its appid" do
 			@app.session_namespace.should == @app.default_appid

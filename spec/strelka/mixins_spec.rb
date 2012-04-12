@@ -8,6 +8,7 @@ BEGIN {
 	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 }
 
+require 'set'
 require 'rspec'
 require 'spec/lib/helpers'
 require 'strelka/mixins'
@@ -215,6 +216,118 @@ describe Strelka, "mixins" do
 				end
 			end
 
+		end
+
+	end
+
+
+	describe Strelka::DataUtilities do
+
+		it "doesn't try to dup immediate objects" do
+			Strelka::DataUtilities.deep_copy( nil ).should be( nil )
+			Strelka::DataUtilities.deep_copy( 112 ).should be( 112 )
+			Strelka::DataUtilities.deep_copy( true ).should be( true )
+			Strelka::DataUtilities.deep_copy( false ).should be( false )
+			Strelka::DataUtilities.deep_copy( :a_symbol ).should be( :a_symbol )
+		end
+
+		it "makes distinct copies of arrays and their members" do
+			original = [ 'foom', Set.new([ 1,2 ]), :a_symbol ]
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should == original
+			copy.should_not be( original )
+			copy[0].should == original[0]
+			copy[0].should_not be( original[0] )
+			copy[1].should == original[1]
+			copy[1].should_not be( original[1] )
+			copy[2].should == original[2]
+			copy[2].should be( original[2] ) # Immediate
+		end
+
+		it "makes recursive copies of deeply-nested Arrays" do
+			original = [ 1, [ 2, 3, [4], 5], 6, [7, [8, 9], 0] ]
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should == original
+			copy.should_not be( original )
+			copy[1].should_not be( original[1] )
+			copy[1][2].should_not be( original[1][2] )
+			copy[3].should_not be( original[3] )
+			copy[3][1].should_not be( original[3][1] )
+		end
+
+		it "makes distinct copies of Hashes and their members" do
+			original = {
+				:a => 1,
+				'b' => 2,
+				3 => 'c',
+			}
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should == original
+			copy.should_not be( original )
+			copy[:a].should == 1
+			copy.key( 2 ).should == 'b'
+			copy.key( 2 ).should_not be( original.key(2) )
+			copy[3].should == 'c'
+			copy[3].should_not be( original[3] )
+		end
+
+		it "makes distinct copies of deeply-nested Hashes" do
+			original = {
+				:a => {
+					:b => {
+						:c => 'd',
+						:e => 'f',
+					},
+					:g => 'h',
+				},
+				:i => 'j',
+			}
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should == original
+			copy[:a][:b][:c].should == 'd'
+			copy[:a][:b][:c].should_not be( original[:a][:b][:c] )
+			copy[:a][:b][:e].should == 'f'
+			copy[:a][:b][:e].should_not be( original[:a][:b][:e] )
+			copy[:a][:g].should == 'h'
+			copy[:a][:g].should_not be( original[:a][:g] )
+			copy[:i].should == 'j'
+			copy[:i].should_not be( original[:i] )
+		end
+
+		it "copies the default proc of copied Hashes" do
+			original = Hash.new {|h,k| h[ k ] = Set.new }
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.default_proc.should == original.default_proc
+		end
+
+		it "preserves taintedness of copied objects" do
+			original = Object.new
+			original.taint
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should_not be( original )
+			copy.should be_tainted()
+		end
+
+		it "preserves frozen-ness of copied objects" do
+			original = Object.new
+			original.freeze
+
+			copy = Strelka::DataUtilities.deep_copy( original )
+
+			copy.should_not be( original )
+			copy.should be_frozen()
 		end
 
 	end

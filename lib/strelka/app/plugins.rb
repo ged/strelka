@@ -203,12 +203,7 @@ class Strelka::App
 						ival = cm_mod.instance_variable_get( ivar )
 
 						# Don't duplicate modules/classes or immediates
-						case ival
-						when Module, TrueClass, FalseClass, Symbol, Numeric, NilClass
-							instance_variable_set( ivar, ival )
-						else
-							instance_variable_set( ivar, ival.dup )
-						end
+						instance_variable_set( ivar, Strelka::DataUtilities.deep_copy(ival) )
 					end
 				end
 			end

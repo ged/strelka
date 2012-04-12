@@ -278,6 +278,7 @@ module Strelka
 
 				when Hash
 					newhash = {}
+					newhash.default_proc = obj.default_proc if obj.default_proc
 					obj.each do |k,v|
 						newhash[ deep_copy(k) ] = deep_copy( v )
 					end

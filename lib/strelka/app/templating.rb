@@ -105,6 +105,14 @@ module Strelka::App::Templating
 		attr_accessor :layout_template
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@template_map, @template_map.dup )
+			subclass.instance_variable_set( :@layout_template, @layout_template.dup )
+		end
+
+
 		### Get/set the templates declared for the App.
 		def templates( newhash=nil )
 			if newhash

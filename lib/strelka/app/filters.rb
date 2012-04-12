@@ -23,6 +23,19 @@ module Strelka::App::Filters
 		attr_reader :filters
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+
+			sub_filters = {
+				:request  => self.filters[:request].dup,
+				:response => self.filters[:response].dup,
+				:both     => self.filters[:both].dup
+			}
+			subclass.instance_variable_set( :@filters, sub_filters )
+		end
+
+
 		### Get/set the router class to use for mapping requests to handlers to +newclass.
 		def filter( which=:both, &block )
 			which = which.to_sym

@@ -116,6 +116,22 @@ describe Strelka::App::Auth do
 			req.authenticated_user.should == 'anonymous'
 		end
 
+		it "has its auth config inherited by subclasses" do
+			@app.class_eval do
+				auth_provider :hostaccess
+				authz_callback { true }
+			end
+			subclass = Class.new( @app )
+
+			subclass.auth_provider.should == @app.auth_provider
+			subclass.authz_callback.should == @app.authz_callback
+			subclass.positive_auth_criteria.should == @app.positive_auth_criteria
+			subclass.positive_auth_criteria.should_not equal( @app.positive_auth_criteria )
+			subclass.negative_auth_criteria.should == @app.negative_auth_criteria
+			subclass.negative_auth_criteria.should_not equal( @app.negative_auth_criteria )
+		end
+
+
 		context "that has negative auth criteria for the root" do
 
 			before( :each ) do

@@ -253,7 +253,7 @@ module Strelka::App::Auth
 	module ClassMethods
 
 		@auth_provider          = nil
-		@authz_callback          = nil
+		@authz_callback         = nil
 		@positive_auth_criteria = {}
 		@negative_auth_criteria = {}
 
@@ -262,14 +262,25 @@ module Strelka::App::Auth
 		attr_reader :positive_auth_criteria, :negative_auth_criteria
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@auth_provider, @auth_provider )
+			subclass.instance_variable_set( :@authz_callback, @authz_callback.dup ) if @authz_callback
+			subclass.instance_variable_set( :@positive_auth_criteria, @positive_auth_criteria.dup )
+			subclass.instance_variable_set( :@negative_auth_criteria, @negative_auth_criteria.dup )
+		end
+
+
 		### Get/set the authentication type.
 		def auth_provider( type=nil )
 			if type
 				@auth_provider = Strelka::AuthProvider.get_subclass( type )
-			elsif type.nil?
-				@auth_provider ||= Strelka::AuthProvider.get_subclass( DEFAULT_AUTH_PROVIDER )
 			end
 
+			Strelka.log.debug "Auth provider %p" % [ @auth_provider ]
+			@auth_provider ||= Strelka::AuthProvider.get_subclass( DEFAULT_AUTH_PROVIDER )
+			Strelka.log.debug "Auth provider %p" % [ @auth_provider ]
 			return @auth_provider
 		end
 

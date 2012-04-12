@@ -53,6 +53,13 @@ module Strelka::App::Errors
 		attr_reader :status_handlers
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@status_handlers, @status_handlers.dup )
+		end
+
+
 		### Register a callback for responses whose status code is within the specified
 		### +range+. Range can either be a single integer HTTP status code, or a Range
 		### of the same (e.g., 400..499) for all statuses with that range.

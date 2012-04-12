@@ -52,6 +52,18 @@ describe Strelka::App::Filters do
 				[ @app, @app.filters.object_id * 2 ]
 		end
 
+		it "has its filters config inherited by subclasses" do
+			@app.filter :request do |req|
+				req.notes['blap'] = true
+			end
+			subclass = Class.new( @app )
+
+			subclass.filters.should == @app.filters
+			subclass.filters.should_not equal( @app.filters )
+			subclass.filters[:request].should_not equal( @app.filters[:request] )
+			subclass.filters[:response].should_not equal( @app.filters[:response] )
+			subclass.filters[:both].should_not equal( @app.filters[:both] )
+		end
 
 		it "has a Hash of filters" do
 			@app.filters.should be_a( Hash )

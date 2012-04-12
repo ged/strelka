@@ -106,6 +106,14 @@ module Strelka::App::Sessions
 		# application
 		@session_namespace = nil
 
+
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@session_namespace, @session_namespace )
+		end
+
+
 		### Get/set the key that will determine which namespace in the session object
 		### the application will see.
 		def session_namespace( new_namespace=nil )

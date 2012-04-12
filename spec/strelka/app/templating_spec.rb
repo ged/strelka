@@ -54,6 +54,17 @@ describe Strelka::App::Templating do
 		end
 
 
+		it "has its config inherited by subclasses" do
+			@app.templates :text => '/tmp/blorp'
+			@app.layout 'layout.tmpl'
+			subclass = Class.new( @app )
+
+			subclass.template_map.should == @app.template_map
+			subclass.template_map.should_not equal( @app.template_map )
+			subclass.layout_template.should == @app.layout_template
+			subclass.layout_template.should_not equal( @app.layout_template )
+		end
+
 		it "has a Hash of templates" do
 			@app.templates.should be_a( Hash )
 		end

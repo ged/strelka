@@ -393,6 +393,29 @@ describe Strelka::App::RestResources do
 
 		end # route behaviors
 
+
+		describe "supports inheritance" do
+
+			subject do
+				@app.resource( Mongrel2::Config::Server )
+				Class.new( @app )
+			end
+
+
+			it "has its config inherited by subclass" do
+				subject.service_options.should == @app.service_options
+				subject.service_options.should_not be( @app.service_options )
+			end
+
+			it "has its metadata inherited by subclasses" do
+				subject.resource_verbs.should have( 1 ).member
+				subject.resource_verbs.should include( 'servers' )
+				subject.resource_verbs[ 'servers' ].
+					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
+			end
+
+		end # supports inheritance
+
 	end
 
 end

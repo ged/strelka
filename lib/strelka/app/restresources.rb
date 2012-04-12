@@ -70,13 +70,13 @@ module Strelka::App::RestResources
 		@resource_verbs = Hash.new {|h,k| h[k] = Set.new }
 
 		# Global options
-		@global_options = DEFAULTS.dup
+		@service_options = DEFAULTS.dup
 
 		# The list of REST routes assigned to Sequel::Model objects
 		attr_reader :resource_verbs
 
-		# The global resource options hash
-		attr_reader :global_options
+		# The global service options hash
+		attr_reader :service_options
 
 
 		### Extension callback -- overridden to also install dependencies.
@@ -96,9 +96,21 @@ module Strelka::App::RestResources
 		end
 
 
+		### Inheritance callback -- copy plugin data to inheriting subclasses.
+		def inherited( subclass )
+			super
+
+			verbs_copy = Strelka::DataUtilities.deep_copy( self.resource_verbs )
+			subclass.instance_variable_set( :@resource_verbs, verbs_copy )
+
+			opts_copy = Strelka::DataUtilities.deep_copy( self.service_options )
+			subclass.instance_variable_set( :@service_options, opts_copy )
+		end
+
+
 		### Set the prefix for all following resource routes to +route+.
 		def resource_prefix( route )
-			self.global_options[ :prefix ] = route
+			self.service_options[ :prefix ] = route
 		end
 
 
@@ -106,7 +118,7 @@ module Strelka::App::RestResources
 		### and returns a Sequel::Dataset)
 		def resource( rsrcobj, options={} )
 			Strelka.log.debug "Adding REST resource for %p" % [ rsrcobj ]
-			options = self.global_options.merge( options )
+			options = self.service_options.merge( options )
 
 			# Figure out what the resource name is, and make the route from it
 			name = options[:name] || rsrcobj.implicit_table_name
