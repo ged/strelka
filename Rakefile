@@ -49,19 +49,6 @@ ENV['VERSION'] ||= hoespec.spec.version.to_s
 # Ensure the specs pass before checking in
 task 'hg:precheckin' => [ :check_history, :check_manifest, :spec ]
 
-### Make the ChangeLog update if the repo has changed since it was last built
-file '.hg/branch'
-file 'ChangeLog' => '.hg/branch' do |task|
-	$stderr.puts "Updating the changelog..."
-	content = make_changelog()
-	File.open( task.name, 'w', 0644 ) do |fh|
-		fh.print( content )
-	end
-end
-
-# Rebuild the ChangeLog immediately before release
-task :prerelease => 'ChangeLog'
-
 
 desc "Build a coverage report"
 task :coverage do
