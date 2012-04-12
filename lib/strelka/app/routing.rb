@@ -232,6 +232,7 @@ module Strelka::App::Routing
 		### Inheritance hook -- inheriting classes inherit their parents' routes table.
 		def inherited( subclass )
 			super
+			subclass.instance_variable_set( :@routerclass, self.routerclass )
 			subclass.instance_variable_set( :@routes, self.routes.dup )
 		end
 

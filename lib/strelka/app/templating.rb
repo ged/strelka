@@ -109,7 +109,7 @@ module Strelka::App::Templating
 		def inherited( subclass )
 			super
 			subclass.instance_variable_set( :@template_map, @template_map.dup )
-			subclass.instance_variable_set( :@layout_template, @layout_template.dup )
+			subclass.instance_variable_set( :@layout_template, @layout_template.dup ) if @layout_template
 		end
 
 

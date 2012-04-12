@@ -203,6 +203,7 @@ describe Strelka::App::Routing do
 
 		it "has its routes inherited by subclasses" do
 			@app.class_eval do
+				router :deep
 				get( '/info' ) {}
 				get( '/about' ) {}
 				get( '/origami' ) {}
@@ -220,6 +221,8 @@ describe Strelka::App::Routing do
 			subclass.routes.should include(
 				[ :GET, ['origami'], {action: subclass.instance_method(:GET_origami), options: {}} ]
 			)
+
+			subclass.routerclass.should == @app.routerclass
 		end
 
 		describe "that also uses the :parameters plugin" do
