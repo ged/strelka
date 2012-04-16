@@ -73,6 +73,21 @@ describe Strelka::Router::Default do
 			@router.route_request( req ).should be_nil()
 		end
 
+		it "responds with an HTTP::METHOD_NOT_ALLOWED for a POST request to /user/foo" do
+			expected_info = {
+				status: 405,
+				message: "Method not allowed.",
+				headers: {
+					allow: 'GET, HEAD'
+				}
+			}
+
+			req = @request_factory.post( '/user/foo' )
+			expect {
+				@router.route_request( req )
+			}.to throw_symbol( :finish, expected_info )
+		end
+
 	end
 
 	context "a router with routes for 'foo', 'foo/bar', and a fallback action" do

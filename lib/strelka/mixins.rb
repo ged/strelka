@@ -333,6 +333,21 @@ module Strelka
 
 	end # module MethodUtilities
 
+
+	# A collection of functions for generating responses.
+	module ResponseHelpers
+
+		### Abort the current execution and return a response with the specified
+		### http_status code immediately. The specified +message+ will be logged,
+		### and will be included in any message that is returned as part of the
+		### response. The +headers+ hash will be used to set response headers.
+		def finish_with( http_status, message, headers={} )
+			status_info = { :status => http_status, :message => message, :headers => headers }
+			throw :finish, status_info
+		end
+
+	end # module ResponseHelpers
+
 end # module Strelka
 
 # vim: set nosta noet ts=4 sw=4:

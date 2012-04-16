@@ -44,7 +44,8 @@ class Strelka::AuthProvider
 	include PluginFactory,
 	        Strelka::Loggable,
 	        Strelka::Constants,
-			Strelka::AbstractClass
+	        Strelka::AbstractClass,
+	        Strelka::ResponseHelpers
 
 
 	### PluginFactory API -- return the Array of directories to search for concrete
@@ -108,15 +109,6 @@ class Strelka::AuthProvider
 		finish_with( HTTP::FORBIDDEN, message )
 	end
 
-
-	### Abort the current execution and return a response with the specified
-	### http_status code immediately. The specified +message+ will be logged,
-	### and will be included in any message that is returned as part of the
-	### response. The +headers+ hash will be used to set response headers.
-	def finish_with( http_status, message, headers={} )
-		status_info = { :status => http_status, :message => message, :headers => headers }
-		throw :finish, status_info
-	end
 
 end # class Strelka::AuthProvider
 
