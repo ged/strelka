@@ -43,10 +43,11 @@ module Strelka::HTTPRequest::Session
 	end
 
 
-	### Returns +true+ if the request already has an associated session object.
+	### Returns +true+ if the request has an associated session object.
 	def session?
-		return !@session.nil?
+		return @session || Strelka::App::Sessions.session_class.has_session_for?( self )
 	end
+	alias_method :has_session?, :session?
 
 
 	### Return the session associated with the request, creating it if necessary.

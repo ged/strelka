@@ -36,23 +36,50 @@ describe Strelka::App::Sessions do
 	it_should_behave_like( "A Strelka::App Plugin" )
 
 
-	it "has an associated session class" do
-		Strelka::App::Sessions.session_class.should be_a( Class )
-		Strelka::App::Sessions.session_class.should < Strelka::Session
+	describe "session-class loading" do
+		before( :all ) do
+			# First, hook the anonymous class up to the 'testing' name using the PluginFactory API
+			@test_session_class = Class.new( Strelka::Session ) do
+				class << self; attr_accessor :options; end
+				def self::configure( options )
+					@options = options
+				end
+			end
+			Strelka::Session.derivatives[ 'testing' ] = @test_session_class
+		end
+
+		after( :each ) do
+			Strelka::App::Sessions.instance_variable_set( :@session_class, nil )
+		end
+
+		it "has a default associated session class" do
+			Strelka::App::Sessions.session_class.should be_a( Class )
+			Strelka::App::Sessions.session_class.should < Strelka::Session
+		end
+
+		it "is can be configured to use a different session class" do
+			Strelka::App::Sessions.configure( :session_class => 'testing' )
+			Strelka::App::Sessions.session_class.should == @test_session_class
+		end
+
+		it "configures the configured session class with default options" do
+			Strelka::App::Sessions.configure( :session_class => 'testing' )
+			Strelka::App::Sessions.session_class.options.should == Strelka::App::Sessions::DEFAULT_OPTIONS
+		end
+
+		it "merges any config options for the configured session class" do
+			options = { 'cookie_name' => 'patience' }
+			Strelka::App::Sessions.configure( :session_class => 'testing', :options => options )
+			Strelka::App::Sessions.session_class.options.
+				should == Strelka::App::Sessions::DEFAULT_OPTIONS.merge( options )
+		end
+
+		it "uses the default session class if the config doesn't have a session section" do
+			Strelka::App::Sessions.configure
+			Strelka::App::Sessions.session_class.should be( Strelka::Session::Default )
+		end
+
 	end
-
-	it "is can be configured to use a different session class" do
-		# First, hook the anonymous class up to the 'testing' name using the PluginFactory API
-		test_session_class = Class.new( Strelka::Session )
-		Strelka::Session.derivatives[ 'testing' ] = test_session_class
-
-		# Now configuring it to use the 'testing' session type should set it to use the 
-		# anonymous class
-		Strelka::App::Sessions.configure( :session_class => 'testing' )
-
-		Strelka::App::Sessions.session_class.should == test_session_class
-	end
-
 
 	describe "an including App" do
 
@@ -72,9 +99,11 @@ describe Strelka::App::Sessions do
 					super
 				end
 
-				def handle( req )
-					req.session[ :test ] = 'session data'
-					return req.response
+				def handle_request( req )
+					super do
+						req.session[ :test ] = 'session data'
+						req.response
+					end
 				end
 			end
 		end
@@ -107,6 +136,23 @@ describe Strelka::App::Sessions do
 			@app.session_namespace.should == :findizzle
 		end
 
+		it "extends the request and response classes" do
+			@app.install_plugins
+			Strelka::HTTPRequest.should < Strelka::HTTPRequest::Session
+			Strelka::HTTPResponse.should < Strelka::HTTPResponse::Session
+		end
+
+		it "sets the session namespace on requests" do
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
+			req.session_namespace.should == @app.default_appid
+		end
+
+		it "saves the session automatically" do
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
+			res.cookies.should include( Strelka::Session::Default.cookie_options[:name] )
+		end
 
 	end
 

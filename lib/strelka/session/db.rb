@@ -15,7 +15,8 @@ require 'strelka/session/default'
 #
 class Strelka::Session::Db < Strelka::Session::Default
 	include Strelka::Loggable
-	extend Forwardable
+	extend Forwardable,
+	       Strelka::MethodUtilities
 
 	# Class-instance variables
 	@table_name   = :sessions
@@ -25,16 +26,17 @@ class Strelka::Session::Db < Strelka::Session::Default
 		:name => 'strelka-session'
 	}
 
-	class << self
-		# The Sequel dataset connection
-		attr_reader :db
+	##
+	# The Sequel dataset connection
+	singleton_attr_reader :db
 
-		# The Sequel dataset for the sessions table
-		attr_reader :dataset
+	##
+	# The Sequel dataset for the sessions table
+	singleton_attr_reader :dataset
 
-		# The configured session cookie parameters
-		attr_accessor :cookie_options
-	end
+	##
+	# The configured session cookie parameters
+	singleton_attr_accessor :cookie_options
 
 
 	########################################################################
@@ -94,7 +96,7 @@ class Strelka::Session::Db < Strelka::Session::Default
 
 
 	### Save the given +data+ associated with the +session_id+ to the DB.
-	def self::save_session_data( session_id, data )
+	def self::save_session_data( session_id, data={} )
 		self.db.transaction do
 			self.delete_session_data( session_id.to_s )
 			self.dataset.insert(
@@ -109,6 +111,14 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### Delete the data associated with the given +session_id+ from the DB.
 	def self::delete_session_data( session_id )
 		self.dataset.filter( :session_id => session_id ).delete
+	end
+
+
+	### Return +true+ if the given +request+ has a session token which corresponds
+	### to an existing session key.
+	def self::has_session_for?( request )
+		id = self.get_existing_session_id( request ) or return false
+		return !self.dataset.filter( :session_id => id ).empty?
 	end
 
 end # class Strelka::Session::Db

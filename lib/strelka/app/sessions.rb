@@ -134,7 +134,7 @@ module Strelka::App::Sessions
 
 	### Configurability API -- set up session type and options with values from
 	### the +config+.
-	def self::configure( config )
+	def self::configure( config=nil )
 		options = DEFAULT_OPTIONS.dup
 
 		# Figure out which session class is going to be used, or choose a default one

@@ -38,7 +38,7 @@ require 'mongrel2/testing'
 require 'strelka'
 
 require 'spec/lib/constants'
-# require 'spec/lib/matchers'
+
 
 ### RSpec helper functions.
 module Strelka::SpecHelpers

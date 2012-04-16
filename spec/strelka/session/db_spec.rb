@@ -70,6 +70,17 @@ describe Strelka::Session::Db do
 	end
 
 
+	it "knows that a request has a session if it has a cookie with an existing session id" do
+		described_class.dataset.insert(
+			:session_id => @session_id,
+			:session    => @session_data.to_yaml )
+
+		session_cookie = "%s=%s" % [ @cookie_name, @session_id ]
+		req = @request_factory.get( '/frothy/gymkata', :cookie => session_cookie )
+		described_class.should have_session_for( req )
+	end
+
+
 	it "can save session data to the database" do
 		req = @request_factory.get( '/frothy/broth' )
 		response = req.response

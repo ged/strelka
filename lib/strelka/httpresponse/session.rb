@@ -57,13 +57,10 @@ module Strelka::HTTPResponse::Session
 			# new blank session.
 			if self.request.session?
 				self.log.debug "Getting the request's session."
-				@session = request.session
+				self.session = request.session
 			else
 				self.log.debug "No session loaded in the request; creating it in the response."
-				sessionclass = Strelka::App::Sessions.session_class
-				@session = sessionclass.load_or_create( self.request )
-				@session.namespace = self.session_namespace
-				request.session = @session
+				self.session = Strelka::App::Sessions.session_class.new
 			end
 		end
 
@@ -73,9 +70,11 @@ module Strelka::HTTPResponse::Session
 
 	### Set the request's session object.
 	def session=( new_session )
+		self.log.debug "Setting session to %p in namespace %p" % [ new_session, self.session_namespace ]
 		new_session.namespace = self.session_namespace
 		@session = new_session
-		request.session = new_session
+		self.log.debug "  session is: %p" % [ @session ]
+		# request.session = new_session # should it set the session in the request too?
 	end
 
 
@@ -83,15 +82,15 @@ module Strelka::HTTPResponse::Session
 	def session?
 		return @session || self.request.session?
 	end
+	alias_method :has_session?, :session?
 
 
 	### Tell the associated session to save itself and set up the session ID in the
 	### response, if one exists.
 	def save_session
 		if self.session?
-			session = self.session
-			self.log.debug "Saving session: %p" % [ @session ]
-			session.save( self )
+			self.log.debug "Saving session: %p" % [ self.session ]
+			self.session.save( self )
 		else
 			self.log.debug "No session to save."
 		end

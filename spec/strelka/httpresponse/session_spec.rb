@@ -18,6 +18,7 @@ require 'spec/lib/helpers'
 require 'strelka'
 require 'strelka/app/sessions'
 require 'strelka/httprequest/session'
+require 'strelka/httpresponse/session'
 require 'strelka/session/default'
 
 
@@ -25,7 +26,7 @@ require 'strelka/session/default'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPRequest::Session, "-extended request" do
+describe Strelka::HTTPResponse::Session, "-extended response" do
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -35,8 +36,9 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 	before( :each ) do
 		@req = @request_factory.get( '/service/user/estark' )
-		Strelka.log.debug "Extending request %p" % [ @req ]
-		@req.extend( described_class )
+		@req.extend( Strelka::HTTPRequest::Session )
+		@res = @req.response
+		@res.extend( described_class )
 	end
 
 	after( :each ) do
@@ -49,28 +51,34 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 
 	it "has a session_namespace attribute" do
-		@req.should respond_to( :session_namespace )
+		@res.should respond_to( :session_namespace )
 	end
 
+	it "sets its request's session when its session is set" do
+		@res.session = Strelka::Session.create( :default )
+		pending "not sure if it should do this or not" do
+			@req.session.should be( @res.session )
+		end
+	end
 
-	context "with no session ID" do
+	context "for a request with no session ID" do
 
 		it "knows that it doesn't have a session" do
-			@req.should_not have_session()
+			@res.should_not have_session()
 		end
 
 		it "doesn't load the session when the session namespace is set" do
-			@req.session_namespace = 'an_appid'
-			@req.should_not have_session()
+			@res.session_namespace = 'an_appid'
+			@res.should_not have_session()
 		end
 
 		it "creates a new session as soon as it's accessed" do
-			@req.session.should be_a( Strelka::Session::Default )
+			@res.session.should be_a( Strelka::Session::Default )
 		end
 
 		it "sets its session's namespace when it loads if the session_namespace is set" do
-			@req.session_namespace = 'an_appid'
-			@req.session.namespace.should == :an_appid
+			@res.session_namespace = 'an_appid'
+			@res.session.namespace.should == :an_appid
 		end
 
 
@@ -78,32 +86,37 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 			before( :each ) do
 				@session = Strelka::Session.create( :default )
-				@req.session = @session
+				@res.request.session = @session
 			end
 
 			it "knows that it has a session" do
-				@req.should have_session()
+				@res.should have_session()
+			end
+
+			it "copies the session from its request when accessed" do
+				@res.session.should be( @session )
 			end
 
 			it "sets the session's namespace when its session_namespace is set" do
-				@req.session_namespace = 'the_appid'
-				@session.namespace.should == :the_appid
+				@res.session_namespace = 'the_appid'
+				@res.session.namespace.should == :the_appid
 			end
+
 		end
 
 	end
 
 
-	context "with a session ID" do
+	context "for a request with a session ID" do
 
 		before( :each ) do
-			cookie_name = Strelka::Session::Default.cookie_options[ :name ]
+			@cookie_name = Strelka::Session::Default.cookie_options[ :name ]
 			@sess_id = Strelka::Session::Default.get_session_id
-			@req.header.cookie = "#{cookie_name}=#{@sess_id}"
+			@req.header.cookie = "#{@cookie_name}=#{@sess_id}"
 		end
 
 		it "knows that it doesn't have a session unless the ID exists" do
-			@req.should_not have_session()
+			@res.should_not have_session()
 		end
 
 
@@ -114,7 +127,13 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 			end
 
 			it "knows that it has a session" do
-				@req.should have_session()
+				@res.should have_session()
+			end
+
+			it "saves the session via itself when told to do so" do
+				@res.cookies.should_not include( @cookie_name )
+				@res.save_session
+				@res.cookies[ @cookie_name ].value.should == @sess_id
 			end
 
 		end

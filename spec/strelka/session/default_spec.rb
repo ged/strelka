@@ -27,6 +27,7 @@ describe Strelka::Session::Default do
 	end
 
 	before( :each ) do
+		described_class.configure
 		@cookie_name = described_class.cookie_options[:name]
 	end
 
@@ -66,18 +67,25 @@ describe Strelka::Session::Default do
 	end
 
 	it "rejects invalid session-ids" do
-		session_cookie = 'strelka-sessionid=gibberish'
+		session_cookie = "%s=gibberish" % [ @cookie_name ]
 		req = @request_factory.get( '/hungry/what-is-in-a-fruit-bowl?', :cookie => session_cookie )
 		described_class.get_session_id( req ).should =~ /^[[:xdigit:]]+$/
 	end
 
 	it "accepts and reuses an existing valid session-id" do
 		session_id = '3422067061a5790be374c81118d9ed3f'
-		session_cookie = "buh-mahlon=%s" % [ session_id ]
+		session_cookie = "%s=%s" % [ @cookie_name, session_id ]
 		req = @request_factory.get( '/hungry/what-is-in-a-fruit-bowl?', :cookie => session_cookie )
 		described_class.get_session_id( req ).should == session_id
 	end
 
+	it "knows that a request has a session if it has a cookie with an existing session id" do
+		session_id = '3422067061a5790be374c81118d9ed3f'
+		described_class.sessions[ session_id ] = {}
+		session_cookie = "%s=%s" % [ @cookie_name, session_id ]
+		req = @request_factory.get( '/hungry/what-is-in-a-fruit-bowl?', :cookie => session_cookie )
+		described_class.should have_session_for( req )
+	end
 
 	it "can save itself to the store and set the response's session ID" do
 		req          = @request_factory.get( '/hungry/hungry/hippos' )

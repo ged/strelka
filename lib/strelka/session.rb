@@ -61,6 +61,14 @@ class Strelka::Session
 	end
 
 
+	### Fetch the session ID from the given +request, returning +nil+ if it doesn't
+	### have any session attributes. You should override this and provide the
+	### code which fetches the ID from the +request+.
+	def self::get_existing_session_id( request )
+		return nil
+	end
+
+
 	### Fetch the session ID from the given +request+, or create a new one if the
 	### request is +nil+ or doesn't have the necessary attributes. You should
 	### override this, as the default implementation just returns +nil+.
@@ -106,13 +114,23 @@ class Strelka::Session
 	end
 
 
+	### Return +true+ if the given +request+ has a valid session token, and that
+	### token corresponds to an existing session ID. You should override this if
+	### there's a cheaper way to check for an existing session than just calling
+	### ::load_session_data.
+	def self::has_session_for?( request )
+		id = self.get_existing_session_id( request ) or return false
+		return true if self.load( id )
+	end
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
 	### Set up a new instance with the given +session_id+ and +initial_values+.
-	def initialize( session_id, initial_values={} ) # :notnew:
-		@session_id = session_id
+	def initialize( session_id=nil, initial_values={} ) # :notnew:
+		@session_id = session_id || self.class.get_session_id
 	end
 
 

@@ -18,31 +18,38 @@ require 'strelka/mixins'
 # #[], #[]=, #delete, #key?
 class Strelka::Session::Default < Strelka::Session
 	extend Forwardable,
+	       Strelka::MethodUtilities,
 	       Strelka::Delegation
 	include Strelka::Loggable,
 			Strelka::DataUtilities
 
-	# Class-instance variables
-	@sessions = {}
-	@cookie_options = {
+	# Default configuration
+	DEFAULT_COOKIE_OPTIONS = {
 		:name => 'strelka-session'
-	}
+	}.freeze
 
-	class << self
-		# Persist sessions in memory
-		attr_reader :sessions
 
-		# The configured session cookie parameters
-		attr_accessor :cookie_options
-	end
+	# Class-instance variables
+	@cookie_options = DEFAULT_COOKIE_OPTIONS.dup
+	@sessions = {}
+
+	##
+	# In-memory session store
+	singleton_attr_reader :sessions
+
+	##
+	# The configured session cookie parameters
+	singleton_attr_accessor :cookie_options
 
 
 	### Configure the session class with the given +options+, which should be a
 	### Hash or an object that has a Hash-like interface. Sets cookie options
 	### for the session if the +:cookie+ key is set.
-	def self::configure( options )
+	def self::configure( options=nil )
 		if options
 			self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
+		else
+			self.cookie_options = DEFAULT_COOKIE_OPTIONS.dup
 		end
 	end
 
@@ -66,17 +73,35 @@ class Strelka::Session::Default < Strelka::Session
 	end
 
 
+	### Try to fetch a session ID from the specified +request+, returning +nil+
+	### if there isn't one.
+	def self::get_existing_session_id( request )
+		cookie = request.cookies[ self.cookie_options[:name] ] or return nil
+
+		if cookie.value =~ /^([[:xdigit:]]+)$/i
+			return $1.untaint
+		else
+			Strelka.log.warn "Request with a malformed session cookie: %p" % [ request ]
+			return nil
+		end
+	end
+
+
 	### Fetch the session ID from the given +request+, or create a new one if the
 	### request doesn't have the necessary attributes.
 	def self::get_session_id( request=nil )
-		id = nil
-
-		# Fetch and untaint the existing ID if it exists and looks valid
-		if request && (cookie = request.cookies[ self.cookie_options[:name] ])
-			id = $1.untaint if cookie.value =~ /^([[:xdigit:]]+)$/i
-		end
-
+		id = self.get_existing_session_id( request ) if request
 		return id || SecureRandom.hex
+	end
+
+
+	### Return +true+ if the given +request+ has a session token which corresponds
+	### to an existing session key.
+	def self::has_session_for?( request )
+		Strelka.log.debug "Checking request (%s/%d) for session." % [ request.sender_id, request.conn_id ]
+		id = self.get_existing_session_id( request ) or return false
+		Strelka.log.debug "  got a session ID: %p" % [ id ]
+		return @sessions.key?( id )
 	end
 
 
@@ -86,8 +111,6 @@ class Strelka::Session::Default < Strelka::Session
 
 	### Create a new session store using the given +hash+ for initial values.
 	def initialize( session_id=nil, initial_values={} )
-		session_id ||= self.class.get_session_id
-
 		@hash       = Hash.new {|h,k| h[k] = {} }
 		@hash.merge!( initial_values )
 
