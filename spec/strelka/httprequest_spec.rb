@@ -150,6 +150,27 @@ describe Strelka::HTTPRequest do
 			end
 		end
 
+
+		context "a POST request without a content type" do
+			before( :each ) do
+				@req = @request_factory.post( '/directory/path', '' )
+			end
+
+
+			it "responds with a 400 (BAD_REQUEST)" do
+				expected_info = {
+					status: 400,
+					message: "Malformed request (no content type?)",
+					headers: {}
+				}
+
+				expect {
+					@req.params
+				}.to throw_symbol( :finish, expected_info )
+			end
+		end
+
+
 		context "a POST request with a 'application/x-www-form-urlencoded' body" do
 
 			before( :each ) do

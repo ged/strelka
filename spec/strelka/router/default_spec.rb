@@ -73,7 +73,7 @@ describe Strelka::Router::Default do
 			@router.route_request( req ).should be_nil()
 		end
 
-		it "responds with an HTTP::METHOD_NOT_ALLOWED for a POST request to /user/foo" do
+		it "responds with a 405 (method not allowed) for a POST request to /user/foo" do
 			expected_info = {
 				status: 405,
 				message: "Method not allowed.",

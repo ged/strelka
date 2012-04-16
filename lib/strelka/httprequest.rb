@@ -14,7 +14,8 @@ require 'strelka/cookieset'
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	include Strelka::Loggable,
-	        Strelka::Constants
+	        Strelka::Constants,
+	        Strelka::ResponseHelpers
 
 	# Set Mongrel2 to use Strelka's request class for HTTP requests
 	register_request_type( self, *HTTP::RFC2616_VERBS )
@@ -163,8 +164,10 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	### Return a Hash of request form data.
 	def parse_form_data
 		case self.headers.content_type
+		when nil
+			finish_with( HTTP::BAD_REQUEST, "Malformed request (no content type?)" )
 		when 'application/x-www-form-urlencoded'
-			 return merge_query_args( URI.decode_www_form(self.body) )
+			return merge_query_args( URI.decode_www_form(self.body) )
 		when 'application/json', 'text/javascript'
 			return Yajl.load( self.body )
 		when 'text/x-yaml', 'application/x-yaml'
