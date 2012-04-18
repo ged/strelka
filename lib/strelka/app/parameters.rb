@@ -4,7 +4,7 @@
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/paramvalidator'
 
 
@@ -36,7 +36,7 @@ require 'strelka/paramvalidator'
 #   end # class UserManager
 #
 module Strelka::App::Parameters
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing
 	run_after :filters

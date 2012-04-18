@@ -40,7 +40,7 @@ require 'strelka/httpresponse/negotiation'
 #
 module Strelka::App::Negotiation
 	include Strelka::Constants
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing
 	run_after  :filters, :templating, :parameters

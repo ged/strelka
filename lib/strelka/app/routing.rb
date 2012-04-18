@@ -7,7 +7,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 require 'strelka/router'
 require 'strelka/exceptions'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 # Sinatra-ish routing logic for Strelka::Apps
 #
@@ -80,7 +80,7 @@ require 'strelka/app/plugins'
 # routing strategies.
 #
 module Strelka::App::Routing
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 	include Strelka::Loggable,
 	        Strelka::Constants
 

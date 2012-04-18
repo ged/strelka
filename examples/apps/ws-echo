@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# vim: set nosta noet ts=4 sw=4:
+#encoding: utf-8
+
+require 'strelka'
+
+# A demo of the WebSocketServer -- this does the same thing as the Mongrel2
+# echo server, but uses the Strelka WebSocket class.
+class WebSocketEchoServer < Strelka::WebSocketServer
+
+	# Use the heartbeat plugin
+	plugins :heartbeat
+
+
+	
+
+end

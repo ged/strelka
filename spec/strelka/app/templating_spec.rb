@@ -14,7 +14,7 @@ require 'inversion'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/templating'
 
 require 'strelka/behavior/plugin'

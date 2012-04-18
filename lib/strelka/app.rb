@@ -7,18 +7,16 @@ require 'rubygems' # For the Rubygems API
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
+require 'strelka/plugins'
 
 
 # The application base class.
 class Strelka::App < Mongrel2::Handler
-	extend Strelka::MethodUtilities
+	extend Strelka::MethodUtilities,
+	       Strelka::PluginLoader
 	include Strelka::Loggable,
 	        Strelka::Constants,
 	        Strelka::ResponseHelpers
-
-	# Load the plugin system
-	require 'strelka/app/plugins'
-	include Strelka::App::Plugins
 
 
 	# Glob for matching Strelka apps relative to a gem's data directory
@@ -239,22 +237,35 @@ class Strelka::App < Mongrel2::Handler
 	### wish to modify or replace the request before the request cycle is
 	### started.
 	def fixup_request( request )
-		self.log.debug "Fixing up request: %p" % [ request ]
-		request = super
-		self.log.debug "  after fixup: %p" % [ request ]
-
 		return request
 	end
 
 
 	### Handle the request and return a +response+. This is the main extension-point
 	### for the plugin system. Without being overridden or extended by plugins, this
-	### method just returns the default Mongrel2::HTTPRequest#response.
+	### method just returns the default Mongrel2::HTTPRequest#response. If you override
+	### this directly in your App subclass, you'll need to +super+ with a block if you
+	### wish the plugins to run on the request, then do whatever it is you want in the
+	### block and return the response, which the plugins will again have an opportunity
+	### to modify.
+	###
+	### Example:
+	###
+	###     class MyApp < Strelka::App
+	###         def handle_request( request )
+	###             super do |req|
+	###                 res = req.response
+	###                 res.content_type = 'text/plain'
+	###                 res.puts "Hello!"
+	###                 return res
+	###             end
+	###         end
+	###     end
 	def handle_request( request, &block )
 		if block
-			return super( request, &block )
+			return block.call( request )
 		else
-			return super( request ) {|r| r.response }
+			return request.response
 		end
 	end
 
@@ -270,7 +281,7 @@ class Strelka::App < Mongrel2::Handler
 			response.request && response.request.verb == :HEAD
 		self.log.debug "  after fixup: %p" % [ response ]
 
-		return super
+		return response
 	end
 
 

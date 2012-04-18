@@ -4,6 +4,7 @@
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
+require 'strelka/plugins'
 
 require 'strelka/httprequest/auth'
 require 'strelka/authprovider'
@@ -235,7 +236,7 @@ require 'strelka/authprovider'
 #    end
 #
 module Strelka::App::Auth
-	extend Strelka::App::Plugin,
+	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
 	       Configurability
 	include Strelka::Loggable,

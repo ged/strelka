@@ -8,7 +8,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 # Request/response filters plugin for Strelka::App.
 module Strelka::App::Filters
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing, :templating
 

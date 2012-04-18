@@ -51,7 +51,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #   isn't clearly specified in the RFC (DELETE /resource)
 # * Sequel plugin for adding links to serialized representations
 module Strelka::App::RestResources
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	# Resource route option defaults
 	DEFAULTS = {

@@ -7,7 +7,7 @@ require 'inversion'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 
 # A templated content-generation plugin for Strelka::Apps. It uses the
@@ -88,7 +88,7 @@ require 'strelka/app/plugins'
 #
 module Strelka::App::Templating
 	include Strelka::Constants
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing, :negotiation, :errors
 	run_after :filters

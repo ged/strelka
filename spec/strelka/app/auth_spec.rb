@@ -12,7 +12,7 @@ require 'rspec/mocks'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/auth'
 require 'strelka/authprovider'
 

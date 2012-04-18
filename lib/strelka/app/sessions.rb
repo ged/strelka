@@ -5,7 +5,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 require 'strelka/mixins'
 require 'strelka/exceptions'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 require 'strelka/httprequest/session'
 require 'strelka/httpresponse/session'
@@ -78,7 +78,7 @@ require 'strelka/httpresponse/session'
 # is passed to the session class's ::configure method (if it has one).
 #
 module Strelka::App::Sessions
-	extend Strelka::App::Plugin,
+	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
 	       Configurability
 	include Strelka::Loggable,

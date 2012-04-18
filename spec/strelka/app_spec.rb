@@ -26,6 +26,7 @@ describe Strelka::App do
 
 	before( :all ) do
 		setup_logging( :fatal )
+		@initial_registry = Strelka::App.loaded_plugins.dup
 		@request_factory = Mongrel2::RequestFactory.new( route: '/mail' )
 		Mongrel2::Config.db = Mongrel2::Config.in_memory_db
 		Mongrel2::Config.init_database
@@ -39,6 +40,7 @@ describe Strelka::App do
 	end
 
 	before( :each ) do
+		Strelka::App.loaded_plugins.clear
 		@app = Class.new( Strelka::App ) do
 			def initialize( appid=TEST_APPID, sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 				super
@@ -55,6 +57,7 @@ describe Strelka::App do
 	end
 
 	after( :all ) do
+		Strelka::App.loaded_plugins = @initial_registry
 		reset_logging()
 	end
 
@@ -174,7 +177,8 @@ describe Strelka::App do
 
 		# make a plugin that always 304s and install it
 		not_modified_plugin = Module.new do
-			extend Strelka::App::Plugin
+			def self::name; "Strelka::App::NotModified"; end
+			extend Strelka::Plugin
 			def handle_request( r )
 				finish_with( HTTP::NOT_MODIFIED, "Unchanged." )
 				fail "Shouldn't be reached."
@@ -193,7 +197,8 @@ describe Strelka::App do
 	it "creates a simple response body for status responses that can have them" do
 		# make an auth plugin that always denies requests
 		forbidden_plugin = Module.new do
-			extend Strelka::App::Plugin
+			def self::name; "Strelka::App::Forbidden"; end
+			extend Strelka::Plugin
 			def handle_request( r )
 				finish_with( HTTP::FORBIDDEN, "You aren't allowed to look at that." )
 				fail "Shouldn't be reached."
@@ -213,7 +218,8 @@ describe Strelka::App do
 	it "uses the specified content type for error responses" do
 		# make an auth plugin that always denies requests
 		forbidden_plugin = Module.new do
-			extend Strelka::App::Plugin
+			def self::name; "Strelka::App::Forbidden"; end
+			extend Strelka::Plugin
 			def handle_request( r )
 				finish_with( HTTP::FORBIDDEN, "You aren't allowed to look at that.",
 					:content_type => 'text/html' )
@@ -350,7 +356,8 @@ describe Strelka::App do
 		it "provides a plugin hook for plugins to manipulate the request before handling it" do
 			# make a fixup plugin that adds a custom x- header to the request
 			header_fixup_plugin = Module.new do
-				extend Strelka::App::Plugin
+				def self::name; "Strelka::App::HeaderFixup"; end
+				extend Strelka::Plugin
 				def fixup_request( r )
 					r.headers[:x_funted_by] = 'Cragnux/1.1.3'
 					super
@@ -375,7 +382,8 @@ describe Strelka::App do
 		it "provides a plugin hook for plugins to manipulate the response before it's returned to Mongrel2" do
 			# make a fixup plugin that adds a custom x- header to the response
 			header_fixup_plugin = Module.new do
-				extend Strelka::App::Plugin
+				def self::name; "Strelka::App::HeaderFixup"; end
+				extend Strelka::Plugin
 				def fixup_response( res )
 					res.headers.x_funted_by = 'Cragnux/1.1.3'
 					super

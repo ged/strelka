@@ -36,7 +36,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 # See the documentation for ClassMethods.on_status for more details.
 module Strelka::App::Errors
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	DEFAULT_HANDLER_STATUS_RANGE = 400..599
 
