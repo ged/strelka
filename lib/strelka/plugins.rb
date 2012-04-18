@@ -114,6 +114,7 @@ module Strelka
 		def self::extended( mod )
 			super
 			mod.loaded_plugins = Strelka::PluginRegistry.new
+			mod.plugin_path_prefix = mod.name.downcase.gsub( /::/, File::SEPARATOR )
 		end
 
 
@@ -129,6 +130,11 @@ module Strelka
 		attr_accessor :plugins_installed_from
 
 
+		##
+		# The prefix path for loading plugins
+		attr_accessor :plugin_path_prefix
+
+
 		### Returns +true+ if the plugins for the extended app class have already
 		### been installed.
 		def plugins_installed?
@@ -140,7 +146,9 @@ module Strelka
 		def inherited( subclass )
 			super
 			@plugins ||= []
+
 			subclass.loaded_plugins = self.loaded_plugins
+			subclass.plugin_path_prefix = self.plugin_path_prefix
 			subclass.plugins_installed_from = nil
 			subclass.instance_variable_set( :@plugins, @plugins.dup )
 		end
@@ -181,9 +189,8 @@ module Strelka
 			mod = self.loaded_plugins[ name.to_sym ]
 
 			unless mod.is_a?( Module )
-				prefix = self.name.gsub( /::/, File::PATH_SEPARATOR )
-				Strelka.log.debug "Loading plugin from #{prefix}/#{name}"
-				require "#{prefix}/#{name}"
+				pluginpath = File.join( self.plugin_path_prefix, name.to_s )
+				require( pluginpath )
 				mod = self.loaded_plugins[ name.to_sym ] or
 					raise "#{name} plugin didn't load correctly."
 			end

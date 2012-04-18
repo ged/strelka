@@ -29,18 +29,17 @@ describe "Strelka plugin system" do
 
 	before( :all ) do
 		setup_logging( :fatal )
-		@original_registry = Strelka::App.loaded_plugins.dup
+		@original_registry = Strelka::Pluggable.loaded_plugins.dup
 	end
 
 	after( :each ) do
-		Strelka::App.loaded_plugins.clear
+		Strelka::Pluggable.loaded_plugins.clear
 	end
 
 	after( :all ) do
-		Strelka::App.loaded_plugins = @original_registry
+		Strelka::Pluggable.loaded_plugins = @original_registry
 		reset_logging()
 	end
-
 
 
 	RSpec::Matchers.define( :order ) do |item|
@@ -75,13 +74,13 @@ describe "Strelka plugin system" do
 
 		before( :each ) do
 			@plugin = Module.new do
-				def self::name; "Strelka::App::TestPlugin"; end
+				def self::name; "Strelka::Pluggable::TestPlugin"; end
 				extend Strelka::Plugin
 			end
 		end
 
 		it "registers itself with a plugin registry" do
-			Strelka::App.loaded_plugins.should include( @plugin.plugin_name => @plugin )
+			Strelka::Pluggable.loaded_plugins.should include( @plugin.plugin_name => @plugin )
 		end
 
 
@@ -90,7 +89,7 @@ describe "Strelka plugin system" do
 			before( :each ) do
 				modname = @plugin.plugin_name
 				@before_mod = Module.new do
-					def self::name; "Strelka::App::BeforeTestPlugin"; end
+					def self::name; "Strelka::Pluggable::BeforeTestPlugin"; end
 					extend Strelka::Plugin
 					run_before( modname )
 				end
@@ -98,7 +97,7 @@ describe "Strelka plugin system" do
 
 
 			it "sorts before it in the plugin registry" do
-				Strelka::App.loaded_plugins.tsort.
+				Strelka::Pluggable.loaded_plugins.tsort.
 					should order( @plugin.plugin_name ).after( @before_mod.plugin_name )
 			end
 
@@ -109,7 +108,7 @@ describe "Strelka plugin system" do
 			before( :each ) do
 				modname = @plugin.plugin_name
 				@after_mod = Module.new do
-					def self::name; "Strelka::App::AfterTestPlugin"; end
+					def self::name; "Strelka::Pluggable::AfterTestPlugin"; end
 					extend Strelka::Plugin
 					run_after( modname )
 				end
@@ -117,7 +116,7 @@ describe "Strelka plugin system" do
 
 
 			it "sorts after it in the plugin registry" do
-				Strelka::App.loaded_plugins.tsort.
+				Strelka::Pluggable.loaded_plugins.tsort.
 					should order( @plugin.plugin_name ).before( @after_mod.plugin_name )
 			end
 
@@ -127,16 +126,30 @@ describe "Strelka plugin system" do
 
 
 	context "loading" do
+
+		it "requires plugins from a directory based on the name of the loader" do
+			Strelka::Pluggable.should_receive( :require ).
+				with( 'strelka/pluggable/scheduler' ).
+				and_return do
+					Module.new do
+						def self::name; "Strelka::Pluggable::Scheduler"; end
+						extend Strelka::Plugin
+					end
+				end
+
+			Class.new( Strelka::Pluggable ) { plugin :scheduler }
+		end
+
 		it "appends class methods if the plugin has them" do
 			plugin = Module.new do
-				def self::name; "Strelka::App::ClassMethodsTestPlugin"; end
+				def self::name; "Strelka::Pluggable::ClassMethodsTestPlugin"; end
 				include Strelka::Plugin
 				module ClassMethods
 					def a_class_method; return "yep."; end
 				end
 			end
 
-			app = Class.new( Strelka::App )
+			app = Class.new( Strelka::Pluggable )
 			app.register_plugin( plugin )
 
 			app.a_class_method.should == "yep."
@@ -144,7 +157,7 @@ describe "Strelka plugin system" do
 
 		it "adds class-instance variables to the class if the plugin has them" do
 			plugin = Module.new do
-				def self::name; "Strelka::App::ClassInstanceMethodsTestPlugin"; end
+				def self::name; "Strelka::Pluggable::ClassInstanceMethodsTestPlugin"; end
 				include Strelka::Plugin
 				module ClassMethods
 					@testing_value = :default
@@ -152,20 +165,20 @@ describe "Strelka plugin system" do
 				end
 			end
 
-			app = Class.new( Strelka::App )
+			app = Class.new( Strelka::Pluggable )
 			app.register_plugin( plugin )
 
 			app.testing_value.should == :default
 			app.testing_value = :not_the_default
 			app.testing_value.should == :not_the_default
 		end
+
 	end
 
 
 	context "plugin/plugins declarative" do
 
 		before( :each ) do
-			@pluggable_class = Strelka::Pluggable
 			@routing_plugin = Module.new do
 				def self::name; "Strelka::Pluggable::Routing"; end
 				extend Strelka::Plugin
@@ -186,7 +199,7 @@ describe "Strelka plugin system" do
 
 
 		it "can declare a single plugin to load" do
-			klass = Class.new( @pluggable_class ) do
+			klass = Class.new( Strelka::Pluggable ) do
 				plugin :routing
 			end
 			klass.install_plugins
@@ -195,7 +208,7 @@ describe "Strelka plugin system" do
 		end
 
 		it "can declare a list of plugins to load" do
-			klass = Class.new( @pluggable_class ) do
+			klass = Class.new( Strelka::Pluggable ) do
 				plugins :templating, :routing
 			end
 			klass.install_plugins
@@ -203,7 +216,7 @@ describe "Strelka plugin system" do
 		end
 
 		it "installs the plugins in the right order even if they're loaded at separate times" do
-			superclass = Class.new( @pluggable_class ) do
+			superclass = Class.new( Strelka::Pluggable ) do
 				plugin :routing
 			end
 			subclass = Class.new( superclass ) do
@@ -215,7 +228,7 @@ describe "Strelka plugin system" do
 		end
 
 		it "adds information about where plugins were installed" do
-			klass = Class.new( @pluggable_class ) do
+			klass = Class.new( Strelka::Pluggable ) do
 				plugin :routing
 			end
 			klass.plugins_installed_from.should be_nil()
@@ -223,20 +236,11 @@ describe "Strelka plugin system" do
 			klass.plugins_installed_from.should =~ /#{__FILE__}:#{__LINE__ - 1}/
 		end
 
-	end
-
-
-	context "Plugins loaded in a superclass" do
-
-		before( :each ) do
-			@superclass = Class.new( Strelka::Pluggable ) do
+		it "are inherited by subclasses" do
+			parentclass = Class.new( Strelka::Pluggable ) do
 				plugin :routing
 			end
-		end
-
-
-		it "are inherited by subclasses" do
-			subclass = Class.new( @superclass ) do
+			subclass = Class.new( parentclass ) do
 				route_some_stuff
 			end
 

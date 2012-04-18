@@ -7,11 +7,9 @@
 #   m2sh.rb -c examples/mongrel2.sqlite load examples/gen-config.rb
 #
 
-require 'strelka'
 require 'mongrel2'
 require 'mongrel2/config/dsl'
 
-Strelka.load_config( 'examples/config.yml' )
 
 # samples server
 server 'examples' do
@@ -29,7 +27,7 @@ server 'examples' do
 
 	host 'localhost' do
 
-		route '/', directory( 'examples/', 'examples.html', 'text/html' )
+		route '/', directory( 'examples/static/', 'examples.html', 'text/html' )
 
 		authdemo = handler( 'tcp://127.0.0.1:9910', 'auth-demo' )
 
