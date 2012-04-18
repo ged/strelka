@@ -19,6 +19,7 @@ data/strelka/apps/hello-world
 examples/apps/auth-demo
 examples/apps/auth-demo2
 examples/apps/sessions-demo
+examples/apps/ws-echo
 examples/config.yml
 examples/gen-config.rb
 examples/static/examples.css
@@ -33,7 +34,6 @@ lib/strelka/app/errors.rb
 lib/strelka/app/filters.rb
 lib/strelka/app/negotiation.rb
 lib/strelka/app/parameters.rb
-lib/strelka/app/plugins.rb
 lib/strelka/app/restresources.rb
 lib/strelka/app/routing.rb
 lib/strelka/app/sessions.rb
@@ -57,6 +57,7 @@ lib/strelka/httpresponse/session.rb
 lib/strelka/logging.rb
 lib/strelka/mixins.rb
 lib/strelka/paramvalidator.rb
+lib/strelka/plugins.rb
 lib/strelka/router.rb
 lib/strelka/router/default.rb
 lib/strelka/router/exclusive.rb
@@ -73,7 +74,6 @@ spec/strelka/app/errors_spec.rb
 spec/strelka/app/filters_spec.rb
 spec/strelka/app/negotiation_spec.rb
 spec/strelka/app/parameters_spec.rb
-spec/strelka/app/plugins_spec.rb
 spec/strelka/app/restresources_spec.rb
 spec/strelka/app/routing_spec.rb
 spec/strelka/app/sessions_spec.rb
@@ -91,10 +91,12 @@ spec/strelka/httprequest/negotiation_spec.rb
 spec/strelka/httprequest/session_spec.rb
 spec/strelka/httprequest_spec.rb
 spec/strelka/httpresponse/negotiation_spec.rb
+spec/strelka/httpresponse/session_spec.rb
 spec/strelka/httpresponse_spec.rb
 spec/strelka/logging_spec.rb
 spec/strelka/mixins_spec.rb
 spec/strelka/paramvalidator_spec.rb
+spec/strelka/plugins_spec.rb
 spec/strelka/router/default_spec.rb
 spec/strelka/router/exclusive_spec.rb
 spec/strelka/router_spec.rb
