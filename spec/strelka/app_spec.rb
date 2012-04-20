@@ -236,6 +236,25 @@ describe Strelka::App do
 		res.body.should == "You aren't allowed to look at that.\n"
 	end
 
+	it "sets the error status info in the transaction notes for error responses" do
+		forbidden_plugin = Module.new do
+			def self::name; "Strelka::App::Forbidden"; end
+			extend Strelka::Plugin
+			def handle_request( r )
+				finish_with( HTTP::FORBIDDEN, "You aren't allowed to look at that." )
+				fail "Shouldn't be reached."
+			end
+		end
+		@app.plugin( forbidden_plugin )
+
+		res = @app.new.handle( @req )
+
+		res.notes.should include( :status_info )
+		res.notes[:status_info].should include( :status, :message, :headers )
+		res.notes[:status_info][:status].should == HTTP::FORBIDDEN
+		res.notes[:status_info][:message].should == "You aren't allowed to look at that."
+	end
+
 
 	it "provides a declarative for setting the default content type of responses" do
 		@app.class_eval do

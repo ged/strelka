@@ -148,6 +148,7 @@ module Strelka::App::Errors
 		# If the app or any plugins threw a finish, look for a handler for the status code
 		# and call it if one is found.
 		if status_response
+			request.notes[:status_info] = status_response
 			response = request.response
 			status = status_response[:status]
 			self.log.info "[:errors] Handling a status response: %d" % [ status ]

@@ -331,6 +331,7 @@ class Strelka::App < Mongrel2::Handler
 		status_code, message = status_info.values_at( :status, :message )
 		self.log.info "Non-OK response: %d (%s)" % [ status_code, message ]
 
+		request.notes[:status_info] = status_info
 		response = request.response
 		response.reset
 		response.status = status_code

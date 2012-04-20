@@ -50,7 +50,7 @@ describe Strelka::App::Errors do
 			end
 		end
 
-		it "has its auth config inherited by subclasses" do
+		it "has its status handlers inherited by subclasses" do
 			@app.on_status HTTP::OK do
 				'blap'
 			end
@@ -157,6 +157,25 @@ describe Strelka::App::Errors do
 			res.body.should == 'Error:  JAMBA'
 		end
 
+		it "sets the error status info in the transaction notes when the response is handled by a status-handler" do
+			@app.class_eval do
+				on_status do |res, info|
+					res.body = '(%d) Filthy banana' % [ info[:status] ]
+					return res
+				end
+
+				get do |req|
+					finish_with HTTP::BAD_REQUEST, "Your sandwich is missing something."
+				end
+			end
+
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
+
+			res.notes[:status_info].should include( :status, :message, :headers )
+			res.notes[:status_info][:status].should == HTTP::BAD_REQUEST
+			res.notes[:status_info][:message].should == "Your sandwich is missing something."
+		end
 
 		context "template-style handlers" do
 
