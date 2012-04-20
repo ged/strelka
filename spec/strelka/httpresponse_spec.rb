@@ -25,7 +25,8 @@ describe Strelka::HTTPResponse do
 	end
 
 	before( :each ) do
-		@res = @request_factory.get( '/glossary/reduct' ).response
+		@req = @request_factory.get( '/glossary/reduct' )
+		@res = @req.response
 	end
 
 	after( :all ) do
@@ -116,11 +117,16 @@ describe Strelka::HTTPResponse do
 		@res.header_data.should =~ /set-cookie: foom=chuckufarly/i
 	end
 
-	it "allows cookies to appended" do
+	it "allows cookies to be appended" do
 		@res.cookies << Strelka::Cookie.new( 'session', '64a3a92eb7403a8199301e03e8b83810' )
 		@res.cookies << Strelka::Cookie.new( 'cn', '18', :expires => '+1d' )
 		@res.header_data.should =~ /set-cookie: session=64a3a92eb7403a8199301e03e8b83810/i
 		@res.header_data.should =~ /set-cookie: cn=18; expires=/i
+	end
+
+
+	it "shares a 'notes' Hash with its associated request" do
+		@res.notes.should be( @req.notes )
 	end
 
 end

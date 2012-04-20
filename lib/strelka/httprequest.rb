@@ -10,12 +10,14 @@ require 'mongrel2/httprequest'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/httpresponse'
 require 'strelka/cookieset'
+require 'strelka/mixins'
 
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	include Strelka::Loggable,
 	        Strelka::Constants,
-	        Strelka::ResponseHelpers
+	        Strelka::ResponseHelpers,
+			Strelka::DataUtilities
 
 	# Set Mongrel2 to use Strelka's request class for HTTP requests
 	register_request_type( self, *HTTP::RFC2616_VERBS )
@@ -53,7 +55,8 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	attr_writer :params
 
 	# A Hash that plugins can use to pass data amongst themselves. The missing-key
-	# callback is set to auto-create nested sub-hashes.
+	# callback is set to auto-create nested sub-hashes. If you create an HTTPResponse
+	# via #response, the response's notes will be shared with its request.
 	attr_reader :notes
 
 
@@ -205,11 +208,5 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		end
 	end
 
-
-	### Create and return a Hash that will auto-vivify any values it is missing with
-	### another auto-vivifying Hash.
-	def autovivify( hash, key )
-		hash[ key ] = Hash.new( &method(:autovivify) )
-	end
 
 end # class Strelka::HTTPRequest

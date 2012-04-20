@@ -88,10 +88,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -117,8 +117,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == 'filtered notes'
-				res.body.should == 'filtered body'
+				req.notes[:saw][:request].should be_true()
+				res.notes[:saw][:response].should be_true()
 			end
 
 		end
@@ -128,10 +128,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter( :request ) do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -157,8 +157,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == 'filtered notes'
-				res.body.should_not == 'filtered body'
+				req.notes[:saw][:request].should be_true()
+				res.notes[:saw][:response].should be_empty()
 			end
 
 		end
@@ -168,10 +168,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter( :response ) do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -197,8 +197,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == {}
-				res.body.should == 'filtered body'
+				req.notes[:saw][:request].should be_empty()
+				res.notes[:saw][:response].should be_true()
 			end
 
 		end

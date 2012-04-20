@@ -289,6 +289,13 @@ module Strelka
 				end
 		end
 
+
+		### Create and return a Hash that will auto-vivify any values it is missing with
+		### another auto-vivifying Hash.
+		def autovivify( hash, key )
+			hash[ key ] = Hash.new( &Strelka::DataUtilities.method(:autovivify) )
+		end
+
 	end # module DataUtilities
 
 
@@ -341,8 +348,18 @@ module Strelka
 		### http_status code immediately. The specified +message+ will be logged,
 		### and will be included in any message that is returned as part of the
 		### response. The +headers+ hash will be used to set response headers.
-		def finish_with( http_status, message, headers={} )
-			status_info = { :status => http_status, :message => message, :headers => headers }
+		### As a shortcut, you can call #finish_with again with the Hash that it
+		### builds to re-throw it.
+		def finish_with( http_status, message=nil, headers={} )
+			status_info = nil
+
+			if http_status.is_a?( Hash ) && http_status.key?(:status)
+				status_info = http_status
+			else
+				message ||= HTTP::STATUS_NAME[ http_status ]
+				status_info = { :status => http_status, :message => message, :headers => headers }
+			end
+
 			throw :finish, status_info
 		end
 

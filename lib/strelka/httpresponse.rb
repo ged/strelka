@@ -9,7 +9,8 @@ require 'strelka/cookieset'
 # An HTTP response class.
 class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	include Strelka::Loggable,
-	        Strelka::Constants
+	        Strelka::Constants,
+			Strelka::DataUtilities
 
 
 	# Pattern for matching a 'charset' parameter in a media-type string, such as the
@@ -22,6 +23,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		@charset   = nil
 		@languages = []
 		@encodings = []
+		@notes     = Hash.new( &method(:autovivify) )
 		@cookies   = nil
 
 		super
@@ -52,6 +54,11 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	# set as the response's Content-Language header when it is sent to the
 	# client. Defaults to the empty Array.
 	attr_accessor :languages
+
+	# A auto-vivifying nested Hash that plugins can use to pass data amongst themselves.
+	# The notes hash is shared between the request and response objects if
+	# the request is set on the response with #request=.
+	attr_reader :notes
 
 
 	### Overridden to add charset, encodings, and languages to outgoing
@@ -85,6 +92,12 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		return @cookies
 	end
 
+
+	### Set the request object associated with this response to +request+.
+	def request=( request )
+		super
+		@notes = request.notes
+	end
 
 
 	#########
