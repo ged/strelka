@@ -82,7 +82,7 @@ class Strelka::App < Mongrel2::Handler
 		Strelka.log.debug "Local paths: %s" % [ Strelka.datadir + APP_GLOB_PATTERN ]
 
 		appfiles = {
-			'strelka' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
+			'' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
 		}
 
 		# Find all the gems that depend on Strelka
@@ -119,7 +119,7 @@ class Strelka::App < Mongrel2::Handler
 		Strelka.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
 		app_paths.each do |gemname, paths|
 			Strelka.log.debug "  loading gem %s" % [ gemname ]
-			gem( gemname ) unless gemname == 'strelka'
+			gem( gemname ) unless gemname == ''
 
 			Strelka.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
 			paths.each do |path|

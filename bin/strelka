@@ -205,6 +205,10 @@ class Strelka::CLICommand
 			Strelka.datadir = subdir
 		end
 
+		# Include a 'lib' directory if there is one
+		$LOAD_PATH.unshift( 'lib' ) if File.directory?( 'lib' )
+
+		# Run the command
 		begin
 			cmd_method = self.method( "#{command}_command" )
 		rescue NameError => err
@@ -258,7 +262,7 @@ class Strelka::CLICommand
 			paths.each do |gemname, paths|
 				message "\n"
 
-				if gemname == 'strelka'
+				if gemname == ''
 					subheader "Local: "
 				else
 					subheader "Gem: #{gemname}"
@@ -282,7 +286,10 @@ class Strelka::CLICommand
 	def start_command( *args )
 		path, appname, gemname = self.find_specified_app( *args )
 
-		header "Starting the %s app from the %s gem" % [ appname, gemname ]
+		header "Starting the %s app%s" % [
+			appname,
+			gemname == '' ? '' : " the #{gemname} gem"
+		]
 		fork do
 			self.log.debug "  in the child."
 			Strelka.load_config( self.options.config ) if self.options.config
