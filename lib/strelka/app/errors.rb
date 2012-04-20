@@ -8,15 +8,50 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 # Custom error-handling plugin for Strelka::App.
 #
-# == Examples
+#   plugin :errors
 #
-# Handle statuses via a callback:
+#   # Handle only status 400 errors
+#   on_status HTTP::BAD_REQUEST do |res, status_info|
+#       # Do something on 400 errors
+#   end
+#
+#   # Handle any other error in the 4xx range
+#   on_status 400..499 do |res, status_info|
+#       # Do something on 4xx errors
+#   end
+#
+# If you have the <tt>:templating</tt> plugin loaded, you can substitute a
+# Symbol that corresponds with one of the declared templates instead:
+#
+#   class MyApp < Strelka::App
+#       plugins :errors, :templating
+#
+#       layout 'layout.tmpl'
+#       templates :missing => 'errors/missing.tmpl'
+#
+#       # Load the 'missing' template, wrap it up in the layout
+#       # template and render that as the body of the 404
+#       # response
+#       on_status HTTP::NOT_FOUND, :missing
+#
+#   end # class MyApp
+#
+# The template can access the status info hash via the +:status_info+ note
+# on the request or response object:
+#
+#   <!-- error.tmpl -->
+#   Sorry, there was a <?call request.notes[:status_info][:status] ?> error:
+#   <?escape request.notes[:status_info][:message] ?>.
+#
+# If you want to do something application-specific for an error, but still use
+# the default error-handling, just call finish_with again with the status info
+# from your status handler:
 #
 #    class MyApp < Strelka::App
 #        plugins :errors
 #
 #        # Send an email when an app is going to return a 500 error
-#        on_status HTTP::SERVER_ERROR do |res, status|
+#        on_status HTTP::SERVER_ERROR do |res, info|
 #            require 'mail'
 #            Mail.deliver do
 #                from    'app@example.com'
@@ -26,15 +61,20 @@ require 'strelka/app' unless defined?( Strelka::App )
 #                body    "Server error while running %p [%s]: %s" %
 #                        [ self.class, self.conn, status.message ]
 #            end
+#
+#            # Finish the transaction
+#            finish_with( info )
 #        end
 #
 #        def handle( req )
-#            finish_with( HTTP::SERVER_ERROR, "Oops, that doesn't exist on this server." )
+#            finish_with( HTTP::SERVER_ERROR, "Ack! Something bad happened." )
 #        end
 #
 #    end # class MyApp
 #
-# See the documentation for ClassMethods.on_status for more details.
+# See the documentation for ClassMethods.on_status for more details on the
+# status-handler block.
+#
 module Strelka::App::Errors
 	extend Strelka::Plugin
 
@@ -64,16 +104,6 @@ module Strelka::App::Errors
 		### +range+. Range can either be a single integer HTTP status code, or a Range
 		### of the same (e.g., 400..499) for all statuses with that range.
 		###
-		###   # Handle only status 400 errors
-		###   on_status HTTP::BAD_REQUEST do |res, status|
-		###       # Do something on 400 errors
-		###   end
-		###
-		###   # Handle any other error in the 4xx range
-		###   on_status 400..499 do |res, status|
-		###       # Do something on 4xx errors
-		###   end
-		###
 		### If no +range+ is specified, any of the HTTP error statuses will invoke
 		### the callback.
 		###
@@ -83,20 +113,6 @@ module Strelka::App::Errors
 		###
 		### [+:status+]   the HTTP status code that was passed to Strelka::App#finish_with
 		### [+:message+]  the message string that was passed to Strelka::App#finish_with
-		###
-		### If you have the <tt>:templating</tt> plugin loaded, you can substitute a
-		### Symbol that corresponds with one of the declared templates instead:
-		#### With the templating plugin, you can also handle it via a custom template.
-		###
-		###   class MyApp < Strelka::App
-		###       plugins :errors, :templating
-		###
-		###       layout 'layout.tmpl'
-		###       templates :missing => 'errors/missing.tmpl'
-		###
-		###       on_status HTTP::NOT_FOUND, :missing
-		###
-		###   end # class MyApp
 		###
 		def on_status( range=DEFAULT_HANDLER_STATUS_RANGE, template=nil, &block )
 			range = Range.new( range, range ) unless range.is_a?( Range )
