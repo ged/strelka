@@ -197,7 +197,13 @@ class Strelka::CLICommand
 		cmd_method = nil
 
 		# Set the datadir override if it's given
-		Strelka.datadir = Pathname( options.datadir ) if self.options.datadir
+		if self.options.datadir
+			self.log.debug "Using data dir option: %s" % [ self.options.datadir ]
+			Strelka.datadir = Pathname( self.options.datadir )
+		elsif File.directory?( 'data' ) && subdir = Dir[ 'data/*' ].first
+			self.log.debug "Using local data dir: %s" % [ subdir ]
+			Strelka.datadir = subdir
+		end
 
 		begin
 			cmd_method = self.method( "#{command}_command" )
@@ -252,7 +258,12 @@ class Strelka::CLICommand
 			paths.each do |gemname, paths|
 				message "\n"
 
-				subheader "#{gemname}:"
+				if gemname == 'strelka'
+					subheader "Local: "
+				else
+					subheader "Gem: #{gemname}"
+				end
+
 				filenames = paths.map {|path| path.basename.to_s }
 				list( filenames )
 			end

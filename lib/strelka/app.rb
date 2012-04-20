@@ -79,6 +79,8 @@ class Strelka::App < Mongrel2::Handler
 	### Return a Hash of Strelka app files as Pathname objects from installed gems,
 	### keyed by gemspec name .
 	def self::discover_paths
+		Strelka.log.debug "Local paths: %s" % [ Strelka.datadir + APP_GLOB_PATTERN ]
+
 		appfiles = {
 			'strelka' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
 		}

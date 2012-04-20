@@ -51,8 +51,14 @@ module Strelka
 	##
 	# The Pathname of the directory that will be searched for default applications,
 	# config, etc.
-	singleton_attr_accessor :datadir
+	singleton_attr_reader :datadir
+
+	### Set the local data directory to +dir+.
+	def self::datadir=( dir )
+		@datadir = Pathname( dir )
+	end
 	self.datadir = DEFAULT_DATADIR
+
 
 	require 'strelka/app'
 	require 'strelka/httprequest'
