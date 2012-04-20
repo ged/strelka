@@ -257,6 +257,20 @@ module Strelka
 			self.plugins_installed_from = caller( 1 ).first
 		end
 
+
+
+		### Output the application stack into the logfile.
+		def dump_application_stack
+			stack = self.class.ancestors.
+				reverse.
+				drop_while {|mod| mod != Strelka::PluginLoader }.
+				select {|mod| mod.respond_to?(:plugin_name) }.
+				collect {|mod| mod.plugin_name }.
+				reverse
+
+			self.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
+		end
+
 	end # module PluginLoader
 
 end # class Strelka
