@@ -10,8 +10,13 @@ require 'strelka/paramvalidator'
 
 # Parameter validation and untainting for Strelka apps.
 #
-# The application can declare parameters globally, and then override them on a
-# per-route basis:
+# When you include the +:parameters+ plugin, you can declare valid parameters, specify
+# constraints that describe what they should contain, and automatically untaint the incoming
+# values that match.
+#
+# == Parameter Declaration
+#
+# Parameters are declared using the +param+ declarative:
 #
 #   class UserManager < Strelka::App
 #
@@ -22,9 +27,37 @@ require 'strelka/paramvalidator'
 #       param :id, /\d+/, "The user's numeric ID"
 #       param :mode, ['add', 'remove']
 #
+# The first item is the parameter _key_, which corresponds to the field 'name' attribute for
+# a form, or the key for JSON or YAML data.
+#
+# The second item is the _constraint_, which specifies what the value in that parameter should
+# look like if it's valid. This can be one of several things:
+#
+# [a Regexp]::
+#   The parameter value, as a String, is matched against the Regexp and validates if the
+#   pattern matches. If the Regexp contains one match group, and the pattern matches, the
+#   validated value will be the capture from that group. If it contains two or more match
+#   groups, the new value is an Array of the captures from the match. If the pattern contains
+#   at least one named capture group, the value will be a Hash of the captures from the named
+#   capture groups. Note that you cannot intermix named and positional capture groups.
+# [a Symbol]::
+#   The parameter value is matched using a built-in constraint. The current built-in
+#   constraints are documented in the ParamValidator API documentation. As a shortcut, if the
+#   parameter's _key_ is the same as a built-in constraint, you can omit the _constraint_ from
+#   the declaration.
+# [a Proc or Method]::
+#   The parameter (or parameters in the case where there are more than one value) are passed to
+#   the given Proc, and the Proc should return what the validated value of the parameter should
+#   be. If it's invalid, the Proc should raise a RuntimeError.
+#
+# == Parameter Routing
+#
+# The inclusion of this plugin also allows you to use parameters in your routes:
+#
 #       # :username gets validated and merged into query args; URI parameters
 #       # clobber query params
-#       get '/info/:username', :params => { :id => /[XRT]\d{4}-\d{8}/ } do |req|
+#       get '/info/:username' do |req|
+#           req.params.add( :id, /[XRT]\d{4}-\d{8}/ )
 #           req.params.okay?
 #           req.params[:username]
 #           req.params.values_at( :id, :username )
@@ -35,6 +68,7 @@ require 'strelka/paramvalidator'
 #
 #   end # class UserManager
 #
+# [:FIXME:] Add more docs
 module Strelka::App::Parameters
 	extend Strelka::Plugin
 
