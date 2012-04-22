@@ -69,7 +69,7 @@ describe Strelka::App::Parameters do
 				param :username, /\w+/i
 			end
 
-			@app.paramvalidator.param_names.should == [ :username ]
+			@app.paramvalidator.param_names.should == [ 'username' ]
 		end
 
 
@@ -79,7 +79,7 @@ describe Strelka::App::Parameters do
 			end
 			subapp = Class.new( @app )
 
-			subapp.paramvalidator.param_names.should == [ :username ]
+			subapp.paramvalidator.param_names.should == [ 'username' ]
 		end
 
 		describe "instance" do

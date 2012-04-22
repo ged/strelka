@@ -51,21 +51,33 @@ describe Strelka::ParamValidator do
 
 	it "allows constraints to be added" do
 		@validator.add( :a_field, :string )
-		@validator.param_names.should include( :a_field )
+		@validator.param_names.should include( 'a_field' )
 	end
 
 	it "doesn't allow a parameter to be added twice" do
 		@validator.add( :a_field, :string )
 		expect {
 			@validator.add( :a_field, :string )
-		}.to raise_error( /parameter :a_field is already defined/i )
-		@validator.param_names.should include( :a_field )
+		}.to raise_error( /parameter "a_field" is already defined/i )
+		@validator.param_names.should include( 'a_field' )
+	end
+
+	it "re-validates if profile is modified" do
+		@validator.add( :a_field, :string )
+		@validator.validate( 'a_field' => 'a string!' )
+		@validator.should_not have_errors()
+		@validator.should be_okay()
+
+		@validator.override( :a_field, :integer )
+		@validator.should have_errors()
+		@validator.should_not be_okay()
+		@validator.error_messages.should include( "Invalid value for 'A Field'" )
 	end
 
 	it "allows an existing constraint to be overridden" do
 		@validator.add( :a_field, :string )
 		@validator.override( :a_field, :integer )
-		@validator.param_names.should include( :a_field )
+		@validator.param_names.should include( 'a_field' )
 		@validator.validate( 'a_field' => 'a string!' )
 		@validator.should have_errors()
 		@validator.should_not be_okay()
@@ -75,14 +87,14 @@ describe Strelka::ParamValidator do
 	it "doesn't allow a non-existant parameter to be overridden" do
 		expect {
 			@validator.override( :a_field, :string )
-		}.to raise_error( /no parameter :a_field defined/i )
-		@validator.param_names.should_not include( :a_field )
+		}.to raise_error( /no parameter "a_field" defined/i )
+		@validator.param_names.should_not include( 'a_field' )
 	end
 
 	it "raises an exception on an unknown constraint type" do
 		expect {
 			@validator.add( :foo, $stderr )
-		}.to raise_error( /no builtin :foo validator/ )
+		}.to raise_error( /no builtin "foo" validator/ )
 	end
 
 	it "retains its parameters through a copy" do

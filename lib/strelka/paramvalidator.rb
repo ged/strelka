@@ -220,7 +220,7 @@ class Strelka::ParamValidator < ::FormValidator
 	### Fetch the constraint/s that apply to the parameter with the given
 	### +name+.
 	def constraint_for( name )
-		constraint = self.profile[:constraints][ name.to_sym ] or
+		constraint = self.profile[:constraints][ name.to_s ] or
 			raise ScriptError, "no parameter %p defined" % [ name ]
 		return constraint
 	end
@@ -270,11 +270,12 @@ class Strelka::ParamValidator < ::FormValidator
 	### Add a validation for a parameter with the specified +name+. The +args+ can include
 	### a constraint, a description, and one or more flags.
 	def add( name, *args, &block )
-		name = name.to_sym
+		name = name.to_s
 		raise ArgumentError,
 			"parameter %p is already defined; perhaps you meant to use #override?" % [name] if
 			self.param_names.include?( name )
 
+		self.log.debug "Adding parameter '%s' to profile" % [ name ]
 		self.set_param( name, *args, &block )
 	end
 
@@ -282,11 +283,12 @@ class Strelka::ParamValidator < ::FormValidator
 	### Replace the existing parameter with the specified +name+. The +args+ replace
 	### the existing description, constraints, and flags. See #add for details.
 	def override( name, *args, &block )
-		name = name.to_sym
+		name = name.to_s
 		raise ArgumentError,
 			"no parameter %p defined; perhaps you meant to use #add?" % [name] unless
 			self.param_names.include?( name )
 
+		self.log.debug "Overriding parameter '%s' in profile" % [ name ]
 		self.set_param( name, *args, &block )
 	end
 
@@ -397,6 +399,8 @@ class Strelka::ParamValidator < ::FormValidator
 		else
 			self.profile[:untaint_constraint_fields].delete( :name )
 		end
+
+		self.revalidate if self.validated?
 	end
 
 
@@ -429,6 +433,12 @@ class Strelka::ParamValidator < ::FormValidator
 		return !@form.empty?
 	end
 	alias_method :has_args?, :args?
+
+
+	### Returns +true+ if the parameters have been validated.
+	def validated?
+		return !@raw_form.empty?
+	end
 
 
 	### Returns +true+ if any fields are missing or contain invalid values.
@@ -553,8 +563,14 @@ class Strelka::ParamValidator < ::FormValidator
 	### re-validate the resulting values.
 	def merge!( params )
 		return if params.empty?
-
 		self.log.debug "Merging parameters for revalidation: %p" % [ params ]
+		self.revalidate( params )
+	end
+
+
+	### Clear existing validation information and re-check against the
+	### current state of the profile.
+	def revalidate( params={} )
 		@missing_fields.clear
 		@unknown_fields.clear
 		@required_fields.clear
