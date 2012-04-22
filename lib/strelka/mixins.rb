@@ -357,7 +357,12 @@ module Strelka
 				status_info = http_status
 			else
 				message ||= HTTP::STATUS_NAME[ http_status ]
-				status_info = { :status => http_status, :message => message, :headers => headers }
+				status_info = {
+					status:    http_status,
+					message:   message,
+					headers:   headers,
+					backtrace: caller(1),
+				}
 			end
 
 			throw :finish, status_info

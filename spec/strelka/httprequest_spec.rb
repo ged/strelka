@@ -166,7 +166,7 @@ describe Strelka::HTTPRequest do
 
 				expect {
 					@req.params
-				}.to throw_symbol( :finish, expected_info )
+				}.to finish_with( HTTP::BAD_REQUEST, /no content type/i )
 			end
 		end
 

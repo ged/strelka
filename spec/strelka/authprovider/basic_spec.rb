@@ -77,22 +77,13 @@ describe Strelka::AuthProvider::Basic do
 
 	context "unconfigured" do
 
-		before( :each ) do
-			@expected_info = {
-				status: 401,
-				message: "Requires authentication.",
-				headers: {
-					www_authenticate: "Basic realm=test-app"
-				}
-			}
-		end
-
 		it "rejects a request with no Authorization header" do
 			req = @request_factory.get( '/admin/console' )
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=test-app" )
 		end
 
 		it "rejects a request with credentials" do
@@ -101,7 +92,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=test-app" )
 		end
 
 	end
@@ -110,13 +102,6 @@ describe Strelka::AuthProvider::Basic do
 	context "configured with at least one user" do
 
 		before( :each ) do
-			@expected_info = {
-				status: 401,
-				message: "Requires authentication.",
-				headers: {
-					www_authenticate: "Basic realm=Pern"
-				}
-			}
 			described_class.configure( @config )
 		end
 
@@ -124,7 +109,8 @@ describe Strelka::AuthProvider::Basic do
 			req = @request_factory.get( '/admin/console' )
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "rejects a request with an authorization header for some other auth scheme" do
@@ -141,7 +127,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "rejects a request with malformed credentials (no ':')" do
@@ -150,7 +137,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "rejects a request with malformed credentials (invalid base64)" do
@@ -159,7 +147,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "rejects a request with non-existant user credentials" do
@@ -168,7 +157,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "rejects a request with a valid user, but the wrong password" do
@@ -177,7 +167,8 @@ describe Strelka::AuthProvider::Basic do
 
 			expect {
 				@provider.authenticate( req )
-			}.to throw_symbol( :finish, @expected_info )
+			}.to finish_with( HTTP::UNAUTHORIZED, /requires authentication/i ).
+			     and_header( www_authenticate: "Basic realm=Pern" )
 		end
 
 		it "accepts a request with valid credentials" do

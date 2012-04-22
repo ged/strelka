@@ -79,16 +79,11 @@ describe Strelka::AuthProvider do
 			end
 
 			it "fails with a 403 (Forbidden) if the app's authz callback returns false" do
-				expected_info = {
-					status:  403,
-					message: "You are not authorized to access this resource.",
-					headers: {}
-				}
 				req = @request_factory.get( '/admin/console' )
 
 				expect {
 					@provider.authorize( 'anonymous', req ) { false }
-				}.to throw_symbol( :finish, expected_info )
+				}.to finish_with( HTTP::FORBIDDEN, /you are not authorized/i )
 			end
 
 		end
