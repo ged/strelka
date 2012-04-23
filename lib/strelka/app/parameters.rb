@@ -20,12 +20,11 @@ require 'strelka/paramvalidator'
 #
 #   class UserManager < Strelka::App
 #
-#       plugins :routing, :parameters
+#       plugin :parameters
 #
-#       param :username, /\w+/, "User login", :required
 #       param :email
 #       param :id, /\d+/, "The user's numeric ID"
-#       param :mode, ['add', 'remove']
+#       param :mode, /^\s*(?<prefix>[A-Z]{2})-(?<sku>\p{Print}+)/
 #
 # The first item is the parameter _key_, which corresponds to the field 'name' attribute for
 # a form, or the key for JSON or YAML data.
@@ -68,7 +67,7 @@ require 'strelka/paramvalidator'
 #
 #   end # class UserManager
 #
-# [:FIXME:] Add more docs
+# [:FIXME:] Add more docs.
 module Strelka::App::Parameters
 	extend Strelka::Plugin
 

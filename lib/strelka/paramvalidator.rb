@@ -371,7 +371,8 @@ class Strelka::ParamValidator < ::FormValidator
 		args.unshift( block ) if block
 
 		# Custom validator -- either a callback or a regex
-		if args.first.is_a?( Regexp ) || args.first.respond_to?( :call )
+		if args.first.is_a?( Regexp ) ||
+			args.first.respond_to?( :call )
 			self.profile[:constraints][ name ] = args.shift
 
 		# Builtin match validator, either explicit or implied by the name
