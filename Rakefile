@@ -11,6 +11,7 @@ end
 Hoe.plugin :mercurial
 Hoe.plugin :signing
 Hoe.plugin :manualgen
+Hoe.plugin :deveiate
 
 Hoe.plugins.delete :rubyforge
 
