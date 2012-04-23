@@ -1,5 +1,5 @@
 # .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
-hoe-deveiate -v0.1.0
+hoe-deveiate -v0.1.1
 formvalidator -v0.1.5
 hoe-manualgen -v0.3.0
 inversion -v0.8.0
