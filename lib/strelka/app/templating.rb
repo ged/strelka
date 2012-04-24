@@ -185,52 +185,73 @@ module Strelka::App::Templating
 		response = super
 
 		self.log.debug "Templating: examining %p response." % [ response.class ]
-		template = nil
-
-		# Response is a template name
-		if response.is_a?( Symbol ) && self.template_map.key?( response )
-			self.log.debug "  response is a template name (Symbol); using the %p template" % [ response ]
-			template = self.template( response )
-			response = request.response
-
-		# Template object
-		elsif response.is_a?( Inversion::Template )
-			self.log.debug "  response is an %p; wrapping it in a Response object" % [ response.class ]
-			template = response
-			response = request.response
-
-		# Template object already in a Response
-		elsif response.is_a?( Mongrel2::Response ) && response.body.is_a?( Inversion::Template )
-			template = response.body
-			self.log.debug "  response is a %p in the body of a %p" % [ template.class, response.class ]
-
-		# Not templated; returned as-is
-		else
-			self.log.debug "  response isn't templated; returning it as-is"
+		template = self.extract_template_from_response( response ) or
 			return response
-		end
 
 		# Wrap the template in a layout if there is one
-		if self.layout
-			self.layout.reload if self.layout.changed?
-			l_template = self.layout.dup
-			self.log.debug "  wrapping response in layout %p" % [ l_template ]
-			l_template.body = template
-			template = l_template
-		end
+		template = self.wrap_in_layout( template )
 
 		# Set some default stuff on the top-level template
-		template.request          = request
-		template.strelka_version  = Strelka.version_string( true )
-		template.mongrel2_version = Mongrel2.version_string( true )
-		template.route            = request.notes[:routing][:route]
+		self.set_common_attributes( template, request )
 
 		# Now render the response body
 		self.log.debug "  rendering the template into the response body"
+		response = request.response unless response.is_a?( Mongrel2::Response )
 		response.body = template.render
 		response.status ||= HTTP::OK
 
 		return response
+	end
+
+
+	### Fetch the template from the +response+ (if there is one) and return it. If
+	### +response+ itself is a template.
+	def extract_template_from_response( response )
+
+		# Response is a template name
+		if response.is_a?( Symbol ) && self.template_map.key?( response )
+			self.log.debug "  response is a template name (Symbol); using the %p template" % [ response ]
+			return self.template( response )
+
+		# Template object
+		elsif response.respond_to?( :render )
+			self.log.debug "  response is a #renderable %p; returning it as-is" % [ response.class ]
+			return response
+
+		# Template object already in a Response
+		elsif response.is_a?( Mongrel2::Response ) && response.body.respond_to?( :render )
+			self.log.debug "  response is a %p in the body of a %p" % [ response.body.class, response.class ]
+			return response.body
+
+		# Not templated; returned as-is
+		else
+			self.log.debug "  response isn't templated; returning nil"
+			return nil
+		end
+	end
+
+
+	### Wrap the specified +content+ template in the layout template and
+	### return it. If there isn't a layout declared, just return +content+ as-is.
+	def wrap_in_layout( content )
+		return content unless self.layout
+
+		self.layout.reload if self.layout.changed?
+		l_template = self.layout.dup
+		self.log.debug "  wrapping response in layout %p" % [ l_template ]
+		l_template.body = content
+
+		return l_template
+	end
+
+
+	### Set some default values from the +request+ in the given top-level +template+.
+	def set_common_attributes( template, request )
+		template.request          = request
+		template.app              = self
+		template.strelka_version  = Strelka.version_string( true )
+		template.mongrel2_version = Mongrel2.version_string( true )
+		template.route            = request.notes[:routing][:route]
 	end
 
 end # module Strelka::App::Templating

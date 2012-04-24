@@ -172,6 +172,25 @@ describe Strelka::App::Templating do
 				res.status.should == 200
 			end
 
+			it "doesn't wrap the layout around non-template responses" do
+				@app.class_eval do
+					layout 'layout.tmpl'
+
+					def handle_request( req )
+						# Super through the plugins and then load the template into the response
+						super do
+							res = req.response
+							res.body = self.template( :main ).render
+							res
+						end
+					end
+				end
+
+				res = @app.new.handle( @req )
+
+				res.body.should == "A template for testing the Templating plugin.\n"
+			end
+
 		end
 
 	end
