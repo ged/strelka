@@ -173,6 +173,23 @@ describe "Strelka plugin system" do
 			app.testing_value.should == :not_the_default
 		end
 
+		it "adds class-instance variables to the class if the plugin has them" do
+			plugin = Module.new do
+				def self::name; "Strelka::Pluggable::ClassInstanceMethodsTestPlugin"; end
+				include Strelka::Plugin
+				module ClassMethods
+					@testing_value = :default
+					attr_accessor :testing_value
+				end
+			end
+
+			app = Class.new( Strelka::Pluggable )
+			app.instance_variable_set( :@testing_value, :pre_existing_value )
+			app.register_plugin( plugin )
+
+			app.testing_value.should == :pre_existing_value
+		end
+
 	end
 
 

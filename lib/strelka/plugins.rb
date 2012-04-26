@@ -209,6 +209,7 @@ module Strelka
 
 				extend( cm_mod )
 				cm_mod.instance_variables.each do |ivar|
+					next if instance_variable_defined?( ivar )
 					Strelka.log.debug "  copying class instance variable %s" % [ ivar ]
 					ival = cm_mod.instance_variable_get( ivar )
 
