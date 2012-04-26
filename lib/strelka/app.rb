@@ -4,6 +4,7 @@
 
 require 'rubygems' # For the Rubygems API
 
+require 'configurability'
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
@@ -12,18 +13,22 @@ require 'strelka/plugins'
 
 # The application base class.
 class Strelka::App < Mongrel2::Handler
-	extend Strelka::MethodUtilities,
+	extend Configurability,
+	       Strelka::MethodUtilities,
 	       Strelka::PluginLoader
 	include Strelka::Loggable,
 	        Strelka::Constants,
 	        Strelka::ResponseHelpers
 
 
+	# Configurability API -- use the 'app' section of the config file.
+	config_key :app
+
 	# Glob for matching Strelka apps relative to a gem's data directory
 	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
 
-
 	# Class instance variables
+	@devmode      = false
 	@default_type = nil
 	@loading_file = nil
 	@subclasses   = Hash.new {|h,k| h[k] = [] }
@@ -34,6 +39,10 @@ class Strelka::App < Mongrel2::Handler
 	# loaded from, or +nil+ if they weren't loaded via ::load.
 	singleton_attr_reader :subclasses
 
+	##
+	# 'Developer mode' flag.
+	singleton_attr_writer :devmode
+
 
 	### Inheritance callback -- add subclasses to @subclasses so .load can figure out which
 	### classes correspond to which files.
@@ -43,13 +52,14 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+
 	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if
 	### one is not specified, and automatically install the config DB if it hasn't been
 	### already.
 	def self::run( appid=nil )
 		appid ||= self.default_appid
 
-		Strelka.logger.level = Logger::DEBUG if $VERBOSE
+		Strelka.logger.level = Logger::DEBUG if self.devmode?
 		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
 
 		Strelka.log.info "Starting up with appid %p." % [ appid ]
@@ -157,6 +167,29 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Configure the App. Override this if you wish to add additional configuration
+	### to the 'app' section of the config that will be passed to you when the config
+	### is loaded.
+	def self::configure( config=nil )
+		if config
+			self.devmode = true if config[:devmode]
+		else
+			self.devmode = $DEBUG ? true : false
+		end
+
+		Strelka.log.info "Enabled developer mode." if self.devmode?
+	end
+
+
+	### Returns +true+ if the application has been configured to run in 'developer mode'.
+	### Developer mode is mostly informational by default (it just makes logging more
+	### verbose), but plugins and such might alter their behavior based on this setting.
+	def self::devmode?
+		return @devmode
+	end
+	singleton_method_alias :in_devmode?, :devmode?
+
+
 	#
 	# :section: Application declarative methods
 	#
@@ -221,8 +254,7 @@ class Strelka::App < Mongrel2::Handler
 
 		return response
 	rescue => err
-		msg = "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
-		self.log.error( msg )
+		self.log.error "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
 		err.backtrace[ 1..-1 ].each {|frame| self.log.debug('  ' + frame) }
 
 		status_info = { :status => HTTP::SERVER_ERROR, :message => 'internal server error' }
@@ -325,8 +357,6 @@ class Strelka::App < Mongrel2::Handler
 
 	### Create a response to specified +request+ based on the specified +status_code+
 	### and +message+.
-	### :TODO: Document and test the :content_type status_info field.
-	### :TODO: Implement a way to set headers from the status_info.
 	def prepare_status_response( request, status_info )
 		status_code, message = status_info.values_at( :status, :message )
 		self.log.info "Non-OK response: %d (%s)" % [ status_code, message ]
@@ -338,7 +368,7 @@ class Strelka::App < Mongrel2::Handler
 
 		# Some status codes allow explanatory text to be returned; some forbid it. Append the
 		# message for those that allow one.
-		unless request.verb == :HEAD || HTTP::BODILESS_HTTP_RESPONSE_CODES.include?( status_code )
+		unless request.verb == :HEAD || response.bodiless?
 			response.content_type = 'text/plain'
 			response.puts( message )
 		end

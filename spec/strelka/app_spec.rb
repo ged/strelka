@@ -350,6 +350,27 @@ describe Strelka::App do
 		res.body.should =~ /internal server error/i
 	end
 
+	it "isn't in 'developer mode' by default" do
+		@app.should_not be_in_devmode()
+	end
+
+	it "can be configured to be in 'developer mode' using the Configurability API" do
+		@app.configure( devmode: true )
+		@app.should be_in_devmode()
+	end
+
+	it "configures itself to be in 'developer mode' if debugging is enabled" do
+		debugsetting = $DEBUG
+
+		begin
+			$DEBUG = true
+			@app.configure
+			@app.should be_in_devmode()
+		ensure
+			$DEBUG = debugsetting
+		end
+	end
+
 
 	describe "process name" do
 
