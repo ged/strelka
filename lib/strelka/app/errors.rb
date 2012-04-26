@@ -77,9 +77,15 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 module Strelka::App::Errors
 	extend Strelka::Plugin
+	include Strelka::Constants
 
+
+	# The range of status codes to delegate to an on_status handler that doesn't
+	# specify one
 	DEFAULT_HANDLER_STATUS_RANGE = 400..599
 
+
+	# Plugin load order
 	run_before :routing
 
 
@@ -141,7 +147,22 @@ module Strelka::App::Errors
 
 		# Catch a finish_with; the status_response will only be non-nil
 		status_response = catch( :finish ) do
-			response = super
+
+			# Provide our own exception-handling and translate them into server errors
+			begin
+				response = super
+			rescue => err
+				self.log.error "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
+				err.backtrace[ 1..-1 ].each {|frame| self.log.debug('  ' + frame) }
+
+				finish_with(
+					status:    HTTP::SERVER_ERROR,
+					message:   err.message,
+					headers:   {},
+					backtrace: err.backtrace,
+					exception: err
+				)
+			end
 			nil
 		end
 

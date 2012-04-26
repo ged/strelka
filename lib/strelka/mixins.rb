@@ -354,6 +354,7 @@ module Strelka
 			status_info = nil
 
 			if http_status.is_a?( Hash ) && http_status.key?(:status)
+				self.log.debug "Re-finishing with a status_info struct: %p." % [ http_status ]
 				status_info = http_status
 			else
 				message ||= HTTP::STATUS_NAME[ http_status ]

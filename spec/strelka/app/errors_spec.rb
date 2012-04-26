@@ -177,6 +177,29 @@ describe Strelka::App::Errors do
 			res.notes[:status_info][:message].should == "Your sandwich is missing something."
 		end
 
+		it "provides its own exception handler for the request phase" do
+			@app.class_eval do
+				on_status do |res, info|
+					res.body = info[:exception].class.name
+					return res
+				end
+
+				get do |req|
+					raise "An uncaught exception"
+				end
+			end
+
+			req = @request_factory.get( '/foom' )
+			res = @app.new.handle( req )
+
+			res.notes[:status_info].should include( :status, :message, :headers, :exception )
+			res.notes[:status_info][:status].should == HTTP::SERVER_ERROR
+			res.notes[:status_info][:message].should == "An uncaught exception"
+			res.notes[:status_info][:exception].should be_a( RuntimeError )
+			res.body.should == "RuntimeError"
+		end
+
+
 		context "template-style handlers" do
 
 			before( :all ) do
