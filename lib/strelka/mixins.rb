@@ -305,9 +305,11 @@ module Strelka
 	#       include Strelka::MethodUtilities
 	#
 	#       singleton_attr_accessor :types
+	#       singleton_method_alias :kinds, :types
 	#   end
 	#
 	#   MyClass.types = [ :pheno, :proto, :stereo ]
+	#   MyClass.kinds # => [:pheno, :proto, :stereo]
 	#
 	module MethodUtilities
 
@@ -337,6 +339,12 @@ module Strelka
 				singleton_class.__send__( :attr_accessor, sym )
 			end
 		end
+
+		### Creates an alias for the +original+ method named +newname+.
+		def singleton_method_alias( newname, original )
+			singleton_class.__send__( :alias_method, newname, original )
+		end
+
 
 	end # module MethodUtilities
 
