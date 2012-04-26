@@ -38,6 +38,7 @@ describe Strelka::HTTPResponse::Negotiation do
 
 	before( :each ) do
 		@app = Class.new( Strelka::App ) { plugins :negotiation }
+		@app.install_plugins
 		@req = @request_factory.get( '/service/user/estark' )
 		@res = @req.response
 	end

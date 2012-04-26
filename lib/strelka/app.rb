@@ -208,7 +208,7 @@ class Strelka::App < Mongrel2::Handler
 
 	### Dump the application stack when a new instance is created.
 	def initialize( * )
-		self.dump_application_stack
+		self.class.dump_application_stack
 		super
 	end
 
@@ -381,19 +381,6 @@ class Strelka::App < Mongrel2::Handler
 		end
 
 		return response
-	end
-
-
-	### Output the application stack into the logfile.
-	def dump_application_stack
-		stack = self.class.ancestors.
-			reverse.
-			drop_while {|mod| mod != Strelka::App }.
-			select {|mod| mod.respond_to?(:plugin_name) }.
-			reverse.
-			collect {|mod| mod.plugin_name }
-
-		self.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
 	end
 
 end # class Strelka::App

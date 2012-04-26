@@ -259,17 +259,18 @@ module Strelka
 		end
 
 
+		### Return the list of plugin modules that are in effect for the current
+		### app.
+		def application_stack
+			Strelka.log.debug "Ancestors are: %p" % [ self.class.ancestors ]
+			return self.ancestors.select {|mod| mod.respond_to?(:plugin_name) }
+		end
+
 
 		### Output the application stack into the logfile.
 		def dump_application_stack
-			stack = self.class.ancestors.
-				reverse.
-				drop_while {|mod| mod != Strelka::PluginLoader }.
-				select {|mod| mod.respond_to?(:plugin_name) }.
-				collect {|mod| mod.plugin_name }.
-				reverse
-
-			self.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
+			stack = self.application_stack.map( &:plugin_name )
+			Strelka.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
 		end
 
 	end # module PluginLoader

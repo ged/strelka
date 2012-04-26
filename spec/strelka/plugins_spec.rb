@@ -193,7 +193,7 @@ describe "Strelka plugin system" do
 	end
 
 
-	context "plugin/plugins declarative" do
+	context "PluginLoader module" do
 
 		before( :each ) do
 			@routing_plugin = Module.new do
@@ -231,6 +231,15 @@ describe "Strelka plugin system" do
 			klass.install_plugins
 			klass.ancestors.should include( @routing_plugin, @templating_plugin )
 		end
+
+		it "has an introspection method for examining the list of loaded plugins" do
+			klass = Class.new( Strelka::Pluggable ) do
+				plugins :templating, :routing
+			end
+			klass.install_plugins
+			klass.application_stack.should == [ @templating_plugin, @routing_plugin ]
+		end
+
 
 		it "installs the plugins in the right order even if they're loaded at separate times" do
 			superclass = Class.new( Strelka::Pluggable ) do
