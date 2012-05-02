@@ -2,6 +2,7 @@
 ChangeLog
 History.rdoc
 IDEAS.rdoc
+MILESTONES.rdoc
 Manifest.txt
 README.rdoc
 Rakefile
