@@ -186,7 +186,7 @@ module Strelka::Logging
 			:info  => colorize( :normal ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
 			:warn  => colorize( :bold, :yellow ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
 			:error => colorize( :red ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
-			:fatal => colorize( :bold, :red, :on_white ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
+			:fatal => colorize( :bold, :red ) {"[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"},
 		}
 
 
