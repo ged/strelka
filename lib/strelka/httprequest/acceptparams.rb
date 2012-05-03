@@ -7,7 +7,10 @@ require 'strelka/httprequest'
 
 class Strelka::HTTPRequest
 
-	# A parser for request Accept, Accept-encoding, Accept-charset, and Accept-language
+	# A parser for request Accept[rdoc-ref:Strelka::HTTPRequest::MediaType] ,
+	# {Accept-encoding}[rdoc-ref:Strelka::HTTPRequest::Encoding] ,
+	# {Accept-charset}[rdoc-ref:Strelka::HTTPRequest::Charset] , and
+	# {Accept-language}[rdoc-ref:Strelka::HTTPRequest::Language]
 	# header values. They provide weighted and wildcard comparisions between two values
 	# of the same field.
 	#
@@ -199,7 +202,7 @@ class Strelka::HTTPRequest
 	end # class AcceptParam
 
 
-	# A mediatype parameter such as one you'd find in an Accept header.
+	# A mediatype parameter such as one you'd find in an +Accept+ header.
 	class MediaType < Strelka::HTTPRequest::AcceptParam
 
 		### Parse the given +accept_param+ as a mediatype and return a
@@ -238,7 +241,7 @@ class Strelka::HTTPRequest
 
 
 	# A natural language specification parameter, such as one you'd find in an
-	# Accept-Language header.
+	# <tt>Accept-Language</tt> header.
 	class Language < Strelka::HTTPRequest::AcceptParam
 
 		### Parse the given +accept_param+ as a language range and return a
@@ -277,7 +280,7 @@ class Strelka::HTTPRequest
 	end # class Language
 
 
-	# A content encoding parameter, such as one you'd find in an Accept-Encoding header.
+	# A content encoding parameter, such as one you'd find in an <tt>Accept-Encoding</tt> header.
 	class Encoding < Strelka::HTTPRequest::AcceptParam
 
 		### Parse the given +accept_param+ as a content coding and return a
@@ -310,7 +313,7 @@ class Strelka::HTTPRequest
 	end # class Encoding
 
 
-	# A content character-set parameter, such as one you'd find in an Accept-Charset header.
+	# A content character-set parameter, such as one you'd find in an <tt>Accept-Charset</tt> header.
 	class Charset < Strelka::HTTPRequest::AcceptParam
 
 		### Parse the given +accept_param+ as a charset and return a

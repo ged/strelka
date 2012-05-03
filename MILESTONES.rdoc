@@ -2,15 +2,22 @@
 
 == v0.0.1
 
-* Ensure the README is up to date
-* Update the IDEAS doc
-* Finish the 'setup' task in bin/strelka
-* Extract the rest of the manual out into RDoc for the app classes
-* Lay out the framework for the 'cookbook' section of the manual
-* Mix in the 18pt awesomesauce.
+=== Documentation
+
+[ ] Ensure the README is up to date
+[ ] Update the IDEAS doc
+[ ] Extract the rest of the tutorial part of the manual out into RDoc for the app classes
+[ ] Lay out the framework for the 'cookbook' section of the manual
+
+=== Code
+
+[ ] Finish the 'setup' task in bin/strelka
 
 
 == v0.1.0
 
-* Add WebSocketService and plugins
+=== Features
+
+[ ] Add WebSocketService and plugins
+
 

@@ -47,7 +47,7 @@ Strelka applications are composed out of plugins that mix in the specific
 framework parts you specify, so you get exactly what you need and nothing
 more.
 
-The plugins system itself is contained in the Strelka::App::Plugins mixin,
+The plugins system itself is contained in the Strelka::Plugins mixin,
 which is included in Strelka::App already. This adds the +plugins+
 declarative, which you use from your app to load the plugins you want to use.
 
@@ -95,20 +95,26 @@ easily.
 
 === Default Plugins
 
-[routing[rdoc-ref:Strelka::App::Routing]]
-    Sinatra-ish request routing.
-[parameters[rdoc-ref:Strelka::App::Parameters]]
-    Query and URI path-parameter validation and untainting.
+[auth[rdoc-ref:Strelka::App::Auth]]
+    Pluggable authentication and authorization for Strelka applications.
+[errors[rdoc-ref:Strelka::App::Errors]]
+    Custom error-handling.
 [filters[rdoc-ref:Strelka::App::Filters]]
     Request/response filters, for doing things like compression, content-type
     negotiation, or other things that somehow modify every request or response.
-[templating[rdoc-ref:Strelka::App::Templating]]
-    Templating via the Inversion template engine.
-[errors[rdoc-ref:Strelka::App::Errors]]
-    Custom error-handling.
+[negotiation[rdoc-ref:Strelka::App::Negotiation]]
+    HTTP Content negotiation for Strelka applications.
+[parameters[rdoc-ref:Strelka::App::Parameters]]
+    Query and URI path-parameter validation and untainting.
 [restresources[rdoc-ref:Strelka::App::RestResources]]
     Automatically set up RESTful service resources for Sequel::Model-derived
-	classes.
+    classes.
+[routing[rdoc-ref:Strelka::App::Routing]]
+    Sinatra-ish request routing.
+[sessions[rdoc-ref:Strelka::App::Sessions]]
+    Sessions for Strelka apps.
+[templating[rdoc-ref:Strelka::App::Templating]]
+    Templating via the Inversion template engine.
 
 
 == Roadmap
@@ -121,7 +127,6 @@ Here's a tentative list of what kinds of stuff we have planned:
 
 === More Plugins
 
-* Auth -- authentication framework
 * CORS -- manage {Cross-Origin Resource Sharing}[http://www.html5rocks.com/en/tutorials/cors/]
   headers, especially for service applications
 * caching -- utilities for easy HTTP caching

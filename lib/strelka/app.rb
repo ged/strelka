@@ -11,7 +11,7 @@ require 'strelka/mixins'
 require 'strelka/plugins'
 
 
-# The application base class.
+# The Strelka HTTP application base class.
 class Strelka::App < Mongrel2::Handler
 	extend Configurability,
 	       Strelka::MethodUtilities,

@@ -73,16 +73,18 @@ require 'strelka/plugins'
 #
 # === Layouts
 #
-# Very often, you'll want your app to share a common page layout. To accomplish this, you
-# can declare a special layout template:
+# Very often, you'll want all or most of the views in your app to share a common page
+# layout. To accomplish this, you can declare a layout template:
 #
 #   layout 'layout.tmpl'
 #
 # Any template that you return will be set as the 'body' attribute of this layout
-# template, and the layout rendered as the body of the response.
+# template (which you'd place into the layout with <tt><?attr body ?></tt>) and the
+# layout rendered as the body of the response.
 #
 # Note that if you want any of the "common objects" from above with a layout template,
-# you must use the <tt><?import ?></tt> directive to import them:
+# they'll be set on it since it's the top-level template, but you can still access them
+# using the <tt><?import ?></tt> directive:
 #
 #   <?import request, strelka_version, route ?>
 #

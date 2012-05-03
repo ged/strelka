@@ -6,7 +6,7 @@ require 'mongrel2'
 require 'configurability'
 require 'configurability/config'
 
-# An application framework for Ruby-mongrel2
+# A Ruby application framework for Mongrel2[http://mongrel2.org/].
 #
 # == Author/s
 #
