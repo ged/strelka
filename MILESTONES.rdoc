@@ -12,6 +12,7 @@
 === Code
 
 [ ] Finish the 'setup' task in bin/strelka
+[ ] Add support for Mongrel2's async uploads. Might require some Ruby-Mongrel2 work as well.
 
 
 == v0.1.0
