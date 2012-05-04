@@ -293,7 +293,8 @@ class Strelka::CLICommand
 		fork do
 			self.log.debug "  in the child."
 			Strelka.load_config( self.options.config ) if self.options.config
-			Kernel.load( path )
+			apps = Strelka::App.load( path )
+			apps.first.run
 		end
 
 		message "started. Waiting for shutdown."
