@@ -149,8 +149,8 @@ module Strelka::App::Templating
 	# The map of template names to Inversion::Template instances.
 	attr_reader :template_map
 
-	# The layout template (an Inversion::Template), if one was declarted
-	attr_reader :layout
+	# The layout template (an Inversion::Template), if one was declared
+	attr_accessor :layout
 
 
 	### Return the template keyed by the given +name+.
