@@ -168,24 +168,31 @@ module Strelka::App::Errors
 
 		# If the app or any plugins threw a finish, look for a handler for the status code
 		# and call it if one is found.
-		if status_response
-			request.notes[:status_info] = status_response
-			response = request.response
-			status = status_response[:status]
-			self.log.info "[:errors] Handling a status response: %d" % [ status ]
-
-			# If we can't find a custom handler for this status, re-throw
-			# to the default handler instead
-			handler = self.status_handler_for( status ) or
-				throw( :finish, status_response )
-
-			# The handler is an UnboundMethod, so bind it to the app instance
-			# and call it
-			response.status = status
-			response = handler.bind( self ).call( response, status_response )
-		end
+		response = self.handle_status_response( request, status_response ) if status_response
 
 		return response
+	end
+
+
+	### Return a response built out of the +status_info+ for the specified +request+ if there
+	### is a custom handler. If there isn't one, rethrows to the main :finish handler.
+	def handle_status_response( request, status_info )
+		status = status_info[:status]
+
+		# If we can't find a custom handler for this status, re-throw
+		# to the default handler instead
+		handler = self.status_handler_for( status ) or
+			throw( :finish, status_info )
+		self.log.info "Using custom handler %p for status response: %d: %s" % [ handler, status, status_info ]
+
+		# Set up the request's response with the right status code
+		request.notes[:status_info] = status_info
+		response = request.response
+		response.status = status
+
+		# The handler is an UnboundMethod, so bind it to the app instance
+		# and call it
+		return handler.bind( self ).call( response, status_info )
 	end
 
 
