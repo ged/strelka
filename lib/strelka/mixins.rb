@@ -374,6 +374,11 @@ module Strelka
 				}
 			end
 
+			# Log using the instance logger if possible, else use the global one
+			logger = self.respond_to?( :log ) ? self.log : Strelka.log
+			logmethod = status_info[:status] > 399 ? logger.method(:error) : logger.method(:info)
+			logmethod.call "Finishing with status %d: %s" % [ status_info[:status], status_info[:message] ]
+
 			throw :finish, status_info
 		end
 
