@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'loggability'
+
 require 'strelka' unless defined?( Strelka )
 require 'strela/app' unless defined?( Strelka::App )
 
@@ -24,7 +26,11 @@ require 'strelka/router/default'
 #     end # class MyApp
 #
 class Strelka::Router::Exclusive < Strelka::Router::Default
-	include Strelka::Loggable
+	extend Loggability
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
 
 	######
 	public

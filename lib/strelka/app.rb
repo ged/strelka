@@ -4,6 +4,7 @@
 
 require 'rubygems' # For the Rubygems API
 
+require 'loggability'
 require 'configurability'
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
@@ -13,13 +14,15 @@ require 'strelka/plugins'
 
 # The Strelka HTTP application base class.
 class Strelka::App < Mongrel2::Handler
-	extend Configurability,
+	extend Loggability,
+	       Configurability,
 	       Strelka::MethodUtilities,
 	       Strelka::PluginLoader
-	include Strelka::Loggable,
-	        Strelka::Constants,
+	include Strelka::Constants,
 	        Strelka::ResponseHelpers
 
+	# Loggability API -- set up logging
+	log_to :strelka
 
 	# Configurability API -- use the 'app' section of the config file.
 	config_key :app
@@ -59,10 +62,10 @@ class Strelka::App < Mongrel2::Handler
 	def self::run( appid=nil )
 		appid ||= self.default_appid
 
-		Strelka.logger.level = Logger::DEBUG if self.devmode?
-		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
+		Loggability.level = :debug if self.devmode?
+		Loggability.format_with( :color ) if $stderr.tty?
 
-		Strelka.log.info "Starting up with appid %p." % [ appid ]
+		self.log.info "Starting up with appid %p." % [ appid ]
 		super( appid )
 	end
 

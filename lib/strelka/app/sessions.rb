@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'loggability'
+
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
@@ -80,18 +82,23 @@ require 'strelka/httpresponse/session'
 module Strelka::App::Sessions
 	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
-	       Configurability
-	include Strelka::Loggable,
-	        Strelka::Constants
+	       Configurability,
+	       Loggability
+	include Strelka::Constants
 
-	# Default options to pass to the session object
-	DEFAULT_OPTIONS = {}
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 	# Configurability API -- specify which section of the config this class gets
 	config_key :sessions
 
-	# Specify load order; run as late as possible so other plugins can use the session
+	# Plugins API -- Specify load order; run as late as possible so other plugins
+	# can use the session
 	run_after :templating, :filters, :parameters
+
+
+	# Default options to pass to the session object
+	DEFAULT_OPTIONS = {}
 
 
 	##

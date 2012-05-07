@@ -1,6 +1,7 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
 
+require 'loggability'
 require 'configurability'
 
 require 'strelka' unless defined?( Strelka )
@@ -30,10 +31,10 @@ require 'strelka/mixins'
 #       kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 #
 class Strelka::AuthProvider::Basic < Strelka::AuthProvider
-	extend Configurability,
+	extend Loggability,
+	       Configurability,
 	       Strelka::MethodUtilities
-	include Strelka::Constants,
-	        Strelka::Loggable
+	include Strelka::Constants
 
 	# Configurability API - set the section of the config
 	config_key :auth

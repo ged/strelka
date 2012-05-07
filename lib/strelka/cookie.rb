@@ -5,6 +5,7 @@
 require 'date'
 require 'time'
 require 'uri'
+require 'loggability'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
@@ -21,7 +22,11 @@ require 'strelka/mixins'
 #   reserved.
 #
 class Strelka::Cookie
-	include Strelka::Loggable
+	extend Loggability
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
 
 	# The format of the date field
 	COOKIE_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'

@@ -2,6 +2,7 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'loggability'
 require 'strelka/mixins'
 require 'strelka/httprequest'
 
@@ -49,9 +50,13 @@ class Strelka::HTTPRequest
 	# * Mahlon E. Smith <mahlon@martini.nu>
 	#
 	class AcceptParam
+		extend Loggability
 		include Comparable,
-		        Strelka::Loggable,
 		        Strelka::AbstractClass
+
+
+		# Loggability API -- set up logging under the 'strelka' log host
+		log_to :strelka
 
 
 		# The default quality value (weight) if none is specified

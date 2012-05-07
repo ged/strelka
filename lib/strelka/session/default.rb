@@ -1,6 +1,7 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
 
+require 'loggability'
 require 'securerandom'
 require 'forwardable'
 
@@ -17,11 +18,11 @@ require 'strelka/mixins'
 # The following methods are delegated to the inner Hash via the #namespaced_hash method:
 # #[], #[]=, #delete, #key?
 class Strelka::Session::Default < Strelka::Session
-	extend Forwardable,
+	extend Loggability,
+	       Forwardable,
 	       Strelka::MethodUtilities,
 	       Strelka::Delegation
-	include Strelka::Loggable,
-			Strelka::DataUtilities
+	include Strelka::DataUtilities
 
 	# Default configuration
 	DEFAULT_COOKIE_OPTIONS = {

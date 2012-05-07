@@ -2,14 +2,16 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'loggability'
+
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/router'
 
 # Simple (dumb?) request router for Strelka::App-based applications.
 class Strelka::Router::Default < Strelka::Router
-	include Strelka::Loggable,
-	        Strelka::Constants,
+	extend Loggability
+	include Strelka::Constants,
 	        Strelka::ResponseHelpers
 
 	### Create a new router that will route requests according to the specified

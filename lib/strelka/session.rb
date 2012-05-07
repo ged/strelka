@@ -3,6 +3,7 @@
 
 require 'digest/sha1'
 require 'pluginfactory'
+require 'loggability'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
@@ -42,9 +43,12 @@ require 'strelka/mixins'
 #
 #
 class Strelka::Session
+	extend Loggability
 	include PluginFactory,
-	        Strelka::Loggable,
-			Strelka::AbstractClass
+	        Strelka::AbstractClass
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 
 	### PluginFactory API -- return the Array of directories to search for concrete

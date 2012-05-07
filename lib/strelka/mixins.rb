@@ -2,89 +2,11 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-require 'logger'
-
 require 'strelka' unless defined?( Strelka )
 require 'strelka/constants'
 
 
 module Strelka
-
-	# Add logging to a Strelka class. Including classes get #log and
-	# #log_debug methods.
-	#
-	#   class MyClass
-	#       include Inversion::Loggable
-	#
-	#       def a_method
-	#           self.log.debug "Doing a_method stuff..."
-	#       end
-	#   end
-	#
-	module Loggable
-
-		# A logging proxy class that wraps calls to the logger into calls that include
-		# the name of the calling class.
-		class ClassNameProxy
-
-			### Create a new proxy for the given +klass+.
-			def initialize( klass, force_debug=false )
-				@classname   = klass.name
-				@force_debug = force_debug
-			end
-
-			### Delegate debug messages to the global logger with the appropriate class name.
-			def debug( msg=nil, &block )
-				Strelka.logger.add( Logger::DEBUG, msg, @classname, &block )
-			end
-
-			### Delegate info messages to the global logger with the appropriate class name.
-			def info( msg=nil, &block )
-				return self.debug( msg, &block ) if @force_debug
-				Strelka.logger.add( Logger::INFO, msg, @classname, &block )
-			end
-
-			### Delegate warn messages to the global logger with the appropriate class name.
-			def warn( msg=nil, &block )
-				return self.debug( msg, &block ) if @force_debug
-				Strelka.logger.add( Logger::WARN, msg, @classname, &block )
-			end
-
-			### Delegate error messages to the global logger with the appropriate class name.
-			def error( msg=nil, &block )
-				return self.debug( msg, &block ) if @force_debug
-				Strelka.logger.add( Logger::ERROR, msg, @classname, &block )
-			end
-
-			### Delegate fatal messages to the global logger with the appropriate class name.
-			def fatal( msg=nil, &block )
-				Strelka.logger.add( Logger::FATAL, msg, @classname, &block )
-			end
-
-		end # ClassNameProxy
-
-		#########
-		protected
-		#########
-
-		### Copy constructor -- clear the original's log proxy.
-		def initialize_copy( original )
-			@log_proxy = @log_debug_proxy = nil
-			super
-		end
-
-		### Return the proxied logger.
-		def log
-			@log_proxy ||= ClassNameProxy.new( self.class )
-		end
-
-		### Return a proxied "debug" logger that ignores other level specification.
-		def log_debug
-			@log_debug_proxy ||= ClassNameProxy.new( self.class, true )
-		end
-
-	end # module Loggable
-
 
 	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
 	# defining API methods. If subclasses of your class don't provide implementations of
@@ -351,6 +273,7 @@ module Strelka
 
 	# A collection of functions for generating responses.
 	module ResponseHelpers
+		include Strelka::Constants
 
 		### Abort the current execution and return a response with the specified
 		### http_status code immediately. The specified +message+ will be logged,
@@ -375,9 +298,13 @@ module Strelka
 			end
 
 			# Log using the instance logger if possible, else use the global one
-			logger = self.respond_to?( :log ) ? self.log : Strelka.log
-			logmethod = status_info[:status] > 399 ? logger.method(:error) : logger.method(:info)
-			logmethod.call "Finishing with status %d: %s" % [ status_info[:status], status_info[:message] ]
+			logmsg = "Finishing with status %d: %s" % [ status_info[:status], status_info[:message] ]
+			if status_info[:status] > 399
+				self.log.info( logmsg )
+			else
+				self.log.error( logmsg )
+			end
+
 
 			throw :finish, status_info
 		end

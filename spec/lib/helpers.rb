@@ -83,34 +83,27 @@ module Strelka::SpecHelpers
 
 	### Reset the logging subsystem to its default state.
 	def reset_logging
-		Strelka.reset_logger
-		Mongrel2.reset_logger
+		Loggability.formatter = nil
+		Loggability.output_to( $stderr )
+		Loggability.level = :fatal
 	end
 
 
 	### Alter the output of the default log formatter to be pretty in SpecMate output
 	def setup_logging( level=Logger::FATAL )
 
-		# Turn symbol-style level config into Logger's expected Fixnum level
-		if Strelka::Logging::LOG_LEVELS.key?( level.to_s )
-			level = Strelka::Logging::LOG_LEVELS[ level.to_s ]
-		end
-
-		logger = Logger.new( $stderr )
-		Strelka.logger = logger
-		Strelka.logger.level = level
-		Mongrel2.logger.level = level
-
 		# Only do this when executing from a spec in TextMate
 		if ENV['HTML_LOGGING'] || (ENV['TM_FILENAME'] && ENV['TM_FILENAME'] =~ /_spec\.rb/)
-			Thread.current['logger-output'] = []
-			logdevice = ArrayLogger.new( Thread.current['logger-output'] )
-			Strelka.logger = Logger.new( logdevice )
-			# Strelka.logger.level = level
-			Strelka.logger.formatter = Strelka::Logging::HtmlFormatter.new( logger )
-			Mongrel2.logger = Strelka.logger
+			logarray = []
+			Thread.current['logger-output'] = logarray
+			Loggability.output_to( logarray )
+			Loggability.format_as( :html )
+			Loggability.level = :debug
+		else
+			Loggability.level = level
 		end
 	end
+
 
 	### Set up a Mongrel2 configuration database according to the specified +dbspec+.
 	### Set up a Mongrel2 configuration database in memory.

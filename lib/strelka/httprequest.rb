@@ -5,6 +5,7 @@
 require 'yajl'
 require 'yaml'
 require 'uri'
+require 'loggability'
 
 require 'mongrel2/httprequest'
 require 'strelka' unless defined?( Strelka )
@@ -14,10 +15,13 @@ require 'strelka/mixins'
 
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
-	include Strelka::Loggable,
-	        Strelka::Constants,
+	extend Loggability
+	include Strelka::Constants,
 	        Strelka::ResponseHelpers,
-			Strelka::DataUtilities
+	        Strelka::DataUtilities
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 	# Set Mongrel2 to use Strelka's request class for HTTP requests
 	register_request_type( self, *HTTP::RFC2616_VERBS )

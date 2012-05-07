@@ -40,12 +40,15 @@ require 'strelka/mixins'
 #
 #
 class Strelka::AuthProvider
-	extend Strelka::Delegation
+	extend Loggability,
+	       Strelka::Delegation
 	include PluginFactory,
-	        Strelka::Loggable,
 	        Strelka::Constants,
 	        Strelka::AbstractClass,
 	        Strelka::ResponseHelpers
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 
 	### PluginFactory API -- return the Array of directories to search for concrete

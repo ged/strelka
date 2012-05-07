@@ -1,6 +1,7 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
 
+require 'loggability'
 require 'securerandom'
 require 'forwardable'
 require 'sequel'
@@ -14,9 +15,13 @@ require 'strelka/session/default'
 # any database that Sequel supports.  It defaults to non-persistent, in memory Sqlite.
 #
 class Strelka::Session::Db < Strelka::Session::Default
-	include Strelka::Loggable
-	extend Forwardable,
+	extend Loggability,
+	       Forwardable,
 	       Strelka::MethodUtilities
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
 
 	# Class-instance variables
 	@table_name   = :sessions
@@ -59,7 +64,7 @@ class Strelka::Session::Db < Strelka::Session::Default
 		@db = options[ :connect ].nil? ?
 			 Mongrel2::Config.in_memory_db :
 			 Sequel.connect( options[:connect] )
-		@db.logger = Strelka.logger
+		@db.logger = Loggability[ Mongrel2 ].proxy_for( @db )
 
 		self.initialize_sessions_table
 	end

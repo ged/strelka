@@ -3,8 +3,10 @@
 # encoding: utf-8
 
 require 'mongrel2'
+require 'loggability'
 require 'configurability'
 require 'configurability/config'
+
 
 # A Ruby application framework for Mongrel2[http://mongrel2.org/].
 #
@@ -16,20 +18,16 @@ require 'configurability/config'
 # :main: README.rdoc
 #
 module Strelka
+	extend Loggability
+
+	# Loggability API -- Set up this module as a log host.
+	log_as :strelka
 
 	# Library version constant
 	VERSION = '0.0.1'
 
 	# Version-control revision constant
 	REVISION = %q$Revision$
-
-
-	require 'strelka/logging'
-	extend Strelka::Logging
-
-	# Combine Strelka, Mongrel2, and Configurability logging
-	Mongrel2.logger = Strelka.logger
-	Configurability.logger = Strelka.logger
 
 	require 'strelka/constants'
 	include Strelka::Constants
@@ -73,7 +71,7 @@ module Strelka
 	### Convenience method -- Load the Configurability::Config from +configfile+
 	### and install it.
 	def self::load_config( configfile, defaults={} )
-		Strelka.log.info "Loading universal config from %p" % [ configfile ]
+		self.log.info "Loading universal config from %p" % [ configfile ]
 		self.config = Configurability::Config.load( configfile, defaults )
 		self.config.install
 	end

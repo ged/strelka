@@ -2,15 +2,20 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'loggability'
 require 'mongrel2/httpresponse'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/cookieset'
 
 # An HTTP response class.
 class Strelka::HTTPResponse < Mongrel2::HTTPResponse
-	include Strelka::Loggable,
-	        Strelka::Constants,
-			Strelka::DataUtilities
+	extend Loggability
+	include Strelka::Constants,
+	        Strelka::DataUtilities
+
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 
 	# Pattern for matching a 'charset' parameter in a media-type string, such as the

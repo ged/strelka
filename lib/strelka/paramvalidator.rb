@@ -8,6 +8,7 @@ require 'uri'
 require 'forwardable'
 require 'date'
 require 'formvalidator'
+require 'loggability'
 
 require 'strelka/mixins'
 require 'strelka' unless defined?( Strelka )
@@ -52,8 +53,12 @@ require 'strelka/app' unless defined?( Strelka::App )
 #	end
 #
 class Strelka::ParamValidator < ::FormValidator
-	extend Forwardable
-	include Strelka::Loggable
+	extend Forwardable,
+	       Loggability
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
 
 	# Options that are passed as Symbols to .param
 	FLAGS = [ :required, :untaint ]

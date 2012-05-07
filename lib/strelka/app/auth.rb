@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 #encoding: utf-8
 
+require 'loggability'
+
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/plugins'
@@ -238,10 +240,15 @@ require 'strelka/authprovider'
 module Strelka::App::Auth
 	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
-	       Configurability
-	include Strelka::Loggable,
-	        Strelka::Constants
+	       Configurability,
+	       Loggability
+	include Strelka::Constants
 
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
+
+	# Plugins API -- Set up load order
 	run_before :routing, :restresources
 	run_after  :templating, :errors, :sessions
 

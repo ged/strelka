@@ -21,40 +21,6 @@ require 'strelka/mixins'
 describe Strelka, "mixins" do
 
 
-	describe Strelka::Loggable do
-		before(:each) do
-			@logfile = StringIO.new('')
-			Strelka.logger = Logger.new( @logfile )
-
-			@test_class = Class.new do
-				include Strelka::Loggable
-
-				def log_test_message( level, msg )
-					self.log.send( level, msg )
-				end
-
-				def logdebug_test_message( msg )
-					self.log_debug.debug( msg )
-				end
-			end
-			@obj = @test_class.new
-		end
-
-
-		it "is able to output to the log via its #log method" do
-			@obj.log_test_message( :debug, "debugging message" )
-			@logfile.rewind
-			@logfile.read.should =~ /debugging message/
-		end
-
-		it "is able to output to the log via its #log_debug method" do
-			@obj.logdebug_test_message( "sexydrownwatch" )
-			@logfile.rewind
-			@logfile.read.should =~ /sexydrownwatch/
-		end
-	end
-
-
 	describe Strelka::AbstractClass do
 
 		context "mixed into a class" do

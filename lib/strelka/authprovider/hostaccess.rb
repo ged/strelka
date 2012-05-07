@@ -2,6 +2,7 @@
 # vim: set nosta noet ts=4 sw=4:
 
 require 'ipaddr'
+require 'loggability'
 require 'configurability'
 
 require 'strelka' unless defined?( Strelka )
@@ -19,10 +20,14 @@ require 'strelka/mixins'
 #     - 127.0.0.0/8
 #     - 10.5.3.0/22
 class Strelka::AuthProvider::HostAccess < Strelka::AuthProvider
+	extend Loggability
 	include Configurability,
 	        Strelka::Constants,
-	        Strelka::Loggable,
 	        Strelka::MethodUtilities
+
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 
 	# The default list of netblocks to allow
