@@ -191,7 +191,7 @@ module Strelka::App::Templating
 			return response
 
 		# Wrap the template in a layout if there is one
-		template = self.wrap_in_layout( template )
+		template = self.wrap_in_layout( template, request )
 
 		# Set some default stuff on the top-level template
 		self.set_common_attributes( template, request )
@@ -235,7 +235,7 @@ module Strelka::App::Templating
 
 	### Wrap the specified +content+ template in the layout template and
 	### return it. If there isn't a layout declared, just return +content+ as-is.
-	def wrap_in_layout( content )
+	def wrap_in_layout( content, request )
 		return content unless self.layout
 
 		self.layout.reload if self.layout.changed?
