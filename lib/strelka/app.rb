@@ -170,6 +170,15 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Returns +true+ if the application has been configured to run in 'developer mode'.
+	### Developer mode is mostly informational by default (it just makes logging more
+	### verbose), but plugins and such might alter their behavior based on this setting.
+	def self::devmode?
+		return @devmode
+	end
+	singleton_method_alias :in_devmode?, :devmode?
+
+
 	### Configure the App. Override this if you wish to add additional configuration
 	### to the 'app' section of the config that will be passed to you when the config
 	### is loaded.
@@ -182,15 +191,6 @@ class Strelka::App < Mongrel2::Handler
 
 		Strelka.log.info "Enabled developer mode." if self.devmode?
 	end
-
-
-	### Returns +true+ if the application has been configured to run in 'developer mode'.
-	### Developer mode is mostly informational by default (it just makes logging more
-	### verbose), but plugins and such might alter their behavior based on this setting.
-	def self::devmode?
-		return @devmode
-	end
-	singleton_method_alias :in_devmode?, :devmode?
 
 
 	#
