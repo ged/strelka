@@ -27,6 +27,7 @@ if ENV['COVERAGE']
 	end
 end
 
+require 'loggability'
 require 'configurability'
 require 'pathname'
 require 'tmpdir'
@@ -43,33 +44,6 @@ require 'spec/lib/constants'
 ### RSpec helper functions.
 module Strelka::SpecHelpers
 	include Strelka::TestConstants
-
-	class ArrayLogger
-		### Create a new ArrayLogger that will append content to +array+.
-		def initialize( array )
-			@array = array
-		end
-
-		### Write the specified +message+ to the array.
-		def write( message )
-			@array << message
-		end
-
-		### No-op -- this is here just so Logger doesn't complain
-		def close; end
-
-	end # class ArrayLogger
-
-
-	unless defined?( LEVEL )
-		LEVEL = {
-			:debug => Logger::DEBUG,
-			:info  => Logger::INFO,
-			:warn  => Logger::WARN,
-			:error => Logger::ERROR,
-			:fatal => Logger::FATAL,
-		  }
-	end
 
 	###############
 	module_function
@@ -90,7 +64,7 @@ module Strelka::SpecHelpers
 
 
 	### Alter the output of the default log formatter to be pretty in SpecMate output
-	def setup_logging( level=Logger::FATAL )
+	def setup_logging( level=:fatal )
 
 		# Only do this when executing from a spec in TextMate
 		if ENV['HTML_LOGGING'] || (ENV['TM_FILENAME'] && ENV['TM_FILENAME'] =~ /_spec\.rb/)
