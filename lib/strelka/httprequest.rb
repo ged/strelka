@@ -156,6 +156,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	end
 
 
+	### A convenience method for redirecting a request to another URI.
+	def redirect( uri, perm=false )
+		code = perm ? HTTP::MOVED_PERMANENTLY : HTTP::MOVED_TEMPORARILY
+		finish_with( code, "redirect from #{self.uri.path} to #{uri}", :location => uri )
+	end
+
+
 	#########
 	protected
 	#########

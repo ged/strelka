@@ -65,6 +65,16 @@ describe Strelka::HTTPRequest do
 			@req.notes[:routing][:route].should be_a( Hash )
 		end
 
+		it "can redirect the request to a different URI" do
+			uri = 'http://www.google.com/'
+			expect {
+				@req.redirect( uri )
+			}.to finish_with( HTTP::MOVED_TEMPORARILY, nil, :location => uri )
+
+			expect {
+				@req.redirect( uri, true )
+			}.to finish_with( HTTP::MOVED_PERMANENTLY, nil, :location => uri )
+		end
 	end
 
 
