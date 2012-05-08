@@ -166,7 +166,7 @@ module Strelka::App::Routing
 		### Get/set the router class to use for mapping requests to handlers to +newclass.
 		def router( newclass=nil )
 			if newclass
-				Strelka.log.info "%p router class set to: %p" % [ self, newclass ]
+				self.log.info "%p router class set to: %p" % [ self, newclass ]
 				self.routerclass = newclass
 			end
 
@@ -182,7 +182,7 @@ module Strelka::App::Routing
 			# route pattern into its components
 			methodparts = [ verb.upcase ]
 			patternparts = self.split_route_pattern( pattern )
-			Strelka.log.debug "Split pattern %p into parts: %p" % [ pattern, patternparts ]
+			self.log.debug "Split pattern %p into parts: %p" % [ pattern, patternparts ]
 
 			# Make a method name from the directories and the named captures of the patterns
 			# in the route
@@ -193,11 +193,11 @@ module Strelka::App::Routing
 					methodparts << part
 				end
 			end
-			Strelka.log.debug "  route methodname parts are: %p" % [ methodparts ]
+			self.log.debug "  route methodname parts are: %p" % [ methodparts ]
 			methodname = methodparts.join( '_' )
 
 			# Define the method using the block from the route as its body
-			Strelka.log.debug "  adding route method %p for %p route: %p" % [ methodname, verb, block ]
+			self.log.debug "  adding route method %p for %p route: %p" % [ methodname, verb, block ]
 			define_method( methodname, &block )
 
 			# Remove any existing route for the same verb, patternparts, and options
@@ -223,7 +223,7 @@ module Strelka::App::Routing
 			return pattern.split( '/' ).collect do |component|
 
 				if component.start_with?( ':' )
-					Strelka.log.debug "translating parameter component %p to a regexp" % [component]
+					self.log.debug "translating parameter component %p to a regexp" % [component]
 					raise ScriptError,
 						"parameter-based routing not supported without a 'parameters' plugin" unless
 						self.respond_to?( :paramvalidator )

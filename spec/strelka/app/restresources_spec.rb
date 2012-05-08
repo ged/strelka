@@ -45,7 +45,6 @@ describe Strelka::App::RestResources do
 	describe "an including App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :restresources
 				def initialize( appid='rest-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )

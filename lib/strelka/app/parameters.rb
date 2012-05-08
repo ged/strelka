@@ -94,7 +94,7 @@ module Strelka::App::Parameters
 		### +constraint+. The +constraint+ can be any of the types supported by
 		### Strelka::ParamValidator.
 		def param( name, *args )
-			Strelka.log.debug "New param %p" % [ name ]
+			self.log.debug "New param %p" % [ name ]
 			self.paramvalidator.add( name, *args )
 		end
 

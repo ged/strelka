@@ -85,8 +85,8 @@ describe Strelka::App::Sessions do
 
 		before( :each ) do
 			@app = Class.new( Strelka::App ) do
-				Strelka.log.info "Anonymous App class: %p" % [ self ]
-				Strelka.log.info "ID constant is: %p" % [ const_defined?(:ID) ? const_get(:ID) : "(not defined)" ]
+				self.log.info "Anonymous App class: %p" % [ self ]
+				self.log.info "ID constant is: %p" % [ const_defined?(:ID) ? const_get(:ID) : "(not defined)" ]
 
 				self::ID = 'monkeyshines'
 				# Guard against ID leakage

@@ -117,7 +117,7 @@ module Strelka::App::RestResources
 		### Expose the specified +rsrcobj+ (which should be an object that responds to #dataset
 		### and returns a Sequel::Dataset)
 		def resource( rsrcobj, options={} )
-			Strelka.log.debug "Adding REST resource for %p" % [ rsrcobj ]
+			self.log.debug "Adding REST resource for %p" % [ rsrcobj ]
 			options = self.service_options.merge( options )
 
 			# Figure out what the resource name is, and make the route from it
@@ -128,7 +128,7 @@ module Strelka::App::RestResources
 			self.add_parameters( rsrcobj, options )
 
 			# Make and install handler methods
-			Strelka.log.debug "  adding readers"
+			self.log.debug "  adding readers"
 			self.add_options_handler( route, rsrcobj, options )
 			self.add_read_handler( route, rsrcobj, options )
 			self.add_collection_read_handler( route, rsrcobj, options )
@@ -136,7 +136,7 @@ module Strelka::App::RestResources
 			# Add handler methods for the mutator parts of the API unless
 			# the resource is read-only
 			if options[:readonly]
-				Strelka.log.debug "  skipping mutators (read-only set)"
+				self.log.debug "  skipping mutators (read-only set)"
 			else
 				self.add_collection_create_handler( route, rsrcobj, options )
 				self.add_update_handler( route, rsrcobj, options )
@@ -152,10 +152,10 @@ module Strelka::App::RestResources
 
 		### Add parameter declarations for parameters related to +rsrcobj+.
 		def add_parameters( rsrcobj, options )
-			Strelka.log.debug "Declaring validations for columns from %p" % [ rsrcobj ]
+			self.log.debug "Declaring validations for columns from %p" % [ rsrcobj ]
 			self.untaint_all_constraints
 			rsrcobj.db_schema.each do |col, config|
-				Strelka.log.debug "  %s (%p)" % [ col, config[:type] ]
+				self.log.debug "  %s (%p)" % [ col, config[:type] ]
 				param col, config[:type]
 			end
 		end
@@ -165,7 +165,7 @@ module Strelka::App::RestResources
 		### OPTIONS /resources
 		def add_options_handler( route, rsrcobj, options )
 			# :TODO: Documentation for HTML mode (possibly using http://swagger.wordnik.com/)
-			Strelka.log.debug "Adding OPTIONS handler for %p" % [ route, rsrcobj ]
+			self.log.debug "Adding OPTIONS handler for %p" % [ route, rsrcobj ]
 			self.add_route( :OPTIONS, route, options ) do |req|
 				self.log.debug "OPTIONS handler!"
 				verbs = self.class.resource_verbs[ route ].sort
@@ -191,7 +191,7 @@ module Strelka::App::RestResources
 			pkey = rsrcobj.primary_key
 			route = "#{route_prefix}/:#{pkey}"
 
-			Strelka.log.debug "Creating handler for reading a single %p: GET %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for reading a single %p: GET %s" % [ rsrcobj, route ]
 			self.add_route( :GET, route, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
@@ -214,7 +214,7 @@ module Strelka::App::RestResources
 		### Sequel::Model class or a ducktype-alike.
 		### GET /resources
 		def add_collection_read_handler( route, rsrcobj, options )
-			Strelka.log.debug "Creating handler for reading collections of %p: GET %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for reading collections of %p: GET %s" % [ rsrcobj, route ]
 			self.add_route( :GET, route, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
@@ -241,7 +241,7 @@ module Strelka::App::RestResources
 		### Add a handler method for creating a new instance of +rsrcobj+.
 		### POST /resources
 		def add_collection_create_handler( route, rsrcobj, options )
-			Strelka.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
 
 			self.add_route( :POST, route, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
@@ -279,7 +279,7 @@ module Strelka::App::RestResources
 			pkey = rsrcobj.primary_key
 			route = "#{route_prefix}/:#{pkey}"
 
-			Strelka.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
 			self.add_route( :PUT, route, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
@@ -312,7 +312,7 @@ module Strelka::App::RestResources
 		### PUT /resources
 		def add_collection_update_handler( route, rsrcobj, options )
 			pkey = rsrcobj.primary_key
-			Strelka.log.debug "Creating handler for updating every %p resources: PUT %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for updating every %p resources: PUT %s" % [ rsrcobj, route ]
 
 			self.add_route( :PUT, route, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
@@ -379,7 +379,7 @@ module Strelka::App::RestResources
 		### DELETE /resources
 		def add_collection_deletion_handler( route, rsrcobj, options )
 			pkey = rsrcobj.primary_key
-			Strelka.log.debug "Creating handler for deleting every %p resources: DELETE %s" %
+			self.log.debug "Creating handler for deleting every %p resources: DELETE %s" %
 				[ rsrcobj, route ]
 
 			self.add_route( :DELETE, route, options ) do |req|
@@ -411,7 +411,7 @@ module Strelka::App::RestResources
 			# :TODO: Support multiple args? (customers/by_city_state/{city}/{state})
 			rsrcobj.dataset_methods.each do |name, proc|
 				if proc.parameters.length > 1
-					Strelka.log.debug "  skipping dataset method %p: more than 1 argument" % [ name ]
+					self.log.debug "  skipping dataset method %p: more than 1 argument" % [ name ]
 					next
 				end
 
@@ -420,16 +420,16 @@ module Strelka::App::RestResources
 				#        or a parameter-type more gracefully.
 				param = proc.parameters.first[1]
 				route = "%s/%s/:%s" % [ route_prefix, name, param ]
-				Strelka.log.debug "  route for dataset method %s: %s" % [ name, route ]
+				self.log.debug "  route for dataset method %s: %s" % [ name, route ]
 				self.add_dataset_read_handler( route, rsrcobj, name, param, options )
 			end
 
 			# Add composite service routes for each association
-			Strelka.log.debug "Adding composite resource routes for %p" % [ rsrcobj ]
+			self.log.debug "Adding composite resource routes for %p" % [ rsrcobj ]
 			rsrcobj.association_reflections.each do |name, refl|
 				pkey = rsrcobj.primary_key
 				route = "%s/:%s/%s" % [ route_prefix, pkey, name ]
-				Strelka.log.debug "  route for associated %p objects via the %s association: %s" %
+				self.log.debug "  route for associated %p objects via the %s association: %s" %
 					[ refl[:class_name], name, route ]
 				self.add_composite_read_handler( route, rsrcobj, name, options )
 			end
@@ -440,7 +440,7 @@ module Strelka::App::RestResources
 		### Add a GET route for the dataset method +dsname+ for the given +rsrcobj+ at the
 		### given +path+.
 		def add_dataset_read_handler( path, rsrcobj, dsname, param, options )
-			Strelka.log.debug "Adding dataset method read handler: %s" % [ path ]
+			self.log.debug "Adding dataset method read handler: %s" % [ path ]
 
 			self.add_route( :GET, path, options ) do |req|
 				self.log.debug "Resource dataset GET request for dataset %s on %p" % [ dsname, rsrcobj ]
@@ -474,7 +474,7 @@ module Strelka::App::RestResources
 		### +path+.
 		def add_composite_read_handler( path, rsrcobj, association, options )
 			pkey = rsrcobj.primary_key
-			Strelka.log.debug "Adding composite read handler for association: %s" % [ association ]
+			self.log.debug "Adding composite read handler for association: %s" % [ association ]
 
 			self.add_route( :GET, path, options ) do |req|
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless

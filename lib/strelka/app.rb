@@ -73,16 +73,16 @@ class Strelka::App < Mongrel2::Handler
 	### Calculate a default application ID for the class based on either its ID
 	### constant or its name and return it.
 	def self::default_appid
-		Strelka.log.info "Looking up appid for %p" % [ self.class ]
+		self.log.info "Looking up appid for %p" % [ self.class ]
 		appid = nil
 
 		if self.const_defined?( :ID )
 			appid = self.const_get( :ID )
-			Strelka.log.info "  app has an ID: %p" % [ appid ]
+			self.log.info "  app has an ID: %p" % [ appid ]
 		else
 			appid = ( self.name || "anonymous#{self.object_id}" ).downcase
 			appid.gsub!( /[^[:alnum:]]+/, '-' )
-			Strelka.log.info "  deriving one from the class name: %p" % [ appid ]
+			self.log.info "  deriving one from the class name: %p" % [ appid ]
 		end
 
 		return appid
@@ -92,7 +92,7 @@ class Strelka::App < Mongrel2::Handler
 	### Return a Hash of Strelka app files as Pathname objects from installed gems,
 	### keyed by gemspec name .
 	def self::discover_paths
-		Strelka.log.debug "Local paths: %s" % [ Strelka.datadir + APP_GLOB_PATTERN ]
+		self.log.debug "Local paths: %s" % [ Strelka.datadir + APP_GLOB_PATTERN ]
 
 		appfiles = {
 			'' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
@@ -103,7 +103,7 @@ class Strelka::App < Mongrel2::Handler
 			gemspec.dependencies.find {|dep| dep.name == 'strelka'}
 		end
 
-		Strelka.log.debug "Found %d gems with a Strelka dependency" % [ gems.length ]
+		self.log.debug "Found %d gems with a Strelka dependency" % [ gems.length ]
 
 		# Find all the files under those gems' data directories that match the application
 		# pattern
@@ -112,11 +112,11 @@ class Strelka::App < Mongrel2::Handler
 			next if appfiles.key?( gemspec.name )
 			appfiles[ gemspec.name ] = []
 
-			Strelka.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
+			self.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
 			pattern = File.join( gemspec.full_gem_path, "data", gemspec.name, APP_GLOB_PATTERN )
-			Strelka.log.debug "    glob pattern is: %p" % [ pattern ]
+			self.log.debug "    glob pattern is: %p" % [ pattern ]
 			gemapps = Pathname.glob( pattern )
-			Strelka.log.debug "    found %d app files" % [ gemapps.length ]
+			self.log.debug "    found %d app files" % [ gemapps.length ]
 			appfiles[ gemspec.name ] += gemapps
 		end
 
@@ -129,22 +129,22 @@ class Strelka::App < Mongrel2::Handler
 		discovered_apps = []
 		app_paths = self.discover_paths
 
-		Strelka.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
+		self.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
 		app_paths.each do |gemname, paths|
-			Strelka.log.debug "  loading gem %s" % [ gemname ]
+			self.log.debug "  loading gem %s" % [ gemname ]
 			gem( gemname ) unless gemname == ''
 
-			Strelka.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
+			self.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
 			paths.each do |path|
 				classes = begin
 					Strelka::App.load( path )
 				rescue StandardError, ScriptError => err
-					Strelka.log.error "%p while loading Strelka apps from %s: %s" %
+					self.log.error "%p while loading Strelka apps from %s: %s" %
 						[ err.class, path, err.message ]
-					Strelka.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
+					self.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
 					[]
 				end
-				Strelka.log.debug "  loaded app classes: %p" % [ classes ]
+				self.log.debug "  loaded app classes: %p" % [ classes ]
 
 				discovered_apps += classes
 			end
@@ -157,12 +157,12 @@ class Strelka::App < Mongrel2::Handler
 	### Load the specified +file+, and return any Strelka::App subclasses that are loaded
 	### as a result.
 	def self::load( file )
-		Strelka.log.debug "Loading application/s from %p" % [ file ]
+		self.log.debug "Loading application/s from %p" % [ file ]
 		@loading_file = Pathname( file ).expand_path
 		self.subclasses.delete( @loading_file )
 		Kernel.load( @loading_file.to_s )
 		new_subclasses = self.subclasses[ @loading_file ]
-		Strelka.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
+		self.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
 
 		return new_subclasses
 	ensure
@@ -189,7 +189,7 @@ class Strelka::App < Mongrel2::Handler
 			self.devmode = $DEBUG ? true : false
 		end
 
-		Strelka.log.info "Enabled developer mode." if self.devmode?
+		self.log.info "Enabled developer mode." if self.devmode?
 	end
 
 

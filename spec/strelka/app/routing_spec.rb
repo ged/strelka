@@ -41,15 +41,12 @@ describe Strelka::App::Routing do
 	describe "an including App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :routing
 				def initialize( appid='params-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
 				end
 			end
-			Strelka.log.debug "  App class is: %p, routes array: 0x%016x" %
-				[ @app, @app.routes.object_id * 2 ]
 		end
 
 

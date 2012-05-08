@@ -103,39 +103,39 @@ class Strelka::Cookie
 	### one or more new Strelka::Cookie objects, keyed by name.
 	def self::parse( header )
 		return {} if header.nil? or header.empty?
-		Strelka.log.debug "Parsing cookie header: %p" % [ header ]
+		self.log.debug "Parsing cookie header: %p" % [ header ]
 		cookies = []
 		version = 0
 		header = header.strip
 
 		# "$Version" = value
 		if COOKIE_VERSION.match( header )
-			Strelka.log.debug "  Found cookie version %p" % [ $1 ]
+			self.log.debug "  Found cookie version %p" % [ $1 ]
 			version = Integer( dequote($1) )
 			header.slice!( COOKIE_VERSION )
 		end
 
 		# 1*((";" | ",") NAME "=" VALUE [";" path] [";" domain])
 		header.split( /[,;]\s*/ ).each do |pair|
-			Strelka.log.debug "  Found pair %p" % [ pair ]
+			self.log.debug "  Found pair %p" % [ pair ]
 			key, valstr = pair.split( /=/, 2 ).collect {|s| s.strip }
 
 			case key
 			when COOKIE_PATH
-				Strelka.log.debug "    -> cookie-path %p" % [ valstr ]
+				self.log.debug "    -> cookie-path %p" % [ valstr ]
 				cookies.last.path = dequote( valstr ) unless cookies.empty?
 
 			when COOKIE_DOMAIN
-				Strelka.log.debug "    -> cookie-domain %p" % [ valstr ]
+				self.log.debug "    -> cookie-domain %p" % [ valstr ]
 				cookies.last.domain = dequote( valstr ) unless cookies.empty?
 
 			when HTTP_TOKEN
 				values = parse_valuestring( valstr )
-				Strelka.log.debug "    -> cookie-values %p" % [ values ]
+				self.log.debug "    -> cookie-values %p" % [ values ]
 				cookies << new( key, values, :version => version )
 
 			else
-				Strelka.log.warn \
+				self.log.warn \
 					"Malformed cookie header %p: %p is not a valid token; ignoring" %
 					[ header, key ]
 			end

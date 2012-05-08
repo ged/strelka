@@ -75,10 +75,10 @@ class Strelka::Session::Db < Strelka::Session::Default
 	###
 	def self::initialize_sessions_table
 		if self.db.table_exists?( @table_name )
-			Strelka.log.debug "Using existing sessions table for %p" % [ db ]
+			self.log.debug "Using existing sessions table for %p" % [ db ]
 
 		else
-			Strelka.log.debug "Creating new sessions table for %p" % [ db ]
+			self.log.debug "Creating new sessions table for %p" % [ db ]
 			self.db.create_table( @table_name ) do
 				text :session_id, :index => true
 				text :session

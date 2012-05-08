@@ -82,7 +82,7 @@ module Strelka::App::Negotiation
 	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation
 	### support when this plugin is loaded.
 	def self::included( object )
-		Strelka.log.debug "Extending Request and Response with Negotiation mixins"
+		self.log.debug "Extending Request and Response with Negotiation mixins"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Negotiation }
 		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Negotiation }
 		super

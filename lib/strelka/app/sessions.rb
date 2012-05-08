@@ -165,9 +165,9 @@ module Strelka::App::Sessions
 	### Extension callback -- extend the HTTPRequest classes with Session
 	### support when this plugin is loaded.
 	def self::included( object )
-		Strelka.log.debug "Extending Request with Session mixin"
+		self.log.debug "Extending Request with Session mixin"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Session }
-		Strelka.log.debug "Extending Response with Session mixin"
+		self.log.debug "Extending Response with Session mixin"
 		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Session }
 		super
 	end

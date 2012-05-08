@@ -82,7 +82,7 @@ class Strelka::Session::Default < Strelka::Session
 		if cookie.value =~ /^([[:xdigit:]]+)$/i
 			return $1.untaint
 		else
-			Strelka.log.warn "Request with a malformed session cookie: %p" % [ request ]
+			self.log.warn "Request with a malformed session cookie: %p" % [ request ]
 			return nil
 		end
 	end
@@ -99,9 +99,9 @@ class Strelka::Session::Default < Strelka::Session
 	### Return +true+ if the given +request+ has a session token which corresponds
 	### to an existing session key.
 	def self::has_session_for?( request )
-		Strelka.log.debug "Checking request (%s/%d) for session." % [ request.sender_id, request.conn_id ]
+		self.log.debug "Checking request (%s/%d) for session." % [ request.sender_id, request.conn_id ]
 		id = self.get_existing_session_id( request ) or return false
-		Strelka.log.debug "  got a session ID: %p" % [ id ]
+		self.log.debug "  got a session ID: %p" % [ id ]
 		return @sessions.key?( id )
 	end
 

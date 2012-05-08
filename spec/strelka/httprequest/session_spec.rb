@@ -35,7 +35,6 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 	before( :each ) do
 		@req = @request_factory.get( '/service/user/estark' )
-		Strelka.log.debug "Extending request %p" % [ @req ]
 		@req.extend( described_class )
 	end
 

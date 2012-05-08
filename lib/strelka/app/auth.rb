@@ -286,9 +286,9 @@ module Strelka::App::Auth
 				@auth_provider = Strelka::AuthProvider.get_subclass( type )
 			end
 
-			Strelka.log.debug "Auth provider %p" % [ @auth_provider ]
+			self.log.debug "Auth provider %p" % [ @auth_provider ]
 			@auth_provider ||= Strelka::AuthProvider.get_subclass( DEFAULT_AUTH_PROVIDER )
-			Strelka.log.debug "Auth provider %p" % [ @auth_provider ]
+			self.log.debug "Auth provider %p" % [ @auth_provider ]
 			return @auth_provider
 		end
 
@@ -350,7 +350,7 @@ module Strelka::App::Auth
 
 			criteria.each do |pattern|
 				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
-				Strelka.log.debug "  adding require_auth for %p" % [ pattern ]
+				self.log.debug "  adding require_auth for %p" % [ pattern ]
 				self.positive_auth_criteria[ pattern ] = block
 			end
 		end
@@ -369,7 +369,7 @@ module Strelka::App::Auth
 
 			criteria.each do |pattern|
 				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
-				Strelka.log.debug "  adding no_auth for %p" % [ pattern ]
+				self.log.debug "  adding no_auth for %p" % [ pattern ]
 				self.negative_auth_criteria[ pattern ] = block
 			end
 		end
@@ -381,7 +381,7 @@ module Strelka::App::Auth
 	### Extension callback -- extend the HTTPRequest class with Auth
 	### support when this plugin is loaded.
 	def self::included( object )
-		Strelka.log.debug "Extending Request with Auth mixin"
+		self.log.debug "Extending Request with Auth mixin"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Auth }
 		super
 	end

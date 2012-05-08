@@ -5,6 +5,7 @@
 require 'set'
 require 'tsort'
 
+require 'loggability'
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
 
@@ -28,11 +29,18 @@ module Strelka
 
 	# Plugin Module extension -- adds registration, load-order support, etc.
 	module Plugin
+		extend Loggability
+
+		# Loggability API -- send logs through the :strelka logger
+		log_to :strelka
+
 
 		### Extension hook -- Extend the given object with methods for setting it
 		### up as a plugin for its containing namespace.
 		def self::extended( object )
 			super
+			object.extend( Loggability )
+			object.log_to( :strelka )
 
 			# Find the plugin's namespace container, which will be the
 			# pluggable class/module
@@ -41,18 +49,18 @@ module Strelka
 				mod.const_get( name )
 			end
 
-			Strelka.log.debug "Extending %p as a Strelka::Plugin for %p" % [ object, pluggable ]
+			self.log.debug "Extending %p as a Strelka::Plugin for %p" % [ object, pluggable ]
 			object.successors = Set.new
 			object.pluggable = pluggable
 
 			# Register any pending dependencies for the newly-loaded plugin
 			name = object.plugin_name
 			if (( deps = pluggable.loaded_plugins[name] ))
-				Strelka.log.debug "  installing deferred deps for %p" % [ name ]
+				self.log.debug "  installing deferred deps for %p" % [ name ]
 				object.run_after( *deps )
 			end
 
-			Strelka.log.debug "  adding %p (%p) to the plugin registry for %p" %
+			self.log.debug "  adding %p (%p) to the plugin registry for %p" %
 				[ name, object, pluggable ]
 			pluggable.loaded_plugins[ name ] = object
 		end
@@ -88,7 +96,7 @@ module Strelka
 				if mod.respond_to?( :run_after )
 					mod.run_after( name )
 				else
-					Strelka.log.debug "%p plugin not yet loaded; setting up pending deps" % [ other_name ]
+					self.log.debug "%p plugin not yet loaded; setting up pending deps" % [ other_name ]
 					mod << name
 				end
 			end
@@ -98,7 +106,7 @@ module Strelka
 		### Register the receiver as needing to be run after +other_plugins+ for requests, and
 		### *before* them for responses.
 		def run_after( *other_plugins )
-			Strelka.log.debug "  %p will run after %p" % [ self, other_plugins ]
+			self.log.debug "  %p will run after %p" % [ self, other_plugins ]
 			self.successors.merge( other_plugins )
 		end
 
@@ -113,6 +121,8 @@ module Strelka
 		### object.
 		def self::extended( mod )
 			super
+			mod.extend( Loggability )
+			mod.log_to( :strelka )
 			mod.loaded_plugins = Strelka::PluginRegistry.new
 			mod.plugin_path_prefix = mod.name.downcase.gsub( /::/, File::SEPARATOR )
 		end
@@ -156,7 +166,7 @@ module Strelka
 
 		### Load the plugins with the given +names+ and install them.
 		def plugins( *names )
-			Strelka.log.info "Adding plugins: %s" % [ names.flatten.map(&:to_s).join(', ') ]
+			self.log.info "Adding plugins: %s" % [ names.flatten.map(&:to_s).join(', ') ]
 
 			# Load the associated Plugin Module objects
 			names.flatten.each {|name| self.load_plugin(name) }
@@ -174,7 +184,7 @@ module Strelka
 					plugin = self.loaded_plugins[ name ]
 				end
 
-				Strelka.log.debug "  registering %p" % [ name ]
+				self.log.debug "  registering %p" % [ name ]
 				self.register_plugin( plugin )
 			end
 		end
@@ -205,12 +215,12 @@ module Strelka
 		def register_plugin( mod )
 			if mod.const_defined?( :ClassMethods )
 				cm_mod = mod.const_get(:ClassMethods)
-				Strelka.log.debug "  adding class methods from %p" % [ cm_mod ]
+				self.log.debug "  adding class methods from %p" % [ cm_mod ]
 
 				extend( cm_mod )
 				cm_mod.instance_variables.each do |ivar|
 					next if instance_variable_defined?( ivar )
-					Strelka.log.debug "  copying class instance variable %s" % [ ivar ]
+					self.log.debug "  copying class instance variable %s" % [ ivar ]
 					ival = cm_mod.instance_variable_get( ivar )
 
 					# Don't duplicate modules/classes or immediates
@@ -233,12 +243,12 @@ module Strelka
 		### of the plugins themselves.
 		def install_plugins
 			if self.plugins_installed?
-				Strelka.log.warn "Plugins were already installed for %p from %p" %
+				self.log.warn "Plugins were already installed for %p from %p" %
 					[ self, self.plugins_installed_from ]
-				Strelka.log.info "I'll attempt to install any new ones, but plugin ordering"
-				Strelka.log.info "and other functionality might exhibit strange behavior."
+				self.log.info "I'll attempt to install any new ones, but plugin ordering"
+				self.log.info "and other functionality might exhibit strange behavior."
 			else
-				Strelka.log.info "Installing plugins for %p." % [ self ]
+				self.log.info "Installing plugins for %p." % [ self ]
 			end
 
 			sorted_plugins = self.loaded_plugins.tsort.reverse
@@ -247,11 +257,11 @@ module Strelka
 				mod = self.loaded_plugins[ name ]
 
 				unless @plugins.include?( name ) || @plugins.include?( mod )
-					Strelka.log.debug "  skipping %s" % [ name ]
+					self.log.debug "  skipping %s" % [ name ]
 					next
 				end
 
-				Strelka.log.info "  including %p." % [ mod ]
+				self.log.info "  including %p." % [ mod ]
 				include( mod )
 			end
 
@@ -262,7 +272,7 @@ module Strelka
 		### Return the list of plugin modules that are in effect for the current
 		### app.
 		def application_stack
-			Strelka.log.debug "Ancestors are: %p" % [ self.class.ancestors ]
+			self.log.debug "Ancestors are: %p" % [ self.class.ancestors ]
 			return self.ancestors.select {|mod| mod.respond_to?(:plugin_name) }
 		end
 
@@ -270,7 +280,7 @@ module Strelka
 		### Output the application stack into the logfile.
 		def dump_application_stack
 			stack = self.application_stack.map( &:plugin_name )
-			Strelka.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
+			self.log.info "Application stack: request -> %s" % [ stack.join(" -> ") ]
 		end
 
 	end # module PluginLoader

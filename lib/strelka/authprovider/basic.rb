@@ -55,7 +55,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 	### Configurability API -- configure the auth provider instance.
 	def self::configure( config=nil )
 		if config
-			Strelka.log.debug "Configuring Basic authprovider: %p" % [ config ]
+			self.log.debug "Configuring Basic authprovider: %p" % [ config ]
 			self.realm = config['realm'] if config['realm']
 			self.users = config['users'] if config['users']
 		else

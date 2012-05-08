@@ -2,10 +2,12 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-require 'strelka' unless defined?( Strelka )
-require 'strelka/cookie'
 require 'set'
 require 'forwardable'
+require 'loggability'
+
+require 'strelka' unless defined?( Strelka )
+require 'strelka/cookie'
 
 
 # An object class which provides a convenient way of accessing a set of Strelka::Cookies.
@@ -35,16 +37,21 @@ require 'forwardable'
 # * Jeremiah Jordan <phaedrus@FaerieMUD.org>
 #
 class Strelka::CookieSet
-	extend Forwardable
+	extend Forwardable,
+	       Loggability
 	include Enumerable
+
+
+	# Loggability API -- send logs through the :strelka logger
+	log_to :strelka
 
 
 	### Parse the Cookie header of the specified +request+ into Strelka::Cookie objects
 	### and return them in a new CookieSet.
 	def self::parse( request )
-		Strelka.log.debug "Parsing cookies from header: %p" % [ request.header.cookie ]
+		self.log.debug "Parsing cookies from header: %p" % [ request.header.cookie ]
 		cookies = Strelka::Cookie.parse( request.header.cookie )
-		Strelka.log.debug "  found %d cookies: %p" % [ cookies.length, cookies ]
+		self.log.debug "  found %d cookies: %p" % [ cookies.length, cookies ]
 		return new( cookies.values )
 	end
 
