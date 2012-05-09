@@ -70,14 +70,8 @@ class Strelka::CookieSet
 	public
 	######
 
-	def_delegators :@cookie_set, :each
+	def_delegators :@cookie_set, :each, :empty?, :member?, :length, :size
 
-
-	### Returns the number of cookies in the cookieset
-	def length
-		return @cookie_set.length
-	end
-	alias_method :size, :length
 
 
 	### Index operator method: returns the Strelka::Cookie with the given +name+ if it

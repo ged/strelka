@@ -27,6 +27,14 @@ describe Strelka::CookieSet do
 	end
 
 
+	it "delegates some methods to its underlying Set" do
+		cookie = Strelka::Cookie.new( 'pants', 'baggy' )
+
+		@cookieset.should be_empty()
+		@cookieset.length.should == 0
+		@cookieset.member?( cookie ).should be_false()
+	end
+
 	it "is able to enummerate over each cookie in the set" do
 		pants_cookie = Strelka::Cookie.new( 'pants', 'baggy' )
 		shirt_cookie = Strelka::Cookie.new( 'shirt', 'pirate' )
