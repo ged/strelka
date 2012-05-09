@@ -240,7 +240,6 @@ require 'strelka/authprovider'
 module Strelka::App::Auth
 	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
-	       Configurability,
 	       Loggability
 	include Strelka::Constants
 

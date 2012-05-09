@@ -27,8 +27,13 @@ class Strelka::App < Mongrel2::Handler
 	# Configurability API -- use the 'app' section of the config file.
 	config_key :app
 
+
 	# Glob for matching Strelka apps relative to a gem's data directory
 	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
+
+	# Default config
+	CONFIG_DEFAULTS = { devmode: false }
+
 
 	# Class instance variables
 	@devmode      = false
