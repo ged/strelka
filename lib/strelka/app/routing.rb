@@ -37,12 +37,23 @@ require 'strelka/plugins'
 #
 #       # match any GET request
 #       get do |req|
-#           return req.response << 'Hello, World!'
+#           res = req.response
+#           res.puts 'Hello, World!'
+#           return res
 #       end
 #
 #       # match any GET request whose path starts with '/goodbye'
 #       get '/goodbye' do |req|
-#           return req.response << "Goodbye, cruel World!"
+#           res = req.response
+#           res.puts "Goodbye, cruel World!"
+#           return res
+#       end
+#
+#       # match any GET request whose path ends with '.pdf'
+#       get /\.pdf$/ do |req|
+#           res = req.response
+#           res.body = generate_pdf()
+#           return res
 #       end
 #
 #
@@ -64,12 +75,16 @@ require 'strelka/plugins'
 #
 #       # match a GET request for the exact route only
 #       get do |req|
-#           return req.response << 'Hello, World!'
+#           res = req.response
+#           res.puts 'Hello, World!'
+#           return res
 #       end
 #
 #       # only match a GET request for '/goodbye'
 #       get '/goodbye' do |req|
-#           return req.response << "Goodbye, cruel World!"
+#           res = req.response
+#           res.puts "Goodbye, cruel World!"
+#           return res
 #       end
 #
 #      # Every other request responds with a 404
@@ -187,8 +202,8 @@ module Strelka::App::Routing
 			# Make a method name from the directories and the named captures of the patterns
 			# in the route
 			patternparts.each do |part|
-				if part.is_a?( Regexp )
-					methodparts << '_' + part.names.join( '_' )
+				if part.respond_to?( :names )
+					methodparts << make_route_name( part )
 				else
 					methodparts << part
 				end
@@ -218,6 +233,8 @@ module Strelka::App::Routing
 
 		### Split the given +pattern+ into its path components and
 		def split_route_pattern( pattern )
+			return [pattern] if pattern.is_a?( Regexp )
+
 			pattern.slice!( 0, 1 ) if pattern.start_with?( '/' )
 
 			return pattern.split( '/' ).collect do |component|
@@ -233,6 +250,19 @@ module Strelka::App::Routing
 					component
 				end
 			end
+		end
+
+
+		### Generate a name based on the parts of the given +pattern+.
+		def make_route_name( pattern )
+			name = '_re_'
+			if pattern.names.empty?
+				name << ("%s%#x" % [ pattern.class.name, pattern.object_id * 2 ])
+			else
+				name << pattern.names.join( '_' )
+			end
+
+			return name
 		end
 
 
@@ -272,6 +302,7 @@ module Strelka::App::Routing
 
 		self.log.debug "[:routing] Done with routing."
 	end
+
 
 end # module Strelka::App::Routing
 

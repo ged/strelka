@@ -227,5 +227,29 @@ describe Strelka::Router::Default do
 
 	end
 
+	context "a router with routes for: 'foo', then '/(?<filename>\p{Print}*)\.pdf$/'" do
+
+		before( :each ) do
+			@router.add_route( :GET, ['foo'], route(:foo) )
+			@router.add_route( :GET, [/(?<filename>\p{Print}*)\.pdf$/], route(:as_pdf) )
+		end
+
+		it "routes /user/foo/1 to the foo action" do
+			req = @request_factory.get( '/user/foo/1' )
+			@router.route_request( req ).should match_route( :foo )
+		end
+
+		it "routes /foo.pdf to the regexp action" do
+			req = @request_factory.get( '/user/foo.pdf' )
+			@router.route_request( req ).should match_route( :as_pdf )
+		end
+
+		it "routes /zanzibar.pdf to the regexp action" do
+			req = @request_factory.get( '/user/zanzibar.pdf' )
+			@router.route_request( req ).should match_route( :as_pdf )
+		end
+
+	end
+
 end
 

@@ -182,6 +182,15 @@ describe Strelka::App::Routing do
 			]
 		end
 
+		it "allows a route to specify a path via a Regex" do
+			@app.class_eval do
+				get /\.pdf$/ do
+				end
+			end
+
+			@app.routes.first[0,2].should == [ :GET, [/\.pdf$/] ]
+		end
+
 
 		it "uses the Strelka::Router::Default as it's router by default" do
 			@app.routerclass.should == :default
@@ -237,7 +246,7 @@ describe Strelka::App::Routing do
 
 				@app.routes.should ==
 					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with ^ and $ for the route" do
@@ -249,7 +258,7 @@ describe Strelka::App::Routing do
 
 				@app.routes.should ==
 					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\A and \\z for the route" do
@@ -261,7 +270,7 @@ describe Strelka::App::Routing do
 
 				@app.routes.should ==
 					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\Z for the route" do
@@ -273,7 +282,7 @@ describe Strelka::App::Routing do
 
 				@app.routes.should ==
 					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					  {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "merges parameters from the route path into the request's param validator" do
