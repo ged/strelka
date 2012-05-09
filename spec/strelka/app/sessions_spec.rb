@@ -101,6 +101,7 @@ describe Strelka::App::Sessions do
 
 				def handle_request( req )
 					super do
+						self.log.debug "Session is: %p" % [ req.session ]
 						req.session[ :test ] = 'session data'
 						req.response
 					end

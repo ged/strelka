@@ -50,6 +50,12 @@ module Strelka::HTTPRequest::Session
 	alias_method :has_session?, :session?
 
 
+	### Returns +true+ if the request has loaded its session.
+	def session_loaded?
+		return @session ? true : false
+	end
+
+
 	### Return the session associated with the request, creating it if necessary.
 	def session
 		unless @session

@@ -109,11 +109,20 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 		context "and a corresponding entry in the database" do
 
 			before( :each ) do
-				@req.session[ :test ] = true
+				Strelka::Session::Default.sessions[ @sess_id ] = {}
 			end
 
 			it "knows that it has a session" do
 				@req.should have_session()
+			end
+
+			it "knows when its session hasn't been loaded" do
+				@req.session_loaded?.should be_false()
+			end
+
+			it "knows when its session has been loaded" do
+				@req.session # Load it
+				@req.session_loaded?.should be_true()
 			end
 
 			it "can purge the session from the database" do

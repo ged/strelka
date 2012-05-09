@@ -130,10 +130,31 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 				@res.should have_session()
 			end
 
-			it "saves the session via itself when told to do so" do
+			it "knows that its session has been loaded if it has one" do
+				@res.session
+				@res.session_loaded?.should be_true()
+			end
+
+			it "knows that its session has been loaded if its request has one" do
+				@res.request.session
+				@res.session_loaded?.should be_true()
+			end
+
+			it "knows that its session hasn't been loaded if neither its request not itself has one" do
+				@res.session_loaded?.should be_false()
+			end
+
+			it "saves the session via itself if it was loaded" do
 				@res.cookies.should_not include( @cookie_name )
+				@res.session
 				@res.save_session
 				@res.cookies[ @cookie_name ].value.should == @sess_id
+			end
+
+			it "doesn't save the session via itself if it wasn't loaded" do
+				@res.cookies.should_not include( @cookie_name )
+				@res.save_session
+				@res.cookies.should be_empty()
 			end
 
 		end

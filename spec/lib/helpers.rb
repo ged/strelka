@@ -68,7 +68,6 @@ module Strelka::SpecHelpers
 
 		# Only do this when executing from a spec in TextMate
 		if ENV['HTML_LOGGING'] || (ENV['TM_FILENAME'] && ENV['TM_FILENAME'] =~ /_spec\.rb/)
-			$stderr.puts "Setting up HTML logs."
 			logarray = []
 			Thread.current['logger-output'] = logarray
 			Loggability.output_to( logarray )

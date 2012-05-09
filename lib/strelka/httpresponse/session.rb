@@ -85,10 +85,16 @@ module Strelka::HTTPResponse::Session
 	alias_method :has_session?, :session?
 
 
+	### Returns +true+ if the response or its request has already loaded the session.
+	def session_loaded?
+		return @session || self.request.session_loaded?
+	end
+
+
 	### Tell the associated session to save itself and set up the session ID in the
 	### response, if one exists.
 	def save_session
-		if self.session?
+		if self.session_loaded?
 			self.log.debug "Saving session: %p" % [ self.session ]
 			self.session.save( self )
 		else
