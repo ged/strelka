@@ -4,6 +4,7 @@
 require 'strelka'
 require 'trollop'
 require 'highline'
+require 'loggability'
 
 # Have to do it this way to avoid the vendored 'sysexits' under OSX.
 gem 'sysexits'
@@ -12,10 +13,15 @@ require 'sysexits'
 
 # A tool for setting up and running Strelka apps
 class Strelka::CLICommand
-	extend ::Sysexits
+	extend ::Sysexits,
+	       Loggability
 	include Sysexits,
-	        Strelka::Loggable,
 	        Strelka::Constants
+
+
+	# Write logs to Strelka's logger
+	log_to :strelka
+
 
 	# Make a HighLine color scheme
 	COLOR_SCHEME = HighLine::ColorScheme.new do |scheme|
@@ -48,8 +54,8 @@ class Strelka::CLICommand
 		exit :ok
 
 	rescue => err
-		Strelka.logger.fatal "Oops: %s: %s" % [ err.class.name, err.message ]
-		Strelka.logger.debug { '  ' + err.backtrace.join("\n  ") }
+		self.log.fatal "Oops: %s: %s" % [ err.class.name, err.message ]
+		self.log.debug { '  ' + err.backtrace.join("\n  ") }
 
 		exit :software_error
 	end
@@ -89,7 +95,7 @@ class Strelka::CLICommand
 			progname = File.basename( $0 )
 
 			# Make a list of the log level names and the available commands
-			loglevels = Strelka::Logging::LOG_LEVELS.
+			loglevels = Loggability::LOG_LEVELS.
 				sort_by {|name,lvl| lvl }.
 				collect {|name,lvl| name.to_s }.
 				join( ', ' )
@@ -111,7 +117,7 @@ class Strelka::CLICommand
 				text 'Other Options:'
 				opt :debug, "Turn debugging on. Also sets the --loglevel to 'debug'."
 				opt :loglevel, "Set the logging level. Must be one of: #{loglevels}",
-					:default => Strelka::Logging::LOG_LEVEL_NAMES[ Strelka.logger.level ]
+					:default => Strelka.logger.level.to_s
 			end
 		end
 
@@ -165,15 +171,15 @@ class Strelka::CLICommand
 	### Create a new instance of the command and set it up with the given
 	### +options+.
 	def initialize( options )
-		Strelka.logger.formatter = Strelka::Logging::ColorFormatter.new( Strelka.logger ) if $stderr.tty?
+		Loggability.format_with( :color ) if $stderr.tty?
 		@options = options
 
 		if @options.debug
 			$DEBUG = true
 			$VERBOSE = true
-			Strelka.logger.level = Logger::DEBUG
+			Loggability.level = :debug
 		elsif @options.loglevel
-			Strelka.logger.level = Strelka::Logging::LOG_LEVELS[ @options.loglevel ]
+			Loggability.level = @options.loglevel
 		end
 
 	end
@@ -302,6 +308,35 @@ class Strelka::CLICommand
 		Process.wait
 	end
 	help :start, "Start a Strelka app"
+
+
+	### The 'version' command
+	def version_command( *args )
+		message( "<%= color 'Version:', :header %> " + Mongrel2.version_string(true) )
+	end
+	help :version, "Prints the Ruby-Mongrel2 version."
+
+
+	### The 'config' command
+	def config_command( *args )
+		gemname = args.shift
+		discovery_name = gemname || ''
+
+		header "Dumping config for %s" % [ gemname || 'local apps' ]
+		discovered_apps = Strelka::App.discover_paths
+
+		raise ArgumentError, "No apps discovered" unless discovered_apps.key?( discovery_name )
+
+		discovered_apps[ discovery_name ].each do |apppath|
+			message "  loading %s (%s)" % [ apppath, apppath.basename('.rb') ]
+			Strelka::App.load( apppath )
+
+			message "  dumping config:"
+			$stdout.puts Configurability.default_config.dump
+		end
+	end
+	help :config, "Dump the configuration for GEMNAME (or the local directory if no gem is specified)"
+	usage :config, "[GEMNAME]"
 
 
 	### The 'version' command
