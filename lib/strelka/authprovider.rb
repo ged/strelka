@@ -11,7 +11,7 @@ require 'strelka/mixins'
 # This is the abstract base class for authentication and/or authorization providers
 # for the {:auth plugin}[Strelka::App::Auth].
 #
-# To define your own session type, you'll need to inherit this class (either
+# To define your own authentication provider, you'll need to inherit this class (either
 # directly or via a subclass), name it <tt>Strelka::AuthProvider::{Something}</tt>,
 # save it in a file named <tt>strelka/authprovider/{something}.rb</tt>, and
 # override the required methods.
@@ -22,22 +22,10 @@ require 'strelka/mixins'
 # == Authentication Providers
 #
 # Authentication providers should override either one or both of the following methods,
-# depending on whether they will provide 
+# depending on whether they will provide authentication, authorization, or both:
 #
-# * #[]
-# * #[]=
-# * #save
-# * #delete
-# * #key?
-# * #namespace=
-# * #namespace
-#
-# These methods provide basic functionality, but you might find it more efficient
-# to override them:
-#
-# * self.load_or_create
-# * self.load
-#
+# * #authenticate
+# * #authorize
 #
 class Strelka::AuthProvider
 	extend Loggability,
