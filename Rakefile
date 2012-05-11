@@ -31,7 +31,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'uuidtools',       '~> 2.1'
 	self.dependency 'configurability', '~> 1.0'
 	self.dependency 'pluginfactory',   '~> 1.0'
-	self.dependency 'loggability',     '~> 0.1'
+	self.dependency 'loggability',     '~> 0.2'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
 	self.dependency 'hoe-manualgen',   '~> 0.3', :developer
