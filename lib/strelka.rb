@@ -70,8 +70,9 @@ module Strelka
 
 	### Convenience method -- Load the Configurability::Config from +configfile+
 	### and install it.
-	def self::load_config( configfile, defaults={} )
-		self.log.info "Loading universal config from %p" % [ configfile ]
+	def self::load_config( configfile, defaults=nil )
+		defaults ||= Configurability.gather_defaults
+		self.log.info "Loading universal config from %p." % [ configfile ]
 		self.config = Configurability::Config.load( configfile, defaults )
 		self.config.install
 	end
