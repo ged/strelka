@@ -72,7 +72,8 @@ module Strelka
 	### and install it.
 	def self::load_config( configfile, defaults=nil )
 		defaults ||= Configurability.gather_defaults
-		self.log.info "Loading universal config from %p." % [ configfile ]
+		self.log.info "Loading universal config from %p with defaults for sections: %p." %
+			[ configfile, defaults.keys ]
 		self.config = Configurability::Config.load( configfile, defaults )
 		self.config.install
 	end
