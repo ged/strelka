@@ -12,3 +12,4 @@ trollop -v1.16.2
 highline -v1.6.11
 sysexits -v1.0.2
 loggability -v0.2.0
+foreman -v0.46.0
