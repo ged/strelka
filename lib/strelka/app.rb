@@ -13,6 +13,7 @@ require 'strelka/plugins'
 
 
 # The Strelka HTTP application base class.
+#
 class Strelka::App < Mongrel2::Handler
 	extend Loggability,
 	       Configurability,
@@ -66,10 +67,6 @@ class Strelka::App < Mongrel2::Handler
 	### already.
 	def self::run( appid=nil )
 		appid ||= self.default_appid
-
-		Loggability.level = :debug if self.devmode?
-		Loggability.format_with( :color ) if $stderr.tty?
-
 		self.log.info "Starting up with appid %p." % [ appid ]
 		super( appid )
 	end
