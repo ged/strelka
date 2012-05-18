@@ -348,7 +348,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 		self.log.info "Validating request params: %p with profile: %p" %
 			[ params, @profile ]
-		@raw_form = params.dup
+		@raw_form = strify_hash( params )
 		profile = @profile
 
 		if additional_profile
