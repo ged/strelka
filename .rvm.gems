@@ -3,7 +3,7 @@ hoe-deveiate -v0.1.1
 formvalidator -v0.1.5
 hoe-manualgen -v0.3.0
 inversion -v0.8.0
-mongrel2 -v0.22.1
+mongrel2 -v0.23.0
 uuidtools -v2.1.2
 configurability -v1.0.10
 pluginfactory -v1.0.8
@@ -11,5 +11,5 @@ simplecov -v0.6.1
 trollop -v1.16.2
 highline -v1.6.11
 sysexits -v1.0.2
-loggability -v0.2.0
+loggability -v0.2.3
 foreman -v0.46.0
