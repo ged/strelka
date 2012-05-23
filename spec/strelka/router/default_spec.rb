@@ -39,23 +39,24 @@ describe Strelka::Router::Default do
 	context "a router with routes for 'foo', 'foo/bar'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo'], route(:foo) )
-			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
+			@router.add_route( :GET, ['foo'], route(:GET_foo) )
+			@router.add_route( :GET, ['foo','bar'], route(:GET_foo_bar) )
+			@router.add_route( :POST, ['foo', 'bar'], route(:POST_foo_bar) )
 		end
 
-		it "routes GET /user/foo/bar/baz to the foo/bar action" do
+		it "routes GET /user/foo/bar/baz to the GET foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
-			@router.route_request( req ).should match_route( :foo_bar )
+			@router.route_request( req ).should match_route( :GET_foo_bar )
 		end
 
-		it "routes GET /user/foo/bar to the foo/bar action" do
+		it "routes GET /user/foo/bar to the GET foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should match_route( :foo_bar )
+			@router.route_request( req ).should match_route( :GET_foo_bar )
 		end
 
-		it "routes GET /user/foo to the foo action" do
+		it "routes GET /user/foo to the GET foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should match_route( :foo )
+			@router.route_request( req ).should match_route( :GET_foo )
 		end
 
 		it "doesn't route GET /user" do
@@ -75,7 +76,15 @@ describe Strelka::Router::Default do
 
 		it "routes HEAD requests to the GET route" do
 			req = @request_factory.head( '/user/foo' )
-			@router.route_request( req ).should match_route( :foo )
+			@router.route_request( req ).should match_route( :GET_foo )
+		end
+
+		it "responds with a 405 (method not allowed) for a DELETE request to /user/foo" do
+			req = @request_factory.delete( '/user/foo' )
+			expect {
+				@router.route_request( req )
+			}.to finish_with( HTTP::METHOD_NOT_ALLOWED, /method not allowed/i ).
+			     and_header( allow: 'GET, HEAD' )
 		end
 
 		it "responds with a 405 (method not allowed) for a POST request to /user/foo" do

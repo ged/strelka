@@ -42,7 +42,7 @@ class Strelka::Router::Exclusive < Strelka::Router::Default
 		re = Regexp.compile( '^' + path.join('/') + '$' )
 
 		# Make the Hash for the specified HTTP verb if it hasn't been created already
-		self.routes[ verb ][ re ] = route
+		self.routes[ re ][ verb ] = route
 	end
 
 end # class Strelka::Router::Default

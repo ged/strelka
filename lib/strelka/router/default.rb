@@ -23,9 +23,9 @@ class Strelka::Router::Default < Strelka::Router
 	###     <route>,        # A hash of routing data built by the Routing plugin
 	###   ]
 	def initialize( routes=[], options={} )
-		@routes = Hash.new {|hash, verb| hash[verb] = {} }
-		# :FIXME: Either call #add_route for each route in 'routes', or eliminate
-		# the parameter
+		@routes = Hash.new {|hash, path| hash[path] = {} }
+
+		routes.each {|r| self.add_route( *r ) }
 
 		super
 	end
@@ -44,8 +44,8 @@ class Strelka::Router::Default < Strelka::Router
 	def add_route( verb, path, route )
 		re = Regexp.compile( '^' + path.join('/') )
 
-		# Add the route keyed by HTTP verb and the path regex
-		self.routes[ verb ][ re ] = route
+		# Add the route keyed by path regex and HTTP verb
+		self.routes[ re ][ verb ] = route
 	end
 
 
@@ -53,29 +53,27 @@ class Strelka::Router::Default < Strelka::Router
 	### the UnboundMethod object of the App that should handle it.
 	def route_request( request )
 		route = nil
+		path  = request.app_path || ''
+		verb  = request.verb
 
-		verb = request.verb
-		verb = :GET if verb == :HEAD
-
-		path = request.app_path || ''
 		path.slice!( 0, 1 ) if path.start_with?( '/' ) # Strip the leading '/'
-
-		self.log.debug "Looking for a route for: %p %p" % [ verb, path ]
-		verbroutes = @routes[ verb ]
-		return self.allowed_response( path ) if verbroutes.empty?
-		match = self.find_longest_match( verbroutes.keys, path ) or return nil
+		self.log.debug "Looking for routes for: %p %p" % [ verb, path ]
+		match = self.find_longest_match( self.routes.keys, path ) or return nil
 		self.log.debug "  longest match result: %p" % [ match ]
+		routekey = match.regexp
 
-		# The best route is the one with the key of the regexp of the
-		# longest match
-		route = verbroutes[ match.regexp ].merge( :match => match )
+		# Pick the appropriate route based on the HTTP verb of the request. HEAD requests
+		# use the GET route. If there isn't a defined route for the request's verb
+		# send a 405 (Method Not Allowed) response
+		verb       = :GET if verb == :HEAD
+		verbroutes = self.routes[ routekey ]
+		route      = verbroutes[ verb ] or not_allowed_response( verbroutes.keys )
 
 		# Inject the parameters that are part of the route path (/foo/:id) into
 		# the parameters hash. They'll be the named match-groups in the matching
 		# Regex.
-		route_params = match.names.inject({}) do |hash,name|
+		route_params = match.names.each_with_object({}) do |name, hash|
 			hash[ name ] = match[ name ]
-			hash
 		end
 
 		# Add routing information to the request, and merge parameters if there are any
@@ -86,20 +84,10 @@ class Strelka::Router::Default < Strelka::Router
 	end
 
 
-	### If the specified +path+ matches a valid route, then respond with a
-	### 405 (Method Not Allowed) with the allowed HTTP verbs. Otherwise, return
-	### +nil+.
-	def allowed_response( path )
-		allowed_verbs = []
-
-		routes = @routes.each do |verb, verbroutes|
-			allowed_verbs << verb if self.find_longest_match( verbroutes.keys, path )
-		end
+	### Build an HTTP Allowed header out of the +allowed_verbs+ and throw a 405 response.
+	###
+	def not_allowed_response( allowed_verbs )
 		allowed_verbs << :HEAD if allowed_verbs.include?( :GET )
-
-		self.log.debug "Allowed methods for path %s: %p" % [ path, allowed_verbs ]
-		return nil if allowed_verbs.empty?
-
 		allowed_hdr = allowed_verbs.map {|verb| verb.to_s.upcase }.join( ', ' )
 		finish_with( HTTP::METHOD_NOT_ALLOWED, 'Method not allowed.', allow: allowed_hdr )
 	end

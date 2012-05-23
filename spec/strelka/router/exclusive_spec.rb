@@ -38,8 +38,8 @@ describe Strelka::Router::Exclusive do
 	context "a router with routes for 'foo', 'foo/bar'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo'], route(:foo) )
-			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
+			@router.add_route( :GET, ['foo'], route(:GET_foo) )
+			@router.add_route( :GET, ['foo','bar'], route(:GET_foo_bar) )
 		end
 
 		it "doesn't route /user/foo/bar/baz" do
@@ -49,17 +49,17 @@ describe Strelka::Router::Exclusive do
 
 		it "routes /user/foo/bar to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should match_route( :foo_bar )
+			@router.route_request( req ).should match_route( :GET_foo_bar )
 		end
 
 		it "routes /user/foo/bar?limit=10 to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar?limit=10' )
-			@router.route_request( req ).should match_route( :foo_bar )
+			@router.route_request( req ).should match_route( :GET_foo_bar )
 		end
 
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should match_route( :foo )
+			@router.route_request( req ).should match_route( :GET_foo )
 		end
 
 		it "doesn't route /user" do
@@ -78,50 +78,64 @@ describe Strelka::Router::Exclusive do
 
 		before( :each ) do
 			@router.add_route( :GET, [], route(:fallback) )
-			@router.add_route( :GET, ['foo'], route(:foo) )
-			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
+			@router.add_route( :GET, ['foo'], route(:GET_foo) )
+			@router.add_route( :GET, ['foo','bar'], route(:GET_foo_bar) )
+			@router.add_route( :POST, ['foo','bar'], route(:POST_foo_bar) )
 		end
 
-		it "doesn't route /user/foo/bar/baz" do
+		it "doesn't route GET /user/foo/bar/baz" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
 			@router.route_request( req ).should be_nil()
 		end
 
-		it "routes /user/foo/bar to the foo/bar action" do
+		it "routes GET /user/foo/bar to the GET foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should match_route( :foo_bar )
+			@router.route_request( req ).should match_route( :GET_foo_bar )
 		end
 
-		it "routes /user/foo to the foo action" do
+		it "routes POST /user/foo/bar to the POST foor/bar action" do
+			req = @request_factory.post( '/user/foo/bar' )
+			@router.route_request( req ).should match_route( :POST_foo_bar )
+		end
+
+		it "routes GET /user/foo to the GET foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should match_route( :foo )
+			@router.route_request( req ).should match_route( :GET_foo )
 		end
 
-		it "routes /user to the fallback action" do
+		it "routes GET /user to the fallback action" do
 			req = @request_factory.get( '/user' )
 			@router.route_request( req ).should match_route( :fallback )
 		end
 
-		it "doesn't route /user/other" do
+		it "doesn't route GET /user/other" do
 			req = @request_factory.get( '/user/other' )
 			@router.route_request( req ).should be_nil()
 		end
 
-		it "responds with an HTTP::METHOD_NOT_ALLOWED for a POST request to /user/foo" do
+		it "responds with an HTTP::METHOD_NOT_ALLOWED for a POST to /user/foo" do
 			req = @request_factory.post( '/user/foo' )
 			expect {
 				@router.route_request( req )
 			}.to finish_with( HTTP::METHOD_NOT_ALLOWED, /method not allowed/i ).
 			     and_header( allow: 'GET, HEAD' )
 		end
+
+		it "responds with an HTTP::METHOD_NOT_ALLOWED for a DELETE on /user/foo/bar" do
+			req = @request_factory.delete( '/user/foo/bar' )
+			expect {
+				@router.route_request( req )
+			}.to finish_with( HTTP::METHOD_NOT_ALLOWED, /method not allowed/i ).
+			     and_header( allow: 'GET, POST, HEAD' )
+		end
 	end
 
 	context "a router with routes for 'foo', 'foo/\w{3}', and 'foo/\w{6}'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo'], route(:foo) )
-			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
-			@router.add_route( :GET, ['foo',/\w{6}/], route(:foo_six) )
+			@router.add_route( :GET, ['foo'], route(:GET_foo) )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:GET_foo_three) )
+			@router.add_route( :GET, ['foo',/\w{6}/], route(:GET_foo_six) )
 		end
 
 		it "doesn't route /user/foo/barbim/baz" do
@@ -131,7 +145,7 @@ describe Strelka::Router::Exclusive do
 
 		it "routes /user/foo/barbat to the foo/\w{6} action" do
 			req = @request_factory.get( '/user/foo/barbat' )
-			@router.route_request( req ).should match_route( :foo_six )
+			@router.route_request( req ).should match_route( :GET_foo_six )
 		end
 
 		it "doesn't route /user/foo/bar/baz" do
@@ -141,12 +155,12 @@ describe Strelka::Router::Exclusive do
 
 		it "routes /user/foo/bar to the foo/\w{3} action" do
 			req = @request_factory.get( '/user/foo/bar' )
-			@router.route_request( req ).should match_route( :foo_three )
+			@router.route_request( req ).should match_route( :GET_foo_three )
 		end
 
 		it "routes /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
-			@router.route_request( req ).should match_route( :foo )
+			@router.route_request( req ).should match_route( :GET_foo )
 		end
 
 		it "doesn't route /user" do
@@ -167,28 +181,28 @@ describe Strelka::Router::Exclusive do
 	context "a router with routes for: 'foo/\w{3}', then 'foo/\d+'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
-			@router.add_route( :GET, ['foo',/\d+/], route(:foo_digit) )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:GET_foo_three) )
+			@router.add_route( :GET, ['foo',/\d+/], route(:GET_foo_digit) )
 		end
 
 		it "routes /user/foo/1 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 		it "routes /user/foo/12 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/12' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 		it "routes /user/foo/123 to the foo/\w{3} action" do
 			req = @request_factory.get( '/user/foo/123' )
-			@router.route_request( req ).should match_route( :foo_three )
+			@router.route_request( req ).should match_route( :GET_foo_three )
 		end
 
 		it "routes /user/foo/1234 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1234' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 	end
@@ -199,28 +213,28 @@ describe Strelka::Router::Exclusive do
 	context "a router with routes for: 'foo/\d+', then 'foo/\w{3}'" do
 
 		before( :each ) do
-			@router.add_route( :GET, ['foo',/\d+/], route(:foo_digit) )
-			@router.add_route( :GET, ['foo',/\w{3}/], route(:foo_three) )
+			@router.add_route( :GET, ['foo',/\d+/], route(:GET_foo_digit) )
+			@router.add_route( :GET, ['foo',/\w{3}/], route(:GET_foo_three) )
 		end
 
 		it "routes /user/foo/1 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 		it "routes /user/foo/12 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/12' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 		it "routes /user/foo/123 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/123' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 		it "routes /user/foo/1234 to the foo/\d+ action" do
 			req = @request_factory.get( '/user/foo/1234' )
-			@router.route_request( req ).should match_route( :foo_digit )
+			@router.route_request( req ).should match_route( :GET_foo_digit )
 		end
 
 	end
