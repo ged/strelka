@@ -53,7 +53,10 @@ class Strelka::Router::Default < Strelka::Router
 	### the UnboundMethod object of the App that should handle it.
 	def route_request( request )
 		route = nil
+
 		verb = request.verb
+		verb = :GET if verb == :HEAD
+
 		path = request.app_path || ''
 		path.slice!( 0, 1 ) if path.start_with?( '/' ) # Strip the leading '/'
 

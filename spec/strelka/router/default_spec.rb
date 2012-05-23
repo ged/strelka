@@ -43,34 +43,39 @@ describe Strelka::Router::Default do
 			@router.add_route( :GET, ['foo','bar'], route(:foo_bar) )
 		end
 
-		it "routes /user/foo/bar/baz to the foo/bar action" do
+		it "routes GET /user/foo/bar/baz to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar/baz' )
 			@router.route_request( req ).should match_route( :foo_bar )
 		end
 
-		it "routes /user/foo/bar to the foo/bar action" do
+		it "routes GET /user/foo/bar to the foo/bar action" do
 			req = @request_factory.get( '/user/foo/bar' )
 			@router.route_request( req ).should match_route( :foo_bar )
 		end
 
-		it "routes /user/foo to the foo action" do
+		it "routes GET /user/foo to the foo action" do
 			req = @request_factory.get( '/user/foo' )
 			@router.route_request( req ).should match_route( :foo )
 		end
 
-		it "doesn't route /user" do
+		it "doesn't route GET /user" do
 			req = @request_factory.get( '/user' )
 			@router.route_request( req ).should be_nil()
 		end
 
-		it "doesn't route /user/something/foo/bar" do
+		it "doesn't route GET /user/something/foo/bar" do
 			req = @request_factory.get( '/user/something/foo/bar' )
 			@router.route_request( req ).should be_nil()
 		end
 
-		it "doesn't route /user/other" do
+		it "doesn't route GET /user/other" do
 			req = @request_factory.get( '/user/other' )
 			@router.route_request( req ).should be_nil()
+		end
+
+		it "routes HEAD requests to the GET route" do
+			req = @request_factory.head( '/user/foo' )
+			@router.route_request( req ).should match_route( :foo )
 		end
 
 		it "responds with a 405 (method not allowed) for a POST request to /user/foo" do
