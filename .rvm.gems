@@ -2,7 +2,7 @@
 hoe-deveiate -v0.1.1
 formvalidator -v0.1.5
 hoe-manualgen -v0.3.0
-inversion -v0.8.0
+inversion -v0.10.0
 mongrel2 -v0.23.0
 uuidtools -v2.1.2
 configurability -v1.0.10
