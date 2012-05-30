@@ -31,16 +31,27 @@ class Strelka::App < Mongrel2::Handler
 
 	# Glob for matching Strelka apps relative to a gem's data directory
 	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
+	APP_GLOB_PATTERN.freeze
+
+	# The glob for matching data directories relative to the PWD
+	LOCAL_DATA_DIRS = 'data/*'
+	LOCAL_DATA_DIRS.freeze
 
 	# Default config
-	CONFIG_DEFAULTS = { devmode: false }
+	CONFIG_DEFAULTS = {
+		devmode: false,
+		app_glob_pattern: APP_GLOB_PATTERN,
+		local_data_dirs: LOCAL_DATA_DIRS,
+	}.freeze
 
 
 	# Class instance variables
-	@devmode      = false
-	@default_type = nil
-	@loading_file = nil
-	@subclasses   = Hash.new {|h,k| h[k] = [] }
+	@devmode          = false
+	@default_type     = nil
+	@loading_file     = nil
+	@subclasses       = Hash.new {|h,k| h[k] = [] }
+	@app_glob_pattern = APP_GLOB_PATTERN
+	@local_data_dirs  = LOCAL_DATA_DIRS
 
 
 	##
@@ -51,6 +62,42 @@ class Strelka::App < Mongrel2::Handler
 	##
 	# 'Developer mode' flag.
 	singleton_attr_writer :devmode
+
+	##
+	# The glob(3) pattern for matching Apps during discovery
+	singleton_attr_accessor :app_glob_pattern
+
+	##
+	# The glob(3) pattern for matching local data directories during discovery. Local
+	# data directories are evaluated relative to the CWD.
+	singleton_attr_accessor :local_data_dirs
+
+
+	### Configure the App. Override this if you wish to add additional configuration
+	### to the 'app' section of the config that will be passed to you when the config
+	### is loaded.
+	def self::configure( config=nil )
+		if config
+			self.devmode          = true if config[:devmode]
+			self.app_glob_pattern = config[:app_glob_pattern]
+			self.local_data_dirs  = config[:local_data_dirs]
+		else
+			self.devmode          = $DEBUG ? true : false
+			self.app_glob_pattern = APP_GLOB_PATTERN
+			self.local_data_dirs  = LOCAL_DATA_DIRS
+		end
+
+		self.log.info "Enabled developer mode." if self.devmode?
+	end
+
+
+	### Returns +true+ if the application has been configured to run in 'developer mode'.
+	### Developer mode is mostly informational by default (it just makes logging more
+	### verbose), but plugins and such might alter their behavior based on this setting.
+	def self::devmode?
+		return @devmode
+	end
+	singleton_method_alias :in_devmode?, :devmode?
 
 
 	### Inheritance callback -- add subclasses to @subclasses so .load can figure out which
@@ -94,10 +141,8 @@ class Strelka::App < Mongrel2::Handler
 	### Return a Hash of Strelka app files as Pathname objects from installed gems,
 	### keyed by gemspec name .
 	def self::discover_paths
-		self.log.debug "Local paths: %s" % [ Strelka.datadir + APP_GLOB_PATTERN ]
-
 		appfiles = {
-			'' => Pathname.glob( Strelka.datadir + APP_GLOB_PATTERN )
+			'' => Pathname.glob( File.join(self.local_data_dirs, self.app_glob_pattern) )
 		}
 
 		# Find all the gems that depend on Strelka
@@ -169,29 +214,6 @@ class Strelka::App < Mongrel2::Handler
 		return new_subclasses
 	ensure
 		@loading_file = nil
-	end
-
-
-	### Returns +true+ if the application has been configured to run in 'developer mode'.
-	### Developer mode is mostly informational by default (it just makes logging more
-	### verbose), but plugins and such might alter their behavior based on this setting.
-	def self::devmode?
-		return @devmode
-	end
-	singleton_method_alias :in_devmode?, :devmode?
-
-
-	### Configure the App. Override this if you wish to add additional configuration
-	### to the 'app' section of the config that will be passed to you when the config
-	### is loaded.
-	def self::configure( config=nil )
-		if config
-			self.devmode = true if config[:devmode]
-		else
-			self.devmode = $DEBUG ? true : false
-		end
-
-		self.log.info "Enabled developer mode." if self.devmode?
 	end
 
 

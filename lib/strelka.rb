@@ -30,11 +30,22 @@ module Strelka
 	REVISION = %q$Revision$
 
 	require 'strelka/constants'
+	require 'strelka/exceptions'
 	include Strelka::Constants
 
-	require 'strelka/exceptions'
-	require 'strelka/mixins'
-	extend Strelka::MethodUtilities
+	autoload :AuthProvider,   'strelka/authprovider'
+	autoload :Cookie,         'strelka/cookie'
+	autoload :CookieSet,      'strelka/cookieset'
+	autoload :ParamValidator, 'strelka/httpresponse'
+	autoload :Plugin,         'strelka/plugins'
+	autoload :PluginLoader,   'strelka/plugins'
+	autoload :PluginRegistry, 'strelka/plugins'
+	autoload :Router,         'strelka/router'
+	autoload :Session,        'strelka/session'
+
+	require 'strelka/app'
+	require 'strelka/httprequest'
+	require 'strelka/httpresponse'
 
 
 	### Get the library version. If +include_buildnum+ is true, the version string will
@@ -44,23 +55,6 @@ module Strelka
 		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
 		return vstring
 	end
-
-
-	##
-	# The Pathname of the directory that will be searched for default applications,
-	# config, etc.
-	singleton_attr_reader :datadir
-
-	### Set the local data directory to +dir+.
-	def self::datadir=( dir )
-		@datadir = Pathname( dir )
-	end
-	self.datadir = DEFAULT_DATADIR
-
-
-	require 'strelka/app'
-	require 'strelka/httprequest'
-	require 'strelka/httpresponse'
 
 
 	# The installed Configurability::Config object

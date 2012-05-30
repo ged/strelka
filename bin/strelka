@@ -205,10 +205,7 @@ class Strelka::CLICommand
 		# Set the datadir override if it's given
 		if self.options.datadir
 			self.log.debug "Using data dir option: %s" % [ self.options.datadir ]
-			Strelka.datadir = Pathname( self.options.datadir )
-		elsif File.directory?( 'data' ) && subdir = Dir[ 'data/*' ].first
-			self.log.debug "Using local data dir: %s" % [ subdir ]
-			Strelka.datadir = subdir
+			Strelka::App.local_data_dirs = Pathname( self.options.datadir )
 		end
 
 		# Include a 'lib' directory if there is one
@@ -330,10 +327,10 @@ class Strelka::CLICommand
 		discovered_apps[ discovery_name ].each do |apppath|
 			message "  loading %s (%s)" % [ apppath, apppath.basename('.rb') ]
 			Strelka::App.load( apppath )
-
-			message "  dumping config:"
-			$stdout.puts Configurability.default_config.dump
 		end
+
+		message "  dumping config:"
+		$stdout.puts Configurability.default_config.dump
 	end
 	help :config, "Dump the configuration for GEMNAME (or the local directory if no gem is specified)"
 	usage :config, "[GEMNAME]"

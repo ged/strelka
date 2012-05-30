@@ -103,7 +103,7 @@ describe Strelka::App do
 		rabbit_path  = specs[:rabbit_new].full_gem_path
 		giraffe_path = specs[:giraffe].full_gem_path
 
-		Dir.should_receive( :glob ).with( Pathname('data/strelka/{apps,handlers}/**/*') ).
+		Dir.should_receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
 			and_return( [] )
 		Dir.should_receive( :glob ).with( "#{giraffe_path}/data/giraffe/{apps,handlers}/**/*" ).
 			and_return([ "#{giraffe_path}/data/giraffe/apps/app" ])
@@ -128,7 +128,7 @@ describe Strelka::App do
 		gemspec = make_gemspec( 'blood-orgy', '0.0.3' )
 		Gem::Specification.should_receive( :each ).and_yield( gemspec ).at_least( :once )
 
-		Dir.should_receive( :glob ).with( Pathname('data/strelka/{apps,handlers}/**/*') ).
+		Dir.should_receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
 			and_return( [] )
 		Dir.should_receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
 			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
@@ -150,7 +150,7 @@ describe Strelka::App do
 		gemspec = make_gemspec( 'blood-orgy', '0.0.3' )
 		Gem::Specification.should_receive( :each ).and_yield( gemspec ).at_least( :once )
 
-		Dir.should_receive( :glob ).with( Pathname('data/strelka/{apps,handlers}/**/*') ).
+		Dir.should_receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
 			and_return( [] )
 		Dir.should_receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
 			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
