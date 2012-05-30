@@ -334,7 +334,7 @@ module Strelka::HTTPResponse::Negotiation
 			STRINGIFIERS.key?( mimetype ) && !new_body.is_a?( String )
 
 		self.body = new_body
-		self.content_type = mimetype
+		self.content_type = mimetype.dup # :TODO: Why is this frozen?
 		self.status ||= HTTP::OK
 
 		return true
