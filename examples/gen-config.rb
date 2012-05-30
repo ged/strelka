@@ -27,15 +27,14 @@ server 'examples' do
 
 	host 'localhost' do
 
-		route '/', directory( 'examples/static/', 'examples.html', 'text/html' )
-
-		authdemo = handler( 'tcp://127.0.0.1:9910', 'auth-demo' )
+		route '/', directory( 'static/', 'examples.html', 'text/html' )
 
 		# Handlers
-		route '/hello', handler( 'tcp://127.0.0.1:9900', 'helloworld-handler' )
+		route '/hello', handler( 'tcp://127.0.0.1:9900', 'hello-world' )
 		route '/sessions', handler( 'tcp://127.0.0.1:9905', 'sessions-demo' )
-		route '/auth', authdemo
-		route '/chunkers', authdemo
+		route '/auth', handler( 'tcp://127.0.0.1:9910', 'auth-demo' )
+		route '/formauth', handler( 'tcp://127.0.0.1:9915', 'auth-demo2' )
+		route '/ws', handler( 'tcp://127.0.0.1:9920', 'ws-echo' )
 
 	end
 

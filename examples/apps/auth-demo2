@@ -12,19 +12,20 @@ class AuthDemo2 < Strelka::App
 	# The Mongrel2 appid of this app
 	ID = 'auth-demo2'
 
-	plugins :auth, :errors, :templating
-	auth_provider :session
+	plugins :auth, :errors, :templating, :routing
 
-	layout 'examples/layout.tmpl'
+	default_type 'text/html'
+
+	layout 'templates/layout.tmpl'
 	templates \
-		form: 'examples/auth-form.tmpl',
-		success: 'examples/auth-success.tmpl'
+		form: 'templates/auth-form.tmpl',
+		success: 'templates/auth-success.tmpl'
 
-	on_status AUTH_REQUIRED, :form
+	on_status HTTP::AUTH_REQUIRED, :form
 
 
 	### Handle any (authenticated) HTTP request
-	def handle_request( req )
+	get do |req|
 		return :success
 	end
 
@@ -32,6 +33,6 @@ class AuthDemo2 < Strelka::App
 end # class AuthDemo2
 
 
-Strelka.load_config( 'examples/config.yml' )
-AuthDemo2.run
+AuthDemo2.run if __FILE__ == $0
+
 

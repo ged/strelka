@@ -18,8 +18,7 @@ class HelloWorldApp < Strelka::App
 	# Handle all GET requests the same way
 	get do |req|
 		res = req.response
-		res.status = HTTP::OK
-		res << 'Hello, world!'
+		res.puts 'Hello, world!'
 		return res
 	end
 

@@ -1,0 +1,8 @@
+# Foreman procfile
+mongrel: m2sh.rb -c mongrel2.sqlite start
+helloworld: ../bin/strelka -l info -c config.yml start hello-world
+auth: ../bin/strelka -l info -c config.yml start auth-demo
+auth2: ../bin/strelka -l info -c config.yml start auth-demo2
+sessions: ../bin/strelka -l info -c config.yml start sessions-demo
+# ws: ../bin/strelka -l info -c config.yml start ws-echo
+

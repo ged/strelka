@@ -39,5 +39,5 @@ class SessionsDemo < Strelka::App
 end # class SessionsDemo
 
 
-Strelka.load_config( 'examples/config.yml' )
-SessionsDemo.run
+SessionsDemo.run if __FILE__ == $0
+

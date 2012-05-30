@@ -1,3 +1,5 @@
+<?import request ?>
+
 <?publish title ?>Auth Successful<?end publish ?>
 
-<p>You succesfully authenticated as: <?call request.user ?></p>
+<p>You successfully authenticated as: <?call request.authenticated_user ?></p>

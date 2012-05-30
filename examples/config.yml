@@ -1,7 +1,10 @@
 mongrel2:
-  configdb: amalgalite://examples/mongrel2.sqlite
+  configdb: amalgalite://mongrel2.sqlite
 
 auth:
+  provider: basic
+
+basicauth:
   realm: Examples
   users:
     ged: "iEPX+SQWIR3p67lj/0zigSWTKHg="
@@ -16,4 +19,12 @@ sessions:
 templates:
   template_paths:
     - examples/templates
+
+logging:
+  strelka: debug (color)
+  inversion: info (color)
+  configurability: debug (color)
+  mongrel2: debug (color)
+
+
 

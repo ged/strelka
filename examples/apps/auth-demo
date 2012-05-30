@@ -9,10 +9,7 @@ class AuthDemo < Strelka::App
 	# The Mongrel2 appid of this app
 	ID = 'auth-demo'
 
-	plugin :auth
-	auth_provider :basic
-
-	plugin :routing
+	plugins :auth, :routing
 
 	### Handle any (authenticated) HTTP request
 	get do |req|
@@ -29,4 +26,5 @@ class AuthDemo < Strelka::App
 
 end # class AuthDemo
 
-AuthDemo.run
+AuthDemo.run if __FILE__ == $0
+
