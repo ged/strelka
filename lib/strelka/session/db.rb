@@ -62,38 +62,6 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### C L A S S   M E T H O D S
 	########################################################################
 
-	### Configure the session class with the given +options+, which should be a
-	### Hash or an object that has a Hash-like interface.
-	###
-	### Valid options (in addition to those ):
-	###
-	### [cookie_name]::
-	###   The name of the cookie to use for the session ID
-	### [cookie_options]::
-	###   Options to pass to Strelka::Cookie's constructor.
-	### [connect]::
-	###   The Sequel connection string; if nil, an in-memory DB will be used.
-	### [table_name]::
-	###   The name of the sessions table. Defaults to 'sessions'.
-	def self::configure( options=nil )
-		super
-
-		if options
-			self.table_name = options[:table_name]
-			self.db = options[ :connect ].nil? ?
-				 Mongrel2::Config.in_memory_db :
-				 Sequel.connect( options[:connect] )
-		else
-			self.table_name = CONFIG_DEFAULTS[:table_name]
-			self.db = Mongrel2::Config.in_memory_db
-		end
-
-		self.db.logger = Loggability[ Mongrel2 ].proxy_for( self.db )
-		self.db.sql_log_level = :debug
-		self.initialize_sessions_table
-	end
-
-
 	### Create the initial DB sessions schema if needed, setting the +sessions+
 	### attribute to a Sequel dataset on the configured DB table.
 	###
@@ -149,6 +117,38 @@ class Strelka::Session::Db < Strelka::Session::Default
 		id = self.get_existing_session_id( request ) or return false
 		return !self.dataset.filter( :session_id => id ).empty?
 	end
+
+	### Configure the session class with the given +options+, which should be a
+	### Hash or an object that has a Hash-like interface.
+	###
+	### Valid options (in addition to those ):
+	###
+	### [cookie_name]::
+	###   The name of the cookie to use for the session ID
+	### [cookie_options]::
+	###   Options to pass to Strelka::Cookie's constructor.
+	### [connect]::
+	###   The Sequel connection string; if nil, an in-memory DB will be used.
+	### [table_name]::
+	###   The name of the sessions table. Defaults to 'sessions'.
+	def self::configure( options=nil )
+		super
+
+		if options
+			self.table_name = options[:table_name]
+			self.db = options[ :connect ].nil? ?
+				 Mongrel2::Config.in_memory_db :
+				 Sequel.connect( options[:connect] )
+		else
+			self.table_name = CONFIG_DEFAULTS[:table_name]
+			self.db = Mongrel2::Config.in_memory_db
+		end
+
+		self.db.logger = Loggability[ Mongrel2 ].proxy_for( self.db )
+		self.db.sql_log_level = :debug
+		self.initialize_sessions_table
+	end
+
 
 end # class Strelka::Session::Db
 

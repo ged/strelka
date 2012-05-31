@@ -52,28 +52,6 @@ class Strelka::Session::Default < Strelka::Session
 	singleton_attr_accessor :cookie_options
 
 
-	### Configure the session class with the given +options+, which should be a
-	### Hash or an object that has a Hash-like interface.
-	###
-	### Valid keys:
-	###
-	### [\cookie_name]
-	###   The name of the cookie that will be used for persisting the session key.
-	### [\cookie_options]
-	###   A hash of options for the session cookie; see
-	###   {Strelka::Cookie}[rdoc-ref://Strelka::Cookie.new]
-	###   for available options.
-	def self::configure( config=nil )
-		if config
-			self.cookie_name = config[:cookie_name]
-			self.cookie_options = config[:cookie_options]
-		else
-			self.cookie_name = CONFIG_DEFAULTS[:cookie_name]
-			self.cookie_options = CONFIG_DEFAULTS[:cookie_options].dup
-		end
-	end
-
-
 	### Load a session instance from storage using the given +session_id+ and return
 	### it. Returns +nil+ if no session could be loaded.
 	def self::load_session_data( session_id )
@@ -122,6 +100,28 @@ class Strelka::Session::Default < Strelka::Session
 		id = self.get_existing_session_id( request ) or return false
 		self.log.debug "  got a session ID: %p" % [ id ]
 		return @sessions.key?( id )
+	end
+
+
+	### Configure the session class with the given +options+, which should be a
+	### Hash or an object that has a Hash-like interface.
+	###
+	### Valid keys:
+	###
+	### [\cookie_name]
+	###   The name of the cookie that will be used for persisting the session key.
+	### [\cookie_options]
+	###   A hash of options for the session cookie; see
+	###   {Strelka::Cookie}[rdoc-ref://Strelka::Cookie.new]
+	###   for available options.
+	def self::configure( config=nil )
+		if config
+			self.cookie_name = config[:cookie_name]
+			self.cookie_options = config[:cookie_options]
+		else
+			self.cookie_name = CONFIG_DEFAULTS[:cookie_name]
+			self.cookie_options = CONFIG_DEFAULTS[:cookie_options].dup
+		end
 	end
 
 
