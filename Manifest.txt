@@ -16,11 +16,12 @@ contrib/hoetemplate/data/project/templates/layout.tmpl.erb
 contrib/hoetemplate/data/project/templates/top.tmpl.erb
 contrib/hoetemplate/lib/file_name.rb.erb
 contrib/hoetemplate/spec/file_name_spec.rb.erb
-data/strelka/apps/hello-world
+examples/.env
+examples/Procfile
 examples/apps/auth-demo
 examples/apps/auth-demo2
+examples/apps/hello-world
 examples/apps/sessions-demo
-examples/apps/ws-echo
 examples/config.yml
 examples/gen-config.rb
 examples/static/examples.css
@@ -55,7 +56,6 @@ lib/strelka/httprequest/session.rb
 lib/strelka/httpresponse.rb
 lib/strelka/httpresponse/negotiation.rb
 lib/strelka/httpresponse/session.rb
-lib/strelka/logging.rb
 lib/strelka/mixins.rb
 lib/strelka/paramvalidator.rb
 lib/strelka/plugins.rb
@@ -94,7 +94,6 @@ spec/strelka/httprequest_spec.rb
 spec/strelka/httpresponse/negotiation_spec.rb
 spec/strelka/httpresponse/session_spec.rb
 spec/strelka/httpresponse_spec.rb
-spec/strelka/logging_spec.rb
 spec/strelka/mixins_spec.rb
 spec/strelka/paramvalidator_spec.rb
 spec/strelka/plugins_spec.rb
