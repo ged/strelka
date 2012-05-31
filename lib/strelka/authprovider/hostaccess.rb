@@ -45,7 +45,7 @@ class Strelka::AuthProvider::HostAccess < Strelka::AuthProvider
 		self.allowed_netblocks = DEFAULT_ALLOWED_NETBLOCKS
 
 		# Register this instance with Configurability
-		config_key :auth
+		config_key :hostaccess
 	end
 
 

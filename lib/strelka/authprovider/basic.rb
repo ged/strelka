@@ -1,7 +1,7 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
 
-require 'loggability'
+require 'openssl'
 require 'configurability'
 
 require 'strelka' unless defined?( Strelka )
@@ -31,17 +31,26 @@ require 'strelka/mixins'
 #       kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 #
 class Strelka::AuthProvider::Basic < Strelka::AuthProvider
-	extend Loggability,
-	       Configurability,
+	extend Configurability,
 	       Strelka::MethodUtilities
 	include Strelka::Constants
 
 	# Configurability API - set the section of the config
-	config_key :auth
+	config_key :basicauth
 
+	# Configurability API -- configuration defaults
+	CONFIG_DEFAULTS = {
+		realm: nil,
+		users: {},
+	}
 
-	@users = nil
-	@realm = nil
+	# The amount of work to do while encrypting -- higher number == more work == less suceptable
+	# to brute-force attacks
+	ENCRYPT_ITERATIONS = 20_000
+
+	# The Digest class to use when encrypting passwords
+	DIGEST_CLASS = OpenSSL::Digest::SHA256
+
 
 	##
 	# The Hash of users and their SHA1+Base64'ed passwords
@@ -54,11 +63,12 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 
 	### Configurability API -- configure the auth provider instance.
 	def self::configure( config=nil )
-		if config
+		if config && config[:realm]
 			self.log.debug "Configuring Basic authprovider: %p" % [ config ]
-			self.realm = config['realm'] if config['realm']
-			self.users = config['users'] if config['users']
+			self.realm = config[:realm]
+			self.users = config[:users]
 		else
+			self.log.warn "No 'basicauth' config section; using the (empty) defaults"
 			self.realm = nil
 			self.users = {}
 		end
@@ -131,5 +141,19 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 		header = "Basic realm=%s" % [ self.class.realm ]
 		finish_with( HTTP::AUTH_REQUIRED, "Requires authentication.", www_authenticate: header )
 	end
+
+
+	### (undocumented)
+	def encrypt( pass, salt=nil )
+		salt   ||= OpenSSL::Random.random_bytes( 16 ) #store this with the generated value
+		iter   = ENCRYPT_ITERATIONS
+		digest = DIGEST_CLASS.new
+		len    = digest.digest_length
+
+		value  = OpenSSL::PKCS5.pbkdf2_hmac( pass, salt, iter, len, digest )
+
+		return [ value, salt ].join( ':' )
+	end
+
 
 end # class Strelka::AuthProvider::Basic

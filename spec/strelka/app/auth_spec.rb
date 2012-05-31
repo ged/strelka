@@ -89,12 +89,12 @@ describe Strelka::App::Auth do
 		end
 
 
-		it "applies auth to every request by default" do
+		it "applies authentication and authorization to every request by default" do
 			app = @app.new
 			req = @request_factory.get( '/api/v1' )
 
 			app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-			app.auth_provider.should_receive( :authorize ).and_return( true )
+			app.auth_provider.should_receive( :authorize )
 
 			res = app.handle( req )
 
@@ -117,300 +117,584 @@ describe Strelka::App::Auth do
 		end
 
 		it "has its auth config inherited by subclasses" do
-			@app.class_eval do
-				auth_provider :hostaccess
-				authz_callback { true }
-			end
 			subclass = Class.new( @app )
 
-			subclass.auth_provider.should == @app.auth_provider
-			subclass.authz_callback.should == @app.authz_callback
 			subclass.positive_auth_criteria.should == @app.positive_auth_criteria
 			subclass.positive_auth_criteria.should_not equal( @app.positive_auth_criteria )
 			subclass.negative_auth_criteria.should == @app.negative_auth_criteria
 			subclass.negative_auth_criteria.should_not equal( @app.negative_auth_criteria )
+			subclass.positive_perms_criteria.should == @app.positive_perms_criteria
+			subclass.positive_perms_criteria.should_not equal( @app.positive_perms_criteria )
+			subclass.negative_perms_criteria.should == @app.negative_perms_criteria
+			subclass.negative_perms_criteria.should_not equal( @app.negative_perms_criteria )
 		end
 
 
-		context "that has negative auth criteria for the root" do
+		it "allows auth criteria to be declared with a string" do
+			@app.require_auth_for( '/string' )
+			app = @app.new
 
-			before( :each ) do
-				@app.no_auth_for( '/' )
+			req = @request_factory.get( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/strong' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/stri' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/string/long' )
+			app.request_should_auth?( req ).should be_false()
+		end
+
+		it "allows auth criteria to be declared with a regexp" do
+			@app.require_auth_for( %r{/str[io]} )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/stri' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/stro' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/string' ) # not right-bound
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/string/long' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/chatlog' ) # Not left-bound
+			app.request_should_auth?( req ).should be_false()
+		end
+
+		it "allows auth criteria to be declared with a string and a block" do
+			@app.require_auth_for( 'string' ) do |req|
+				req.verb != :GET
 			end
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.post( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.put( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.delete( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.options( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+		end
+
+		it "allows auth criteria to be declared with a regexp and a block" do
+			@app.require_auth_for( %r{/regexp(?:/(?<username>\w+))?} ) do |req, match|
+				match[:username] ? true : false
 			end
 
-			it "doesn't pass a request for the root path through auth" do
-				req = @request_factory.get( '/api/v1/' )
+			app = @app.new
 
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
+			req = @request_factory.get( '/api/v1/regexp' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/regexp/a_username' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
+			app.request_should_auth?( req ).should be_false()
+		end
 
-				app.handle( req )
+		it "allows auth criteria to be declared with just a block" do
+			@app.require_auth_for do |req|
+				path = req.app_path.gsub( %r{^/+|/+$}, '' )
+
+				(
+					path == 'strong' or
+					path =~ %r{^marlon_brando$}i or
+					req.verb == :POST or
+					req.content_type == 'application/x-www-form-urlencoded'
+				)
 			end
 
-			it "passes a request for a path other than the root through auth" do
-				req = @request_factory.get( '/api/v1/console' )
+			app = @app.new
 
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
+			req = @request_factory.get( '/api/v1/strong' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/marlon_brando' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.post( '/api/v1/somewhere' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.put( '/api/v1/somewhere' )
+			req.content_type = 'application/x-www-form-urlencoded'
+			app.request_should_auth?( req ).should be_true()
 
-				app.handle( req )
-			end
+			req = @request_factory.get( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/marlon_brando/2' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.put( '/api/v1/somewhere' )
+			app.request_should_auth?( req ).should be_false()
 
 		end
 
-		context "that has negative auth criteria" do
 
-			before( :each ) do
-				@app.no_auth_for( '/login' )
+		it "allows negative auth criteria to be declared with a string" do
+			@app.no_auth_for( '/string' )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/strong' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/stri' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/string/long' )
+			app.request_should_auth?( req ).should be_true()
+		end
+
+		it "allows negative auth criteria to be declared with a regexp" do
+			@app.no_auth_for( %r{/str[io]} )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/stri' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/stro' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/string' ) # not right-bound
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/string/long' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/chat' )
+			app.request_should_auth?( req ).should be_true()
+		end
+
+		it "allows negative auth criteria to be declared with a string and a block" do
+			@app.no_auth_for( 'string' ) do |req|
+				Strelka.log.debug "Checking request verb: %p" % [ req.verb ]
+				req.verb == :GET
 			end
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_false()
+			req = @request_factory.get( '/api/v1/strong' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.post( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.put( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.delete( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.options( '/api/v1/string' )
+			app.request_should_auth?( req ).should be_true()
+		end
+
+		it "allows negative auth criteria to be declared with a regexp and a block" do
+			@app.no_auth_for( %r{/regexp(?:/(?<username>\w+))?} ) do |req, match|
+				match[:username] == 'guest'
 			end
 
-			it "doesn't pass a request that matches through auth" do
-				req = @request_factory.get( '/api/v1/login' )
+			app = @app.new
 
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
+			req = @request_factory.get( '/api/v1/regexp' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/regexp/a_username' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/regexp/guest' )
+			app.request_should_auth?( req ).should be_false()
+		end
 
-				app.handle( req )
+		it "allows negative auth criteria to be declared with just a block" do
+			@app.no_auth_for do |req|
+				req.app_path == '/foom' &&
+				req.verb == :GET &&
+				req.headers.accept.include?( 'text/plain' )
 			end
 
-			it "passes a request that doesn't match through auth" do
-				req = @request_factory.get( '/api/v1/console' )
+			app = @app.new
 
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
+			req = @request_factory.get( '/api/v1/foom' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.post( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
+			app.request_should_auth?( req ).should be_true()
+			req = @request_factory.get( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
+			app.request_should_auth?( req ).should be_false()
 
 		end
 
-		context "that has a negative auth criteria block" do
 
-			before( :each ) do
-				@app.no_auth_for do |req|
-					req.notes[:skip_auth]
+		it "allows perms criteria to be declared with a string" do
+			@app.require_perms_for( '/string', :stringperm )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.required_perms_for( req ).should == [ :stringperm ]
+			req = @request_factory.get( '/api/v1/strong' )
+			app.required_perms_for( req ).should == []
+		end
+
+		it "allows perms criteria to be declared with a regexp" do
+			@app.require_perms_for( %r{^/admin}, :admin )
+			@app.require_perms_for( %r{/grant}, :grant )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/admin' )
+			app.required_perms_for( req ).should == [ :admin ]
+			req = @request_factory.get( '/api/v1/admin/grant' )
+			app.required_perms_for( req ).should == [ :admin, :grant ]
+			req = @request_factory.get( '/api/v1/users' )
+			app.required_perms_for( req ).should == []
+			req = @request_factory.get( '/api/v1/users/grant' )
+			app.required_perms_for( req ).should == [ :grant ]
+		end
+
+		it "allows perms criteria to be declared with a string and a block" do
+			@app.require_perms_for( '/string' ) do |req|
+				perms = [:stringperm, :otherperm]
+				perms << :rawdata if req.headers.accept && req.headers.accept =~ /json/i
+				perms
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.required_perms_for( req ).should == [ :stringperm, :otherperm ]
+			req = @request_factory.get( '/api/v1/strong' )
+			app.required_perms_for( req ).should == []
+		end
+
+		it "allows perms criteria to be declared with a regexp and a block" do
+			@app.require_perms_for( %r{^/admin(/(?<username>\w+))?} ) do |req, match|
+				perms = [:admin]
+				perms << match[:username].to_sym if match[:username]
+				perms
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/admin' )
+			app.required_perms_for( req ).should == [ :admin ]
+			req = @request_factory.get( '/api/v1/admin/jzero' )
+			app.required_perms_for( req ).should == [ :admin, :jzero ]
+			req = @request_factory.get( '/api/v1/users' )
+			app.required_perms_for( req ).should == []
+		end
+
+		it "allows perms criteria to be declared with just a block" do
+			@app.require_perms_for do |req|
+				req.app_path.scan( %r{/(\w+)} ).flatten.map( &:to_sym )
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/admin' )
+			app.required_perms_for( req ).should == [ :admin ]
+			req = @request_factory.get( '/api/v1/admin/jzero' )
+			app.required_perms_for( req ).should == [ :admin, :jzero ]
+			req = @request_factory.get( '/api/v1/users' )
+			app.required_perms_for( req ).should == [ :users ]
+		end
+
+		it "allows negative perms criteria to be declared with a string" do
+			@app.no_perms_for( '/string' )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/string' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/strong' )
+			app.required_perms_for( req ).should == [ :auth_test ] # default == appid
+		end
+
+		it "allows negative perms criteria to be declared with a regexp" do
+			@app.no_perms_for( %r{^/signup} )
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/signup' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/signup/reapply' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/index' )
+			app.required_perms_for( req ).should == [ :auth_test ]
+		end
+
+		it "allows negative perms criteria to be declared with a string and a block" do
+			@app.no_perms_for( '/' ) do |req|
+				req.verb == :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.post( '/api/v1' )
+			app.required_perms_for( req ).should == [ :auth_test ] # default == appid
+			req = @request_factory.get( '/api/v1/users' )
+			app.required_perms_for( req ).should == [ :auth_test ]
+		end
+
+		it "allows negative perms criteria to be declared with a regexp and a block" do
+			@app.no_perms_for( %r{^/collection/(?<collname>[^/]+)} ) do |req, match|
+				public_collections = %w[degasse ione champhion]
+				collname = match[:collname]
+				if public_collections.include?( collname )
+					true
+				else
+					false
 				end
 			end
+			app = @app.new
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
-			end
-
-			it "doesn't pass a request for which the block returns true through auth" do
-				req = @request_factory.get( '/api/v1/login' )
-				req.notes[:skip_auth] = true
-
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
-
-				app.handle( req )
-			end
-
-			it "passes a request for which the block returns false through auth" do
-				req = @request_factory.get( '/api/v1/login' )
-				req.notes[:skip_auth] = false
-
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
-
+			req = @request_factory.get( '/api/v1/collection' )
+			app.required_perms_for( req ).should == [ :auth_test ]
+			req = @request_factory.get( '/api/v1/collection/degasse' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/collection/ione' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/collection/champhion' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/collection/calindra' )
+			app.required_perms_for( req ).should == [ :auth_test ]
 		end
 
-
-		context "that has a negative auth criteria with both a pattern and a block" do
-
-			before( :each ) do
-				@app.no_auth_for( %r{^/login/(?<username>\w+)} ) do |req, match|
-					match[:username] != 'validuser'
-				end
+		it "allows negative perms criteria to be declared with just a block" do
+			@app.no_perms_for do |req|
+				intranet = IPAddr.new( '10.0.0.0/8' )
+				intranet.include?( req.remote_ip )
 			end
+			app = @app.new
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
-			end
-
-			it "doesn't pass a request through auth if the path matches and the block returns true" do
-				req = @request_factory.get( '/api/v1/login/lyssa' )
-
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
-
-				app.handle( req )
-			end
-
-			it "passes a request through auth if the path doesn't match" do
-				req = @request_factory.get( '/api/v1/console' )
-
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
-
-			it "passes a request through auth if the path matches, but the the block returns false" do
-				req = @request_factory.get( '/api/v1/login/validuser' )
-
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
-
+			req = @request_factory.get( '/api/v1/collection', x_forwarded_for: '10.0.1.68' )
+			app.required_perms_for( req ).should be_empty()
+			req = @request_factory.get( '/api/v1/collection', x_forwarded_for: '192.0.43.10' )
+			app.required_perms_for( req ).should == [ :auth_test ]
 		end
 
 
 		context "that has positive auth criteria" do
 
 			before( :each ) do
-				@app.require_auth_for( '/login' )
+				@app.require_auth_for( '/onlyauth' )
+				@app.require_auth_for( '/both' )
 			end
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
-			end
+			context "and positive perms criteria" do
 
-			it "passes requests that match through auth" do
-				req = @request_factory.get( '/api/v1/login' )
-
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
-
-			it "doesn't pass requests that don't match through auth" do
-				req = @request_factory.get( '/api/v1/console' )
-
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
-
-				app.handle( req )
-			end
-		end
-
-
-		context "that has a positive auth criteria block" do
-
-			before( :each ) do
-				@app.require_auth_for do |req|
-					req.notes[:require_auth]
+				before( :each ) do
+					@app.require_perms_for( '/both' )
+					@app.require_perms_for( '/onlyperms' )
 				end
-			end
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
-			end
+				it "authorizes a request that only matches the perms criteria" do
+					req = @request_factory.get( '/api/v1/onlyperms' )
 
-			it "passes requests for which the block returns true through auth" do
-				req = @request_factory.get( '/api/v1/login' )
-				req.notes[:require_auth] = true
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
 
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
-
-				app.handle( req )
-			end
-
-			it "doesn't pass requests for which the block returns false through auth" do
-				req = @request_factory.get( '/api/v1/console' )
-				req.notes[:require_auth] = false
-
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
-
-				app.handle( req )
-			end
-		end
-
-
-		context "that has a positive auth criteria with both a pattern and a block" do
-
-			before( :each ) do
-				@app.require_auth_for( %r{^/login/(?<username>\w+)} ) do |req, match|
-					match[:username] != 'guest'
+					app.handle( req )
 				end
+
+				it "authenticates a request that only matches the auth criteria" do
+					req = @request_factory.get( '/api/v1/onlyauth' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "authenticates and authorizes a request that matches both" do
+					req = @request_factory.get( '/api/v1/both' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "doesn't do either for a request that doesn't match either" do
+					req = @request_factory.get( '/api/v1/neither' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
 			end
 
-			it "knows that it has auth criteria" do
-				@app.should have_auth_criteria()
-			end
+			context "and negative perms criteria" do
 
-			it "passes a request through auth if the path matches and the block returns true" do
-				req = @request_factory.get( '/api/v1/login/lyssa' )
+				before( :each ) do
+					@app.no_perms_for( '/both' )
+					@app.no_perms_for( '/onlyperms' )
+				end
 
-				app = @app.new
-				app.auth_provider.should_receive( :authenticate ).and_return( 'lyssa' )
-				app.auth_provider.should_receive( :authorize ).and_return( true )
+				it "doesn't do either for a request that only matches the perms criteria" do
+					req = @request_factory.get( '/api/v1/onlyperms' )
 
-				app.handle( req )
-			end
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
 
-			it "doesn't pass a request through auth if the path doesn't match" do
-				req = @request_factory.get( '/api/v1/console' )
+					app.handle( req )
+				end
 
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
+				it "authenticates and authorizes a request that only matches the auth criteria"do
+					req = @request_factory.get( '/api/v1/onlyauth' )
 
-				app.handle( req )
-			end
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
 
-			it "doesn't pass a request through auth if the path matches, but the the block returns false" do
-				req = @request_factory.get( '/api/v1/login/guest' )
+					app.handle( req )
+				end
 
-				app = @app.new
-				app.auth_provider.should_not_receive( :authenticate )
-				app.auth_provider.should_not_receive( :authorize )
+				it "only authenticates a request that matches both" do
+					req = @request_factory.get( '/api/v1/both' )
 
-				app.handle( req )
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "only authorizes a request that doesn't match either" do
+					req = @request_factory.get( '/api/v1/neither' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
 			end
 
 		end
 
 
-		it "can register an authorization callback with a block" do
-			@app.authz_callback { :authz }
-			@app.authz_callback.should be_a( Proc )
-		end
-
-		it "can register an authorization callback with a callable object" do
-			callback = Proc.new { :authz }
-			@app.authz_callback( callback )
-			@app.authz_callback.should == callback
-		end
-
-
-		context "that has an authz callback" do
+		context "that has negative auth criteria" do
 
 			before( :each ) do
-				@app.authz_callback {  }
+				@app.no_auth_for( '/onlyauth' )
+				@app.no_auth_for( '/both' )
 			end
 
-			it "yields authorization to the callback if authentication succeeds"
-			it "responds with a 403 Forbidden response if the block doesn't return true"
+			context "and positive perms criteria" do
+
+				before( :each ) do
+					@app.require_perms_for( '/both' )
+					@app.require_perms_for( '/onlyperms' )
+				end
+
+				it "authenticates and authorizes a request that only matches the perms criteria" do
+					req = @request_factory.get( '/api/v1/onlyperms' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "doesn't do either for a request that only matches the auth criteria" do
+					req = @request_factory.get( '/api/v1/onlyauth' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "authorizes a request that matches both" do
+					req = @request_factory.get( '/api/v1/both' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "authenticates a request that doesn't match either" do
+					req = @request_factory.get( '/api/v1/neither' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+			end
+
+			context "and negative perms criteria" do
+
+				before( :each ) do
+					@app.no_perms_for( '/both' )
+					@app.no_perms_for( '/onlyperms' )
+				end
+
+				it "authenticates for a request that only matches the perms criteria" do
+					req = @request_factory.get( '/api/v1/onlyperms' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "authorizes a request that only matches the auth criteria" do
+					req = @request_factory.get( '/api/v1/onlyauth' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "doesn't do either for a request that matches both" do
+					req = @request_factory.get( '/api/v1/both' )
+
+					app = @app.new
+					app.auth_provider.should_not_receive( :authenticate )
+					app.auth_provider.should_not_receive( :authorize )
+
+					app.handle( req )
+				end
+
+				it "authenticates and authorizes a request that doesn't match either" do
+					req = @request_factory.get( '/api/v1/neither' )
+
+					app = @app.new
+					app.auth_provider.should_receive( :authenticate )
+					app.auth_provider.should_receive( :authorize )
+
+					app.handle( req )
+				end
+
+			end
+
+		end
+
+
+		context "that has overlapping perms criteria" do
+
+			before( :each ) do
+				@app.require_perms_for( %r{^/admin.*}, :admin )
+				@app.require_perms_for( %r{^/admin/upload.*}, :upload )
+			end
+
+			it "authorizes with a union of the permissions of both of the criteria" do
+				req = @request_factory.get( '/api/v1/admin/upload' )
+
+				app = @app.new
+				app.auth_provider.stub!( :authenticate ).and_return( :credentials )
+				app.auth_provider.should_receive( :authorize ).with( :credentials, req, [:admin, :upload] )
+
+				app.handle( req )
+			end
 
 		end
 

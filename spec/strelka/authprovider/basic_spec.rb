@@ -31,8 +31,8 @@ describe Strelka::AuthProvider::Basic do
 		@app = stub( "Strelka::App", :conn => stub("Connection", :app_id => 'test-app') )
 		@provider = Strelka::AuthProvider.create( :basic, @app )
 		@config = {
-			'realm' => 'Pern',
-			'users' => {
+			:realm => 'Pern',
+			:users => {
 				"lessa" => "8wiomemUvH/+CX8UJv3Yhu+X26k=",
 				"f'lar" => "NSeXAe7J5TTtJUE9epdaE6ojSYk=",
 			}
@@ -70,8 +70,8 @@ describe Strelka::AuthProvider::Basic do
 
 	it "can be configured via the Configurability API" do
 		described_class.configure( @config )
-		described_class.realm.should == @config['realm']
-		described_class.users.should == @config['users']
+		described_class.realm.should == @config[:realm]
+		described_class.users.should == @config[:users]
 	end
 
 

@@ -11,7 +11,6 @@ require 'strelka/plugins'
 require 'strelka/httprequest/auth'
 require 'strelka/authprovider'
 
-
 # Pluggable authentication and authorization for Strelka applications.
 #
 # Enabling the +:auth+ plugin by default causes all requests to your
@@ -30,6 +29,13 @@ require 'strelka/authprovider'
 # should be in a file named <tt>lib/strelka/authprovider/<mytype>.rb</tt>. They
 # can implement one or both of the stages; see the API docs for Strelka::AuthProvider
 # for details on how to write your own plugin.
+#
+# The provider for an application can be specified in the Configurability config file
+# under the 'auth' section:
+#
+#     ---
+#     auth:
+#       provider: basic
 #
 #
 # == Applying Authentication
@@ -123,20 +129,41 @@ require 'strelka/authprovider'
 # itself (especially a custom one), but typically authorization is particular to an application and
 # even particular actions within the application.
 #
-# To provide the particulars for your app's authorization, you can declare
-# a block with the +authz_callback+ directive.
+# To facilitate mapping out what actions are available to whom, there is a
+# declaration similar to require_auth_for that can define a set of permissions
+# that are necessary for a request to be allowed:
 #
-#    authz_callback do |request, user, *other_auth_info|
-#        user.can?( request.app_path )
-#    end
+#    # The app ID, which is the default permission
+#    ID = 'gemserver'
 #
-# The block will be called once authentication has succeeded, and any general authorization has been
-# checked. It will be called with at least the credentials object returned from the authentication
-# stage and the request object. Some AuthProviders may opt to return authentication credentials
-# as a User object of some kind (e.g., a database row, LDAP entry, model object, etc.), but the
-# simpler ones just return the login of the authenticated +user+. The AuthProvider may also
-# furnish additional useful arguments such as a database handle, permission objects, etc. to your
-# authorization block. See the documentation for your chosen AuthProvider for details.
+#    # GET /app/admin/upload/install would require:
+#    #   :gemserver, :admin, :upload, and :install
+#    # permissions. What those mean is up to the AuthProvider.
+#    require_perms_for ''
+#    require_perms_for %r{^/admin.*}, :admin
+#    require_perms_for %r{/upload}, :upload
+#    require_perms_for %r{/install}, :install
+#
+# and its negative corollary:
+#
+#    no_perms_for '/login'
+#
+# Incoming requests are matched against +require_perms_for+ patterns, and the union
+# of all matching permissions is gathered, then any +no_auth_for+ patterns
+# are used to remove permissions from that set.
+#
+# If no require_perms_for patterns are declared, authorization is not checked, unless there is
+# at least one no_perms_for pattern, in which case all requests that don't match the negative
+# patterns are checked (with the permission set to the ID of the app).
+#
+# Authorization will be checked once authentication has succeeded. It will be called with at least the
+# credentials object returned from the authentication stage and the request object. Some AuthProviders
+# may opt to return authentication credentials as a User object of some kind (e.g., a database row,
+# LDAP entry, model object, etc.), but the simpler ones just return the login of the authenticated
+# +user+. The AuthProvider may also furnish additional useful arguments such as a database handle,
+# permission objects, etc. to your authorization block. See the documentation for your chosen
+# AuthProvider for details.
+#
 #
 # == Customizing Failure
 #
@@ -151,11 +178,10 @@ require 'strelka/authprovider'
 #
 # If you're using form-based session authentication (as opposed to basic
 # auth, which has its own UI), you can rewrite the response to instruct
-# the browser to go to a static HTML form instead:
+# the browser to go to a static HTML form instead using the <tt>:errors</tt> plugin:
 #
 #    class FormAuthApp < Strelka::App
 #        plugins :errors, :auth, :sessions
-#        auth_provider :session
 #
 #        on_status HTTP::AUTH_REQUIRED do |res, status|
 #            formuri = res.request.uri
@@ -178,7 +204,6 @@ require 'strelka/authprovider'
 #
 #    class TemplateFormAuthApp < Strelka::App
 #        plugins :auth, :errors, :templating
-#        auth_provider :session
 #
 #        layout 'examples/layout.tmpl'
 #        templates \
@@ -194,58 +219,18 @@ require 'strelka/authprovider'
 #
 #    end
 #
-# == Examples
-#
-# Here are a few more examples using a few different AuthProviders.
-#
-#    # Guard every request the app does behind a simple passphrase
-#    class MyGuardedApp < Strelka::App
-#        plugins :auth
-#
-#        auth_provider :passphrase
-#    end
-#
-#    # Require LDAP authentication for one route
-#    class MyGuardedApp < Strelka::App
-#        plugins :auth, :routing
-#
-#        auth_provider :ldap
-#        authz_callback do |user, request, directory|
-#            authgroup = directory.ou( :appperms ).cn( :guarded_app )
-#            authgroup.members.include?( user.dn )
-#        end
-#
-#        authenticated %r{^/admin}
-#    end
-#
-#    # Use a user table in a PostgreSQL database for authentication for
-#    # all routes except one
-#    class MyGuardedApp < Strelka::App
-#        plugins :auth
-#
-#        auth_provider :sequel
-#        authz_callback do |user, request, db|
-#            db[:permissions].filter( :user_id => user[:id] ).
-#                filter( :permname => 'guardedapp' )
-#        end
-#
-#        unauthenticated %r{^/auth}
-#
-#        # Only authenticated users can use this
-#        post '/servers' do
-#            # ...
-#        end
-#    end
-#
 module Strelka::App::Auth
 	extend Strelka::Plugin,
 	       Strelka::MethodUtilities,
-	       Loggability
+	       Loggability,
+		   Configurability
 	include Strelka::Constants
 
 	# Loggability API -- set up logging under the 'strelka' log host
 	log_to :strelka
 
+	# Configurability API -- configure the auth plugin via the 'auth' section of the config
+	config_key :auth
 
 	# Plugins API -- Set up load order
 	run_before :routing, :restresources
@@ -255,57 +240,86 @@ module Strelka::App::Auth
 	# The name of the default plugin to use for authentication
 	DEFAULT_AUTH_PROVIDER = :hostaccess
 
+	# Configuration defaults
+	CONFIG_DEFAULTS = {
+		provider: DEFAULT_AUTH_PROVIDER,
+	}
+
+
+
+	##
+	# The Array of apps that have had the auth plugin installed; this is used to
+	# set up the AuthProvider when the configuration loads later.
+	singleton_attr_accessor :extended_apps
+	self.extended_apps = []
+
+
+	### Configurability API -- configure the Auth plugin via the 'auth' section of the
+	### unified config.
+	def self::configure( config=nil )
+		if config && config.provider?
+			self.log.debug "Setting up the %p AuthProvider for apps: %p" %
+				[ config.provider, self.extended_apps ]
+			self.extended_apps.each {|app| app.auth_provider = config.provider }
+		else
+			self.log.notice "Setting up the default AuthProvider for apps %p" % [ self.extended_apps ]
+			self.extended_apps.each {|app| app.auth_provider = DEFAULT_AUTH_PROVIDER }
+		end
+	end
+
 
 	# Class methods to add to app classes that enable Auth
 	module ClassMethods
 
-		@auth_provider          = nil
-		@authz_callback         = nil
-		@positive_auth_criteria = {}
-		@negative_auth_criteria = {}
+		### Extension callback -- register objects that are extended so when the
+		### auth plugin is configured, it can set the configured auto provider.
+		def self::extended( obj )
+			super
+			Strelka::App::Auth.extended_apps << obj
+			obj.auth_provider = Strelka::App::Auth::DEFAULT_AUTH_PROVIDER
+		end
+
+
+		@auth_provider           = nil
+
+		@positive_auth_criteria  = {}
+		@negative_auth_criteria  = {}
+
+		@positive_perms_criteria = {}
+		@negative_perms_criteria = {}
+
 
 		##
-		# Arrays of criteria for applying and skipping auth for a request.
+		# The Strelka::AuthProvider subclass that will be used to provide authentication and
+		# authorization to instances of the app.
+		attr_reader :auth_provider
+
+		##
+		# Hashes of criteria for applying and skipping auth for a request, keyed by request pattern
 		attr_reader :positive_auth_criteria, :negative_auth_criteria
+
+		##
+		# Hashes of criteria for applying and skipping authorization for a request, keyed by request pattern
+		attr_reader :positive_perms_criteria, :negative_perms_criteria
 
 
 		### Extension callback -- add instance variables to extending objects.
 		def inherited( subclass )
 			super
 			subclass.instance_variable_set( :@auth_provider, @auth_provider )
-			subclass.instance_variable_set( :@authz_callback, @authz_callback.dup ) if @authz_callback
 			subclass.instance_variable_set( :@positive_auth_criteria, @positive_auth_criteria.dup )
 			subclass.instance_variable_set( :@negative_auth_criteria, @negative_auth_criteria.dup )
+			subclass.instance_variable_set( :@positive_perms_criteria, @positive_perms_criteria.dup )
+			subclass.instance_variable_set( :@negative_perms_criteria, @negative_perms_criteria.dup )
 		end
 
 
-		### Get/set the authentication type.
-		def auth_provider( type=nil )
-			if type
-				@auth_provider = Strelka::AuthProvider.get_subclass( type )
-			end
-
-			self.log.debug "Auth provider %p" % [ @auth_provider ]
-			@auth_provider ||= Strelka::AuthProvider.get_subclass( DEFAULT_AUTH_PROVIDER )
-			self.log.debug "Auth provider %p" % [ @auth_provider ]
+		### Get/set the AuthProvider for the app to +type+, where +type+ can be an AuthProvider
+		### class object or the name of one.
+		def auth_provider=( type )
+			@auth_provider = Strelka::AuthProvider.get_subclass( type )
+			self.log.debug "Auth provider set to %p" % [ @auth_provider ]
 			return @auth_provider
-		end
-
-
-        ### Register a function to call after the user successfully authenticates to check
-        ### for authorization or other criteria.  The arguments to the function depend on
-        ### which authentication plugin is used. Returning +true+ from this function will
-        ### cause authorization to succeed, while returning a false value causes it to fail
-        ### with a FORBIDDEN response.  If no callback is set, and the provider doesn't
-        ### provide authorization
-		def authz_callback( callable=nil, &block )
-			if callable
-				@authz_callback = callable
-			elsif block
-				@authz_callback = block
-			end
-
-			return @authz_callback
 		end
 
 
@@ -329,13 +343,19 @@ module Strelka::App::Auth
 			return !self.negative_auth_criteria.empty?
 		end
 
-
-		### Constrain auth to apply only to requests which match the given +criteria+,
-		### and/or the given +block+. The +criteria+ are either Strings or Regexps
-		### which are tested against
-		### {the request's #app_path}[rdoc-ref:Strelka::HTTPRequest#app_path]. The block
-		### should return a true-ish value if the request should undergo authentication
-		### and authorization.
+		### :call-seq:
+		###   require_auth_for( string )
+		###   require_auth_for( regexp )
+		###   require_auth_for { |request| ... }
+		###   require_auth_for( string ) { |request| ... }
+		###   require_auth_for( regexp ) { |request, matchdata| ... }
+		###
+		### Constrain authentication to apply only to requests whose
+		### {#app_path}[rdoc-ref:Strelka::HTTPRequest#app_path] matches
+		### the given +string+ or +regexp+, and/or for which the given +block+ returns
+		### a true value. +regexp+ patterns are matched as-is, and +string+ patterns are
+		### matched exactly via <tt>==</tt> after stripping leading and trailing '/' characters
+		### from both it and the #app_path.
 		### *NOTE:* using this declaration inverts the default security policy of
 		### restricting access to all requests.
 		def require_auth_for( *criteria, &block )
@@ -355,8 +375,17 @@ module Strelka::App::Auth
 		end
 
 
-		### Contrain auth to apply to all requests *except* those that match the
-		### given +criteria+.
+		### :call-seq:
+		###   no_auth_for( string )
+		###   no_auth_for( regexp )
+		###   no_auth_for { |request| ... }
+		###   no_auth_for( string ) { |request| ... }
+		###   no_auth_for( regexp ) { |request, matchdata| ... }
+		###
+		### Constrain authentication to apply to requests *except* those whose
+		### {#app_path}[rdoc-ref:Strelka::HTTPRequest#app_path] matches
+		### the given +string+ or +regexp+, and/or for which the given +block+ returns
+		### a true value.
 		def no_auth_for( *criteria, &block )
 			if self.has_positive_auth_criteria?
 				raise ScriptError,
@@ -373,6 +402,39 @@ module Strelka::App::Auth
 			end
 		end
 
+
+		### Constrain authorization to apply only to requests which match the given
+		### +pattern+. The +pattern+ is either a String or a Regexp which is tested against
+		### {the request's #app_path}[rdoc-ref:Strelka::HTTPRequest#app_path]. The +perms+ should
+		### be Symbols which indicate a set of permission types that must have been granted
+		### in order to carry out the request. The block should also return one or more
+		### permissions (as Symbols) if the request should undergo authorization, or nil
+		### if it should not.
+		### *NOTE:* using this declaration inverts the default security policy of
+		### restricting access to all requests.
+		def require_perms_for( pattern=nil, *perms, &block )
+			block ||= Proc.new { perms }
+
+			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+			self.log.debug "  adding require_perms (%p) for %p" % [ perms, pattern ]
+			self.positive_perms_criteria[ pattern ] = block
+		end
+
+
+		### Register one or more exceptions to the permissions policy in effect for
+		### requests whose {#app_path}[rdoc-ref:Strelka::HTTPRequest#app_path]
+		### matches the specified +pattern+. The +block+ form should return +true+ if the request
+		### it's called with should be allowed without authorization checks.
+		def no_perms_for( pattern=nil, &block )
+			raise LocalJumpError, "no block or pattern given" unless pattern || block
+
+			block   ||= Proc.new { true }
+			pattern ||= /(?##{block.object_id})/
+
+			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+			self.log.debug "  adding no_auth for %p" % [ pattern ]
+			self.negative_perms_criteria[ pattern ] = block
+		end
 
 	end # module ClassMethods
 
@@ -407,78 +469,18 @@ module Strelka::App::Auth
 	def handle_request( request, &block )
 		self.log.debug "[:auth] Wrapping request in auth with a %p" % [ self.auth_provider ]
 
-		self.authenticate_and_authorize( request ) if self.request_should_auth?( request )
+		self.authenticate_and_authorize( request )
 
 		super
 	end
 
 
-	#########
-	protected
-	#########
-
-	### Returns +true+ if the given +request+ requires authentication.
-	def request_should_auth?( request )
-		self.log.debug "Checking to see if Auth(entication/orization) should be applied for app_path: %p" %
-			[ request.app_path ]
-
-		# If there are positive criteria, return true if the request matches any of them,
-		# or false if they don't
-		if self.class.has_positive_auth_criteria?
-			criteria = self.class.positive_auth_criteria
-			self.log.debug "  checking %d positive auth criteria" % [ criteria.length ]
-			return criteria.any? do |pattern, block|
-				self.log.debug "    %p -> %p" % [ pattern, block ]
-				self.request_matches_criteria( request, pattern, &block )
-			end
-
-		# If there are negative criteria, return false if the request matches any of them,
-		# or true if they don't
-		elsif self.class.has_negative_auth_criteria?
-			criteria = self.class.negative_auth_criteria
-			self.log.debug "  checking %d negative auth criteria" % [ criteria.length ]
-			return !criteria.any? do |pattern, block|
-				self.log.debug "    %p -> %p" % [ pattern, block ]
-				self.request_matches_criteria( request, pattern, &block )
-			end
-
-		else
-			self.log.debug "  no auth criteria; default to requiring auth"
-			return true
-		end
-	end
-
-
-	### Returns +true+ if there are positive auth criteria and the +request+ matches
-	### at least one of them.
-	def request_matches_criteria( request, pattern )
-		case pattern
-		when nil
-			self.log.debug "  no pattern; calling the block"
-			return yield( request )
-
-		when Regexp
-			self.log.debug "  matching app_path with regexp: %p" % [ pattern ]
-			matchdata = pattern.match( request.app_path ) or return false
-			self.log.debug "  calling the block"
-			return yield( request, matchdata )
-
-		when String
-			self.log.debug "  matching app_path: %p" % [ pattern ]
-			request.app_path.gsub( %r{^/+|/+$}, '' ) == pattern or return false
-			self.log.debug "  calling the block"
-			return yield( request )
-
-		else
-			raise ScriptError, "don't know how to match a request with a %p" % [ pattern.class ]
-		end
-	end
-
-
 	### Process authentication and authorization for the specified +request+.
 	def authenticate_and_authorize( request )
-		credentials = self.provide_authentication( request )
+		credentials = nil
+		credentials = self.provide_authentication( request ) if self.request_should_auth?( request )
 		request.authenticated_user = credentials
+
 		self.provide_authorization( credentials, request )
 	end
 
@@ -494,12 +496,138 @@ module Strelka::App::Auth
 
 
 	### Process authorization for the given +credentials+ and +request+.
+	### The +credentials+ argument is the opaque return value from a valid authentication, or
+	### +nil+ if the request didn't require authentication.
 	def provide_authorization( credentials, request )
 		provider = self.auth_provider
-		callback = self.class.authz_callback
+		perms = self.required_perms_for( request )
+		self.log.debug "Perms required: %p" % [ perms ]
+		provider.authorize( credentials, request, perms ) unless perms.empty?
+	end
 
-		self.log.info "Authorizing using credentials: %p, callback: %p" % [ credentials, callback ]
-		provider.authorize( credentials, request, &callback )
+
+	### Returns +true+ if the given +request+ requires authentication.
+	def request_should_auth?( request )
+		self.log.debug "Checking to see if Auth(entication/orization) should be applied for app_path: %p" %
+			[ request.app_path ]
+
+		# If there are positive criteria, return true if the request matches any of them,
+		# or false if they don't
+		if self.class.has_positive_auth_criteria?
+			criteria = self.class.positive_auth_criteria
+			self.log.debug "  checking %d positive auth criteria" % [ criteria.length ]
+			return criteria.any? do |pattern, block|
+				self.request_matches_criteria( request, pattern, &block )
+			end
+			return false
+
+		# If there are negative criteria, return false if the request matches any of them,
+		# or true if they don't
+		elsif self.class.has_negative_auth_criteria?
+			criteria = self.class.negative_auth_criteria
+			self.log.debug "  checking %d negative auth criteria" % [ criteria.length ]
+			return false if criteria.any? do |pattern, block|
+				rval = self.request_matches_criteria( request, pattern, &block )
+				self.log.debug "    matched: %p -> %p" % [ pattern, block ] if rval
+				rval
+			end
+			return true
+
+		else
+			self.log.debug "  no auth criteria; default to requiring auth"
+			return true
+		end
+	end
+
+
+	### Return a permission Symbol derived from the app's ID.
+	def default_permission
+		return self.app_id.downcase.gsub(/\W+/, '_' ).to_sym
+	end
+
+
+	### Gather the set of permissions that apply to the specified +request+ and return
+	### them.
+	def required_perms_for( request )
+		self.log.debug "Gathering required perms for: %s %s" % [ request.verb, request.app_path ]
+
+		# Return the empty set if any negative auth criteria match
+		return [] if self.negative_perms_criteria_match?( request )
+
+		# If there aren't any positive criteria, default to requiring authorization with
+		# the app's ID as the permission
+		if self.class.positive_perms_criteria.empty?
+			return [ self.default_permission ]
+		end
+
+		# Apply positive auth criteria
+		return self.union_positive_perms_criteria( request )
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Returns +true+ if there are positive auth criteria and the +request+ matches
+	### at least one of them.
+	def request_matches_criteria( request, pattern )
+		self.log.debug "Testing request '%s %s' against pattern: %p" %
+			[ request.verb, request.app_path, pattern ]
+
+		case pattern
+		when nil
+			self.log.debug "  no pattern; calling the block"
+			return yield( request )
+
+		when Regexp
+			self.log.debug "  checking app_path with regexp: %p" % [ pattern ]
+			matchdata = pattern.match( request.app_path ) or return false
+			self.log.debug "  matched: calling the block"
+			return yield( request, matchdata )
+
+		when String
+			self.log.debug "  checking app_path: %p" % [ pattern ]
+			request.app_path.gsub( %r{^/+|/+$}, '' ) == pattern or return false
+			self.log.debug "  matched: calling the block"
+			return yield( request )
+
+		else
+			raise ScriptError, "don't know how to match a request with a %p" % [ pattern.class ]
+		end
+	end
+
+
+	### Returns +true+ if the +request+ matches at least one negative perms criteria
+	### whose block also returns +true+ when called.
+	def negative_perms_criteria_match?( request )
+		self.log.debug "  negative perm criteria: %p" % [ self.class.negative_perms_criteria ]
+		return self.class.negative_perms_criteria.any? do |pattern, block|
+			self.request_matches_criteria( request, pattern, &block )
+		end
+	end
+
+
+	### Find all positive perm criteria, calling each one's block with +request+ if its
+	### pattern matches +path+, and assembling a union of all the permission sets
+	### that result.
+	def union_positive_perms_criteria( request )
+		perms = []
+
+		self.log.debug "  positive perm criteria: %p" % [ self.class.positive_perms_criteria ]
+		self.class.positive_perms_criteria.each do |pattern, block|
+			newperms = self.request_matches_criteria( request, pattern, &block ) or next
+			newperms = Array( newperms )
+			newperms << self.default_permission if newperms.empty?
+
+			raise TypeError, "Permissions must be Symbols; got: %p" % [newperms] unless
+				newperms.all? {|perm| perm.is_a?(Symbol) }
+
+			self.log.debug "  found new perms: %p" % [ newperms ]
+			perms += newperms
+		end
+
+		return perms.compact.uniq
 	end
 
 
