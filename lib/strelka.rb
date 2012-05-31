@@ -33,16 +33,6 @@ module Strelka
 	require 'strelka/exceptions'
 	include Strelka::Constants
 
-	autoload :AuthProvider,   'strelka/authprovider'
-	autoload :Cookie,         'strelka/cookie'
-	autoload :CookieSet,      'strelka/cookieset'
-	autoload :ParamValidator, 'strelka/httpresponse'
-	autoload :Plugin,         'strelka/plugins'
-	autoload :PluginLoader,   'strelka/plugins'
-	autoload :PluginRegistry, 'strelka/plugins'
-	autoload :Router,         'strelka/router'
-	autoload :Session,        'strelka/session'
-
 	require 'strelka/app'
 	require 'strelka/httprequest'
 	require 'strelka/httpresponse'

@@ -137,6 +137,12 @@ module Strelka::App::Sessions
 	singleton_attr_reader :session_class
 
 
+	### Get the configured session class (Strelka::Session subclass)
+	def self::session_class=( newclass )
+		@session_class = Strelka::Session.get_subclass( newclass )
+	end
+
+
 	### Configurability API -- set up session type and options with values from
 	### the +config+.
 	def self::configure( config=nil )
@@ -147,12 +153,6 @@ module Strelka::App::Sessions
 			self.session_class = CONFIG_DEFAULTS[:session_class]
 		end
 
-	end
-
-
-	### Get the configured session class (Strelka::Session subclass)
-	def self::session_class=( newclass )
-		@session_class = Strelka::Session.get_subclass( newclass )
 	end
 
 

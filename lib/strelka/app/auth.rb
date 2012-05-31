@@ -262,7 +262,7 @@ module Strelka::App::Auth
 				[ config.provider, self.extended_apps ]
 			self.extended_apps.each {|app| app.auth_provider = config.provider }
 		else
-			self.log.notice "Setting up the default AuthProvider for apps %p" % [ self.extended_apps ]
+			self.log.warn "Setting up the default AuthProvider for apps %p" % [ self.extended_apps ]
 			self.extended_apps.each {|app| app.auth_provider = DEFAULT_AUTH_PROVIDER }
 		end
 	end
