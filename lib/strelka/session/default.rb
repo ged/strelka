@@ -12,45 +12,64 @@ require 'strelka/session'
 require 'strelka/mixins'
 
 # Default session class -- simple in-memory, cookie-based base-bones session.
-#
-# == Hash Interface
-#
-# The following methods are delegated to the inner Hash via the #namespaced_hash method:
-# #[], #[]=, #delete, #key?
 class Strelka::Session::Default < Strelka::Session
-	extend Loggability,
+	extend Configurability,
 	       Forwardable,
 	       Strelka::MethodUtilities,
 	       Strelka::Delegation
 	include Strelka::DataUtilities
 
+
+	##
+	# Configurability API -- use the 'defaultsession' section of the config
+	config_key :defaultsession
+
 	# Default configuration
-	DEFAULT_COOKIE_OPTIONS = {
-		:name => 'strelka-session'
+	CONFIG_DEFAULTS = {
+		cookie_name: 'strelka-session',
+		cookie_options: {
+			expires: "+1d",
+		}
 	}.freeze
 
 
 	# Class-instance variables
-	@cookie_options = DEFAULT_COOKIE_OPTIONS.dup
-	@sessions = {}
+	@sessions       = {}
+	@cookie_name    = CONFIG_DEFAULTS[:cookie_name]
+	@cookie_options = {}
 
 	##
 	# In-memory session store
 	singleton_attr_reader :sessions
 
 	##
-	# The configured session cookie parameters
+	# The name of the session cookie
+	singleton_attr_accessor :cookie_name
+
+	##
+	# Session cookie options; see {Strelka::Cookie}[rdoc-ref://Strelka::Cookie.new]
+	# for available options.
 	singleton_attr_accessor :cookie_options
 
 
 	### Configure the session class with the given +options+, which should be a
-	### Hash or an object that has a Hash-like interface. Sets cookie options
-	### for the session if the +:cookie+ key is set.
-	def self::configure( options=nil )
-		if options
-			self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
+	### Hash or an object that has a Hash-like interface.
+	###
+	### Valid keys:
+	###
+	### [\cookie_name]
+	###   The name of the cookie that will be used for persisting the session key.
+	### [\cookie_options]
+	###   A hash of options for the session cookie; see
+	###   {Strelka::Cookie}[rdoc-ref://Strelka::Cookie.new]
+	###   for available options.
+	def self::configure( config=nil )
+		if config
+			self.cookie_name = config[:cookie_name]
+			self.cookie_options = config[:cookie_options]
 		else
-			self.cookie_options = DEFAULT_COOKIE_OPTIONS.dup
+			self.cookie_name = CONFIG_DEFAULTS[:cookie_name]
+			self.cookie_options = CONFIG_DEFAULTS[:cookie_options].dup
 		end
 	end
 
@@ -77,7 +96,7 @@ class Strelka::Session::Default < Strelka::Session
 	### Try to fetch a session ID from the specified +request+, returning +nil+
 	### if there isn't one.
 	def self::get_existing_session_id( request )
-		cookie = request.cookies[ self.cookie_options[:name] ] or return nil
+		cookie = request.cookies[ self.cookie_name ] or return nil
 
 		if cookie.value =~ /^([[:xdigit:]]+)$/i
 			return $1.untaint
@@ -141,6 +160,7 @@ class Strelka::Session::Default < Strelka::Session
 	# to the application.
 	attr_reader :namespace
 
+	##
 	# Delegate Hash methods to whichever Hash is the current namespace
 	def_method_delegators :namespaced_hash, :[], :[]=, :delete, :key?
 
@@ -160,7 +180,7 @@ class Strelka::Session::Default < Strelka::Session
 		self.log.debug "Adding session cookie to the request."
 
 		session_cookie = Strelka::Cookie.new(
-			self.class.cookie_options[ :name ],
+			self.class.cookie_name,
 			self.session_id,
 			self.class.cookie_options
 		)

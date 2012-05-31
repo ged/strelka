@@ -28,7 +28,7 @@ describe Strelka::Session::Default do
 
 	before( :each ) do
 		described_class.configure
-		@cookie_name = described_class.cookie_options[:name]
+		@cookie_name = described_class.cookie_name
 	end
 
 	after( :each ) do
@@ -48,8 +48,8 @@ describe Strelka::Session::Default do
 
 
 	it "can be configured to store its session ID in a different cookie" do
-		described_class.configure( :cookie => {:name => 'buh-mahlon'} )
-		described_class.cookie_options[:name].should == 'buh-mahlon'
+		described_class.configure( :cookie_name => 'buh-mahlon' )
+		described_class.cookie_name.should == 'buh-mahlon'
 	end
 
 	it "can load sessions from and save sessions to its in-memory store" do

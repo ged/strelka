@@ -155,7 +155,23 @@ class Strelka::Cookie
 	#################################################################
 
 	### Create a new Strelka::Cookie object with the specified +name+ and
-	### +values+.
+	### +values+. Valid options are:
+	###
+	### [\version]
+	###   The cookie version. 0 (the default) is fine for most uses
+	### [\domain]
+	###   The domain the cookie belongs to.
+	### [\path]
+	###   The path the cookie applies to.
+	### [\secure]
+	###   The cookie's 'secure' flag.
+	### [\expires]
+	###   The cookie's expiration (a Time object). See expires= for valid
+	###   values.
+	### [\max_age]
+	###   The lifetime of the cookie, in seconds.
+	### [\comment]
+	###   Cookie comment; see #comment= for details.
 	def initialize( name, values, options={} )
 		values   = [ values ] unless values.is_a?( Array )
 		@name    = name

@@ -15,29 +15,43 @@ require 'strelka/session/default'
 # any database that Sequel supports.  It defaults to non-persistent, in memory Sqlite.
 #
 class Strelka::Session::Db < Strelka::Session::Default
-	extend Loggability,
+	extend Configurability,
 	       Forwardable,
 	       Strelka::MethodUtilities
 
-	# Loggability API -- set up logging under the 'strelka' log host
-	log_to :strelka
 
+	##
+	# Configurability API -- use the 'dbsession' section of the config
+	config_key :dbsession
+
+
+	# Configuration defaults
+	CONFIG_DEFAULTS = {
+		connect: nil,
+		table_name: 'sessions',
+		cookie_name: 'strelka-session',
+		cookie_options: {
+			expires: "+1d",
+		}
+	}
 
 	# Class-instance variables
 	@table_name   = :sessions
 	@db           = nil
 	@dataset      = nil
-	@cookie_options = {
-		:name => 'strelka-session'
-	}
+
 
 	##
 	# The Sequel dataset connection
-	singleton_attr_reader :db
+	singleton_attr_accessor :db
 
 	##
 	# The Sequel dataset for the sessions table
-	singleton_attr_reader :dataset
+	singleton_attr_accessor :dataset
+
+	##
+	# The name of the table to use for storing sessions
+	singleton_attr_accessor :table_name
 
 	##
 	# The configured session cookie parameters
@@ -51,21 +65,31 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### Configure the session class with the given +options+, which should be a
 	### Hash or an object that has a Hash-like interface.
 	###
-	### Valid options:
-	###    cookie     -> A hash that contains valid Strelka::Cookie options
-	###    connect    -> The Sequel connection string
-	###    table_name -> The name of the sessions table
-	def self::configure( options={} )
-		options ||= {}
+	### Valid options (in addition to those ):
+	###
+	### [cookie_name]::
+	###   The name of the cookie to use for the session ID
+	### [cookie_options]::
+	###   Options to pass to Strelka::Cookie's constructor.
+	### [connect]::
+	###   The Sequel connection string; if nil, an in-memory DB will be used.
+	### [table_name]::
+	###   The name of the sessions table. Defaults to 'sessions'.
+	def self::configure( options=nil )
+		super
 
-		self.cookie_options.merge!( options[:cookie] ) if options[:cookie]
-		@table_name      = options[:table_name]  || :sessions
+		if options
+			self.table_name = options[:table_name]
+			self.db = options[ :connect ].nil? ?
+				 Mongrel2::Config.in_memory_db :
+				 Sequel.connect( options[:connect] )
+		else
+			self.table_name = CONFIG_DEFAULTS[:table_name]
+			self.db = Mongrel2::Config.in_memory_db
+		end
 
-		@db = options[ :connect ].nil? ?
-			 Mongrel2::Config.in_memory_db :
-			 Sequel.connect( options[:connect] )
-		@db.logger = Loggability[ Mongrel2 ].proxy_for( @db )
-
+		self.db.logger = Loggability[ Mongrel2 ].proxy_for( self.db )
+		self.db.sql_log_level = :debug
 		self.initialize_sessions_table
 	end
 
@@ -74,12 +98,12 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### attribute to a Sequel dataset on the configured DB table.
 	###
 	def self::initialize_sessions_table
-		if self.db.table_exists?( @table_name )
+		if self.db.table_exists?( self.table_name )
 			self.log.debug "Using existing sessions table for %p" % [ db ]
 
 		else
 			self.log.debug "Creating new sessions table for %p" % [ db ]
-			self.db.create_table( @table_name ) do
+			self.db.create_table( self.table_name ) do
 				text :session_id, :index => true
 				text :session
 				timestamp :created
@@ -88,7 +112,7 @@ class Strelka::Session::Db < Strelka::Session::Default
 			end
 		end
 
-		@dataset = self.db[ @table_name ]
+		self.dataset = self.db[ self.table_name.to_sym ]
 	end
 
 

@@ -64,16 +64,18 @@ require 'strelka/httpresponse/session'
 #   # it uses
 #   sessions:
 #     session_class: default
-#     options:
+#
+#   defaultsession:
 #       cookie_name: acme-session
 #
-#   # Load a (hypothetical) Sequel-backed session type and point it
+#   # Use the database-backed session type and point it
 #   # at a database
 #   sessions:
-#     session_class: sequel
-#     options:
-#       db: "postgres://pg.example.com/db01"
-#       table: sessions
+#     session_class: db
+#
+#   dbsession:
+#       connect: "postgres://pg.example.com/db01"
+#       table_name: sessions
 #
 # The +type+ value will be used to look up the class (see Strelka::Session
 # for more information about how this works), and the +options+ section
@@ -95,15 +97,6 @@ module Strelka::App::Sessions
 	# Plugins API -- Specify load order; run as late as possible so other plugins
 	# can use the session
 	run_after :templating, :filters, :parameters
-
-
-	# Default options to pass to the session object
-	DEFAULT_OPTIONS = {}
-
-
-	##
-	# What session class to use (Class object)
-	singleton_attr_writer :session_class
 
 
 	# Class methods and instance variables to add to classes with sessions.
@@ -132,33 +125,34 @@ module Strelka::App::Sessions
 	end # module ClassMethods
 
 
+	# Default options to pass to the session object
+	CONFIG_DEFAULTS = {
+		session_class: 'default',
+	}
 
-	### Get the configured session class (Strelka::Session subclass)
-	def self::session_class
-		@session_class ||= Strelka::Session.get_subclass( :default )
-	end
+
+	##
+	# What session class to use (String, Symbol, or Class); passed to
+	# Strelka::Session.create.
+	singleton_attr_reader :session_class
 
 
 	### Configurability API -- set up session type and options with values from
 	### the +config+.
 	def self::configure( config=nil )
-		options = DEFAULT_OPTIONS.dup
-
 		# Figure out which session class is going to be used, or choose a default one
 		if config
-			self.session_class = Strelka::Session.get_subclass( config[:session_class] ) if
-				config.key?( :session_class )
-			if config[:options]
-				options.merge!( config[:options] ) do |key, oldval, newval|
-					oldval.merge( newval )
-				end
-			end
+			self.session_class = config[:session_class]
 		else
-			self.session_class = Strelka::Session.get_subclass( :default )
+			self.session_class = CONFIG_DEFAULTS[:session_class]
 		end
 
-		# Configure the session class if it can be
-		self.session_class.configure( options ) if self.session_class.respond_to?( :configure )
+	end
+
+
+	### Get the configured session class (Strelka::Session subclass)
+	def self::session_class=( newclass )
+		@session_class = Strelka::Session.get_subclass( newclass )
 	end
 
 

@@ -39,12 +39,7 @@ describe Strelka::App::Sessions do
 	describe "session-class loading" do
 		before( :all ) do
 			# First, hook the anonymous class up to the 'testing' name using the PluginFactory API
-			@test_session_class = Class.new( Strelka::Session ) do
-				class << self; attr_accessor :options; end
-				def self::configure( options )
-					@options = options
-				end
-			end
+			@test_session_class = Class.new( Strelka::Session )
 			Strelka::Session.derivatives[ 'testing' ] = @test_session_class
 		end
 
@@ -53,8 +48,8 @@ describe Strelka::App::Sessions do
 		end
 
 		it "has a default associated session class" do
-			Strelka::App::Sessions.session_class.should be_a( Class )
-			Strelka::App::Sessions.session_class.should < Strelka::Session
+			Strelka::App::Sessions.configure
+			Strelka::App::Sessions.session_class.should be( Strelka::Session::Default )
 		end
 
 		it "is can be configured to use a different session class" do
@@ -62,28 +57,14 @@ describe Strelka::App::Sessions do
 			Strelka::App::Sessions.session_class.should == @test_session_class
 		end
 
-		it "configures the configured session class with default options" do
-			Strelka::App::Sessions.configure( :session_class => 'testing' )
-			Strelka::App::Sessions.session_class.options.should == Strelka::App::Sessions::DEFAULT_OPTIONS
-		end
-
-		it "merges any config options for the configured session class" do
-			options = { 'cookie_name' => 'patience' }
-			Strelka::App::Sessions.configure( :session_class => 'testing', :options => options )
-			Strelka::App::Sessions.session_class.options.
-				should == Strelka::App::Sessions::DEFAULT_OPTIONS.merge( options )
-		end
-
-		it "uses the default session class if the config doesn't have a session section" do
-			Strelka::App::Sessions.configure
-			Strelka::App::Sessions.session_class.should be( Strelka::Session::Default )
-		end
-
 	end
 
 	describe "an including App" do
 
+
 		before( :each ) do
+			Strelka::App::Sessions.configure
+
 			@app = Class.new( Strelka::App ) do
 				self.log.info "Anonymous App class: %p" % [ self ]
 				self.log.info "ID constant is: %p" % [ const_defined?(:ID) ? const_get(:ID) : "(not defined)" ]
@@ -152,7 +133,7 @@ describe Strelka::App::Sessions do
 		it "saves the session automatically" do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
-			res.cookies.should include( Strelka::Session::Default.cookie_options[:name] )
+			res.cookies.should include( Strelka::Session::Default.cookie_name )
 		end
 
 	end

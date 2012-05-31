@@ -34,13 +34,17 @@ describe Strelka::Session::Db do
 	end
 
 	before( :each ) do
-		@cookie_name = described_class.cookie_options[:name]
+		Strelka.log.debug "BEFORE each"
+		@cookie_name = described_class.cookie_name
 		described_class.configure
+		Strelka.log.debug "/BEFORE each"
 	end
 
 	after( :each ) do
+		Strelka.log.debug "AFTER each"
 		described_class.db.drop_table( :sessions ) if
 			described_class.db.table_exists?( :sessions )
+		Strelka.log.debug "/AFTER each"
 	end
 
 	after( :all ) do
@@ -61,6 +65,7 @@ describe Strelka::Session::Db do
 
 
 	it "can load an existing session from the sessions table" do
+		Strelka.log.debug "described_class dataset: %p" % [ described_class.dataset ]
 		described_class.dataset.insert(
 			:session_id => @session_id,
 			:session    => @session_data.to_yaml )
