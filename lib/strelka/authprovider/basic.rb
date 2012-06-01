@@ -24,6 +24,9 @@ require 'strelka/mixins'
 #
 #   --
 #   auth:
+#     provider: basic
+#
+#   basicauth:
 #     realm: Acme Admin Console
 #     users:
 #       mgranger: "9d5lIumnMJXmVT/34QrMuyj+p0E="

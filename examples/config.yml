@@ -7,14 +7,17 @@ auth:
 basicauth:
   realm: Examples
   users:
-    ged: "iEPX+SQWIR3p67lj/0zigSWTKHg="
+    ged: "dn44fsIrKF6KmBw0im4GIJktSpM="
     jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
     kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 
 sessions:
   type: default
-  options:
-    cookie-name: "session-demo"
+
+defaultsession:
+  cookie_name: "session-demo"
+  cookie_options:
+    expires: +5m
 
 templates:
   template_paths:
