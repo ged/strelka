@@ -31,20 +31,22 @@ describe Strelka::Session::Db do
 				:hurrrg => true
 			}
 		}
+		@default_config = {
+			cookie_name: 'chunkers',
+			connect: {
+				adapter: Mongrel2::Config.sqlite_adapter
+			}
+		}
 	end
 
 	before( :each ) do
-		Strelka.log.debug "BEFORE each"
+		described_class.configure( @default_config )
 		@cookie_name = described_class.cookie_name
-		described_class.configure
-		Strelka.log.debug "/BEFORE each"
 	end
 
 	after( :each ) do
-		Strelka.log.debug "AFTER each"
 		described_class.db.drop_table( :sessions ) if
 			described_class.db.table_exists?( :sessions )
-		Strelka.log.debug "/AFTER each"
 	end
 
 	after( :all ) do
@@ -58,7 +60,7 @@ describe Strelka::Session::Db do
 
 
 	it "can change the default table name" do
-		described_class.configure( :table_name => :brothy )
+		described_class.configure( @default_config.merge(:table_name => :brothy) )
 		described_class.db.table_exists?( :brothy ).should be_true()
 		described_class.db.drop_table( :brothy )
 	end

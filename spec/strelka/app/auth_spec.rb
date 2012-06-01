@@ -47,7 +47,6 @@ describe Strelka::App::Auth do
 		app.auth_provider.should < Strelka::AuthProvider
 	end
 
-
 	it "adds the Auth mixin to the request class" do
 		app = Class.new( Strelka::App ) do
 			plugins :auth
@@ -114,6 +113,12 @@ describe Strelka::App::Auth do
 
 			app.handle( req )
 			req.authenticated_user.should == 'anonymous'
+		end
+
+		it "has its configured auth provider inherited by subclasses" do
+			Strelka::App::Auth.configure( :provider => 'basic' )
+			subclass = Class.new( @app )
+			subclass.auth_provider.should == Strelka::AuthProvider::Basic
 		end
 
 		it "has its auth config inherited by subclasses" do

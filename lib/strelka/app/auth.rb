@@ -257,10 +257,10 @@ module Strelka::App::Auth
 	### Configurability API -- configure the Auth plugin via the 'auth' section of the
 	### unified config.
 	def self::configure( config=nil )
-		if config && config.provider?
+		if config && config[:provider]
 			self.log.debug "Setting up the %p AuthProvider for apps: %p" %
-				[ config.provider, self.extended_apps ]
-			self.extended_apps.each {|app| app.auth_provider = config.provider }
+				[ config[:provider], self.extended_apps ]
+			self.extended_apps.each {|app| app.auth_provider = config[:provider] }
 		else
 			self.log.warn "Setting up the default AuthProvider for apps %p" % [ self.extended_apps ]
 			self.extended_apps.each {|app| app.auth_provider = DEFAULT_AUTH_PROVIDER }
@@ -306,6 +306,7 @@ module Strelka::App::Auth
 		### Extension callback -- add instance variables to extending objects.
 		def inherited( subclass )
 			super
+			Strelka::App::Auth.extended_apps << subclass
 			subclass.instance_variable_set( :@auth_provider, @auth_provider )
 			subclass.instance_variable_set( :@positive_auth_criteria, @positive_auth_criteria.dup )
 			subclass.instance_variable_set( :@negative_auth_criteria, @negative_auth_criteria.dup )

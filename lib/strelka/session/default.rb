@@ -182,7 +182,7 @@ class Strelka::Session::Default < Strelka::Session
 		session_cookie = Strelka::Cookie.new(
 			self.class.cookie_name,
 			self.session_id,
-			self.class.cookie_options
+			self.class.cookie_options || {}
 		)
 
 		response.cookies << session_cookie

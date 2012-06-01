@@ -66,12 +66,12 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### attribute to a Sequel dataset on the configured DB table.
 	###
 	def self::initialize_sessions_table
-		if self.db.table_exists?( self.table_name )
+		if self.db.table_exists?( self.table_name.to_sym )
 			self.log.debug "Using existing sessions table for %p" % [ db ]
 
 		else
 			self.log.debug "Creating new sessions table for %p" % [ db ]
-			self.db.create_table( self.table_name ) do
+			self.db.create_table( self.table_name.to_sym ) do
 				text :session_id, :index => true
 				text :session
 				timestamp :created
@@ -134,19 +134,15 @@ class Strelka::Session::Db < Strelka::Session::Default
 	def self::configure( options=nil )
 		super
 
-		if options
-			self.table_name = options[:table_name]
-			self.db = options[ :connect ].nil? ?
-				 Mongrel2::Config.in_memory_db :
-				 Sequel.connect( options[:connect] )
-		else
-			self.table_name = CONFIG_DEFAULTS[:table_name]
-			self.db = Mongrel2::Config.in_memory_db
-		end
+		if options && options[:connect]
+			self.log.warn "Configuring dbsession with: %p" % [ options ]
+			self.table_name = options[:table_name] || CONFIG_DEFAULTS[:table_name]
+			self.db = Sequel.connect( options[:connect] )
 
-		self.db.logger = Loggability[ Mongrel2 ].proxy_for( self.db )
-		self.db.sql_log_level = :debug
-		self.initialize_sessions_table
+			self.db.logger = Loggability[ Mongrel2 ].proxy_for( self.db )
+			self.db.sql_log_level = :debug
+			self.initialize_sessions_table
+		end
 	end
 
 
