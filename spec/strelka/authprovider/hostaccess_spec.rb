@@ -56,13 +56,13 @@ describe Strelka::AuthProvider::HostAccess do
 
 	it "allows a request that originates from one of its allowed netblocks" do
 		req = @request_factory.get( '/admin/console', :x_forwarded_for => '127.0.0.1' )
-		@provider.authorize( nil, req ).should be_true()
+		@provider.authorize( nil, req, nil ).should be_true()
 	end
 
 
 	it "doesn't allow a request which is not from one of its allowed netblocks" do
 		req = @request_factory.get( '/admin/console', :x_forwarded_for => '8.8.8.8' )
-		@provider.authorize( nil, req ).should be_false()
+		@provider.authorize( nil, req, nil ).should be_false()
 	end
 
 

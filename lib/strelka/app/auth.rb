@@ -123,11 +123,12 @@ require 'strelka/authprovider'
 # Sometimes simple authentication isn't sufficient for accessing some
 # resources, especially if you have some kind of permissions system that
 # dictates who can see/use what. That's where the second stage of the
-# authentification process comes into play: Authorization.
+# auth process comes into play: Authorization.
 #
-# The AuthProvider you're using may provide some form of general authorization
-# itself (especially a custom one), but typically authorization is particular to an application and
-# even particular actions within the application.
+# The AuthProvider you're using may provide some form of general
+# authorization itself (especially a custom one), but typically
+# authorization is particular to an application and even particular
+# actions within the application.
 #
 # To facilitate mapping out what actions are available to whom, there is a
 # declaration similar to require_auth_for that can define a set of permissions

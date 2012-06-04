@@ -77,7 +77,7 @@ class Strelka::AuthProvider::HostAccess < Strelka::AuthProvider
 
 	### Check authorization for the specified +request+ by testing its the IP in its
 	### X-forwarded-for header against the allowed_netblocks.
-	def authorize( _, request )
+	def authorize( _, request, _ )
 		client_ip = request.header.x_forwarded_for or
 			raise "No X-Forwarded-For header?!"
 		addr = IPAddr.new( client_ip )
