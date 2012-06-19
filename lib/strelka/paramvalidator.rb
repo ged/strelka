@@ -164,6 +164,7 @@ class Strelka::ParamValidator < ::FormValidator
 		@filters_array       = []
 		@untaint_fields      = []
 		@untaint_all         = false
+		@validated           = false
 
 		@parsed_params       = nil
 	end
@@ -188,6 +189,7 @@ class Strelka::ParamValidator < ::FormValidator
 		@filters_array       = @filters_array.clone
 		@untaint_fields      = @untaint_fields.clone
 		@untaint_all         = original.untaint_all?
+		@validated           = original.validated?
 
 		@parsed_params       = @parsed_params.clone if @parsed_params
 	end
@@ -358,6 +360,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 		self.log.debug "Calling superclass's validate: %p" % [ self ]
 		super( params, profile )
+		@validated = true
 	end
 
 
@@ -443,7 +446,7 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Returns +true+ if the parameters have been validated.
 	def validated?
-		return !@raw_form.empty?
+		return @validated
 	end
 
 

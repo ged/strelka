@@ -177,6 +177,19 @@ describe Strelka::ParamValidator do
 			@validator.error_messages.should include( "Invalid value for 'A Field'" )
 		end
 
+		it "re-validates if profile is modified, even with no parameters" do
+			@validator.add( :a_field, :string )
+			@validator.validate
+			@validator.should_not have_errors()
+			@validator.should be_okay()
+
+			@validator.override( :a_field, :string, :required )
+			@validator.should have_errors()
+			@validator.should_not be_okay()
+			@validator.error_messages.should include( "Missing value for 'A Field'" )
+		end
+
+
 	end # describe "validation"
 
 	describe "validation error descriptions" do
