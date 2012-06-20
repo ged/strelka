@@ -177,9 +177,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	### Return a Hash of request form data.
 	def parse_form_data
-		case self.headers.content_type
-		when nil
+		unless self.headers.content_type
 			finish_with( HTTP::BAD_REQUEST, "Malformed request (no content type?)" )
+		end
+
+		case self.headers.content_type.split( ';' ).first
 		when 'application/x-www-form-urlencoded'
 			return merge_query_args( URI.decode_www_form(self.body) )
 		when 'application/json', 'text/javascript'
