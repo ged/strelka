@@ -96,9 +96,7 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 	context "with a session ID" do
 
 		before( :each ) do
-			cookie_name = Strelka::Session::Default.cookie_name
 			@sess_id = Strelka::Session::Default.get_session_id
-			@req.header.cookie = "#{cookie_name}=#{@sess_id}"
 		end
 
 		it "knows that it doesn't have a session unless the ID exists" do
@@ -113,6 +111,8 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 			end
 
 			it "knows that it has a session" do
+				cookie_name = Strelka::Session::Default.cookie_name
+				@req.header.cookie = "#{cookie_name}=#{@sess_id}"
 				@req.should have_session()
 			end
 
@@ -125,11 +125,6 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 				@req.session_loaded?.should be_true()
 			end
 
-			it "can purge the session from the database" do
-				@req.should have_session()
-				@req.destroy_session
-				@req.should_not have_session()
-			end
 		end
 
 	end

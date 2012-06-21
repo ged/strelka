@@ -157,6 +157,21 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 				@res.cookies.should be_empty()
 			end
 
+			it "destroys the session via itself if it was loaded" do
+				@res.cookies.should_not include( @cookie_name )
+				@res.session
+				@res.destroy_session
+				@res.cookies[ @cookie_name ].value.should == @sess_id
+				@res.cookies[ @cookie_name ].expires.should < Time.now
+			end
+
+			it "destroys the session via itself even if it wasn't loaded" do
+				@res.cookies.should_not include( @cookie_name )
+				@res.destroy_session
+				@res.cookies[ @cookie_name ].value.should == @sess_id
+				@res.cookies[ @cookie_name ].expires.should < Time.now
+			end
+
 		end
 
 	end

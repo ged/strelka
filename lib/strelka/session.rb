@@ -170,6 +170,13 @@ class Strelka::Session
 
 
 	# :call-seq:
+	#   destroy( response )
+	# Destroy the session and set up the specified +response+ to expire the
+	# session ID.
+	pure_virtual :destroy
+
+
+	# :call-seq:
 	#   key?( key ) -> boolean
 	#
 	# Returns +true+ if the specified +key+ exists in the current namespace.

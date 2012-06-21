@@ -100,6 +100,19 @@ describe Strelka::Session::Default do
 		response.header_data.should =~ /Set-Cookie: #{@cookie_name}=#{session_id}/i
 	end
 
+	it "can remove itself from the store and expire the response's session ID" do
+		req          = @request_factory.get( '/hungry/hungry/hippos' )
+		response     = req.response
+		session_id   = '3422067061a5790be374c81118d9ed3f'
+		session_data = { :namespace => {'fruit' => 'bowl'} }
+		session      = described_class.new( session_id, session_data )
+
+		session.destroy( response )
+
+		described_class.sessions.should_not include({ session_id => session_data })
+		response.header_data.should =~ /Set-Cookie: #{@cookie_name}=#{session_id}/i
+	end
+
 	describe "with no namespace set (the 'nil' namespace)" do
 
 		subject { Strelka::Session.create('default', 'the_session_id') }

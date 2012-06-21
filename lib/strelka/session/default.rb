@@ -177,13 +177,30 @@ class Strelka::Session::Default < Strelka::Session
 	def save( response )
 		self.log.debug "Saving session %s" % [ self.session_id ]
 		self.class.save_session_data( self.session_id, @hash )
-		self.log.debug "Adding session cookie to the request."
+		self.log.debug "Adding session cookie to the response."
 
 		session_cookie = Strelka::Cookie.new(
 			self.class.cookie_name,
 			self.session_id,
 			self.class.cookie_options || {}
 		)
+
+		response.cookies << session_cookie
+	end
+
+
+	### Delete the session from storage and expire the session cookie from the given +response+.
+	def destroy( response )
+		self.log.debug "Destroying session %s" % [ self.session_id ]
+		self.class.delete_session_data( self.session_id )
+
+		self.log.debug "Adding expired session cookie to the response"
+		session_cookie = Strelka::Cookie.new(
+			self.class.cookie_name,
+			self.session_id,
+			self.class.cookie_options || {}
+		)
+		session_cookie.expire!
 
 		response.cookies << session_cookie
 	end

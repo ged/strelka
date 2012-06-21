@@ -91,6 +91,18 @@ module Strelka::HTTPResponse::Session
 	end
 
 
+	### Purge the response's session from the session store and expire its ID.
+	def destroy_session
+		if self.session?
+			self.log.debug "Destroying session: %p" % [ self.session ]
+			self.session.destroy( self )
+			@session = nil
+		else
+			self.log.debug "No session to destroy."
+		end
+	end
+
+
 	### Tell the associated session to save itself and set up the session ID in the
 	### response, if one exists.
 	def save_session

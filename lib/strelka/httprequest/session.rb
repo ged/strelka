@@ -67,14 +67,6 @@ module Strelka::HTTPRequest::Session
 	end
 
 
-	### Purge the request's session from the session store.
-	def destroy_session
-		self.log.debug "Removing session id %s" % [ self.session.session_id ]
-		Strelka::App::Sessions.session_class.delete_session_data( self.session.session_id )
-		@session = nil
-	end
-
-
 	### Set the request's session object.
 	def session=( new_session )
 		new_session.namespace = self.session_namespace
