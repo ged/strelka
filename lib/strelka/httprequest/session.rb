@@ -69,7 +69,7 @@ module Strelka::HTTPRequest::Session
 
 	### Set the request's session object.
 	def session=( new_session )
-		new_session.namespace = self.session_namespace
+		new_session.namespace = self.session_namespace if new_session.respond_to?( :namespace )
 		@session = new_session
 	end
 

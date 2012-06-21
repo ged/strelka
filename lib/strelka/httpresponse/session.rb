@@ -96,7 +96,7 @@ module Strelka::HTTPResponse::Session
 		if self.session?
 			self.log.debug "Destroying session: %p" % [ self.session ]
 			self.session.destroy( self )
-			@session = nil
+			self.request.session = @session = nil
 		else
 			self.log.debug "No session to destroy."
 		end
