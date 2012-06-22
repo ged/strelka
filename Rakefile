@@ -27,12 +27,12 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'sysexits',        '~> 1.0'
 	self.dependency 'formvalidator',   '~> 0.1'
 	self.dependency 'inversion',       '~> 0.10'
-	self.dependency 'mongrel2',        '~> 0.22'
+	self.dependency 'mongrel2',        '~> 0.25'
 	self.dependency 'uuidtools',       '~> 2.1'
 	self.dependency 'configurability', '~> 1.0'
 	self.dependency 'pluginfactory',   '~> 1.0'
 	self.dependency 'loggability',     '~> 0.3'
-	self.dependency 'foreman',         '~> 0.46'
+	self.dependency 'foreman',         '~> 0.47'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
 	self.dependency 'hoe-manualgen',   '~> 0.3', :developer
