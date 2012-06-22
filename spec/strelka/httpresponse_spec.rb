@@ -34,14 +34,14 @@ describe Strelka::HTTPResponse do
 	end
 
 
-	it "adds a charset to the response's content-type header if one is explicitly set" do
+	it "adds a charset to the response's content-type header if it's text/* and one is explicitly set" do
 		@res.content_type = 'text/html'
 		@res.charset = Encoding::UTF_8
 
 		@res.header_data.should =~ %r{Content-type: text/html; charset=UTF-8}i
 	end
 
-	it "replaces the existing content-type header charset if one is explicitly set" do
+	it "replaces the existing content-type header charset if it's text/* and one is explicitly set" do
 		@res.content_type = 'text/html; charset=iso-8859-1'
 		@res.charset = Encoding::UTF_8
 
@@ -50,7 +50,7 @@ describe Strelka::HTTPResponse do
 	end
 
 	it "adds a charset to the response's content-type header based on the entity body's encoding " +
-	   "if there isn't already one set on the request or the header" do
+	   "if it's text/* and there isn't already one set on the request or the header" do
 		@res.body = "Стрелке".encode( 'koi8-r' )
 		@res.content_type = 'text/plain'
 
@@ -58,14 +58,14 @@ describe Strelka::HTTPResponse do
 	end
 
 	it "adds a charset to the response's content-type header based on the entity body's " +
-	   "external encoding if there isn't already one set on the request or the header" do
+	   "external encoding if it's text/* and there isn't already one set on the request or the header" do
 		@res.body = File.open( __FILE__, 'r:iso-8859-5' )
 		@res.content_type = 'text/plain'
 
 		@res.header_data.should =~ /charset=iso-8859-5/i
 	end
 
-	it "doesn't replace a charset in the content-type header with one based on the entity body" do
+	it "doesn't replace a charset in a text/* content-type header with one based on the entity body" do
 		@res.body = "Стрелке".encode( 'iso-8859-5' )
 		@res.content_type = 'text/plain; charset=utf-8'
 
@@ -78,6 +78,11 @@ describe Strelka::HTTPResponse do
 		@res.content_type = 'text/plain'
 		@res.charset = Encoding::ASCII_8BIT
 
+		@res.header_data.should_not =~ /charset/i
+	end
+
+	it "doesn't add a charset to the response's content-type header if it's not text/*" do
+		@res.content_type = 'application/octet-stream'
 		@res.header_data.should_not =~ /charset/i
 	end
 

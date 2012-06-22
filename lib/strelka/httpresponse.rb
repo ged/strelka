@@ -111,12 +111,15 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add a charset to the content-type header in +headers+ if possible.
 	def add_content_type_charset( headers )
+		return unless headers.content_type.start_with?( 'text' )
+
 		charset = self.find_header_charset
 		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset.name ]
 
 		headers.content_type.slice!( CONTENT_TYPE_CHARSET_RE ) and
 			self.log.debug "  removed old charset parameter."
-		headers.content_type += "; charset=#{charset.name}" unless charset == Encoding::ASCII_8BIT
+		headers.content_type += "; charset=#{charset.name}" unless
+			charset == Encoding::ASCII_8BIT
 	end
 
 
@@ -157,7 +160,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		enc ||= @body.internal_encoding if @body.respond_to?( :internal_encoding )
 		enc ||= @body.external_encoding if @body.respond_to?( :external_encoding )
 
-		self.log.debug "  Body didn't respond to either #internal_encoding or #external_encoding." unless enc
+		self.log.debug "  encoding of the entity body is: %p" % [ enc ]
 		return enc
 	end
 
