@@ -124,19 +124,14 @@ module Strelka::HTTPResponse::Negotiation
 
 	### Stringify the response -- overridden to use the negotiated body.
 	def to_s
-		return [
-			self.status_line,
-			self.header_data,
-			self.negotiated_body
-		].join( "\r\n" )
+		self.negotiate
+		super
 	end
 
 
 	### Transform the entity body if it doesn't meet the criteria
 	def negotiated_body
-		return '' if self.bodiless?
-
-		self.negotiate 
+		self.negotiate
 		return self.body
 	end
 

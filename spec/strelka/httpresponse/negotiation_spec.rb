@@ -44,6 +44,20 @@ describe Strelka::HTTPResponse::Negotiation do
 	end
 
 
+	it "still stringifies as a valid HTTP response" do
+		@res.puts( "FOOM!" )
+		@res.content_type = 'text/plain'
+		@res.charset = Encoding::UTF_8
+		@res.to_s.should include(
+			'HTTP/1.1 200 OK',
+			'Content-Length: 6',
+			'Content-Type: text/plain; charset=UTF-8',
+			"\r\n\r\nFOOM!"
+		)
+	end
+
+
+
 	describe "content-alternative callback methods" do
 
 		it "can provide blocks for bodies of several different mediatypes" do
