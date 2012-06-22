@@ -51,6 +51,15 @@ module Strelka::HTTPResponse::Negotiation
 		'application/json'   => Yajl.method( :dump ),
 	}
 
+	# Transcoding to Unicode is likely enough to work to warrant auto-transcoding. These
+	# are the charsets that will be used for auto-transcoding in the case where the whole
+	# entity body isn't in memory
+	UNICODE_CHARSETS = [
+		Encoding::UTF_8,
+		Encoding::UTF_16BE,
+		Encoding::UTF_32BE,
+	]
+
 
 	### Add some instance variables for negotiation.
 	def initialize( * )
@@ -127,7 +136,7 @@ module Strelka::HTTPResponse::Negotiation
 	def negotiated_body
 		return '' if self.bodiless?
 
-		self.negotiate
+		self.negotiate 
 		return self.body
 	end
 
@@ -460,45 +469,65 @@ module Strelka::HTTPResponse::Negotiation
 	### if it
 	def transform_charset
 		self.log.debug "Looking for charset transformations."
-		self.better_charsets.each do |charset|
-			self.log.debug "  trying to transcode to: %s" % [ charset ]
+		if self.body.respond_to?( :string ) || self.body.respond_to?( :fileno )
 
-			if self.body.respond_to?( :encode )
-				self.log.debug "  body is a string; trying direct transcoding"
-				if self.transcode_body_string( charset )
-					self.log.debug "  success; body is now %p" % [ self.body.encoding ]
+			# Try each charset that's better than what we have already
+			self.better_charsets.each do |charset|
+				self.log.debug "  trying to transcode to: %s" % [ charset ]
+
+				# If it succeeds, indicate that transcoding took place in the Vary header
+				if self.transcode_body( charset )
+					self.log.debug "  success; body is now %p" % [ charset ]
 					self.vary_fields.add( 'accept-charset' )
 					break
 				end
-
-			# Can change the external_encoding if it's a File that has a #path
-			elsif self.body.respond_to?( :external_encoding )
-				raise NotImplementedError,
-					"Support for transcoding %p objects isn't done." % [ self.body.class ]
-			else
-				self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 			end
+		else
+			self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 		end
 	end
 
 
-	### Try to transcode the entity body String to one of the specified +charsets+. Returns
+	### Try to transcode the entity body stream to one of the specified +charsets+. Returns
 	### the succesful Encoding object if transcoding succeeded, or +nil+ if transcoding
 	### failed.
-	def transcode_body_string( charset )
+	def transcode_body( charset )
 		unless enc = charset.encoding_object
 			self.log.warn "    unsupported charset: %s" % [ charset ]
 			return false
 		end
 
-		succeeded = false
 		begin
-			succeeded = self.body.encode!( enc )
+
+			# StringIOs get their internal string transcoded directly
+			if self.body.respond_to?( :string )
+				self.body.string.encode!( enc )
+				return true
+
+			# For other IO objects, the situation is trickier -- we can't know that
+			# encoding will succeed for more-restrictive charsets, so we only do
+			# automatic transcoding if the 'wanted' one is a Unicode charset.
+			# This probably isn't perfect, either.
+			# :FIXME: Probably need a list of exceptions, i.e., charsets that don't
+			# always transcode nicely into Unicode.
+			elsif self.body.respond_to?( :fileno ) && UNICODE_CHARSETS.include?( enc )
+				self.log.info "Assuming %s data can be transcoded into %s" %
+					[ self.body.internal_encoding, enc ]
+
+				# Don't close the FD when this IO goes out of scope
+				oldbody = self.body
+				oldbody.auto_close = false
+
+				# Re-open the same file descriptor, but transcoding to the wanted encoding
+				self.body = IO.for_fd( oldbody.fileno, internal_encoding: enc )
+				return true
+			end
+
 		rescue Encoding::UndefinedConversionError => err
 			self.log.error "%p while transcoding: %s" % [ err.class, err.message ]
 		end
 
-		return succeeded
+		return false
 	end
 
 

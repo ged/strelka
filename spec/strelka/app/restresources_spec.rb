@@ -225,7 +225,8 @@ describe Strelka::App::RestResources do
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::NOT_FOUND
-					res.body.should =~ /no such server/i
+					res.body.rewind
+					res.body.read.should =~ /no such server/i
 				end
 
 				it "returns a NOT FOUND response when fetching a resource with an invalid ID" do
@@ -233,7 +234,8 @@ describe Strelka::App::RestResources do
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::NOT_FOUND
-					res.body.should =~ /requested resource was not found/i
+					res.body.rewind
+					res.body.read.should =~ /requested resource was not found/i
 				end
 
 				it "has a GET route for fetching the resource via one of its dataset methods" do

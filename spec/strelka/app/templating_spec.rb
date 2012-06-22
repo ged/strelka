@@ -116,7 +116,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -129,7 +130,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -146,7 +148,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -167,7 +170,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A minimal layout template.\n" +
+				res.body.rewind
+				res.body.read.should == "A minimal layout template.\n" +
 					"A template for testing the Templating plugin.\n\n"
 				res.status.should == 200
 			end
@@ -188,7 +192,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 			end
 
 		end

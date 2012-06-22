@@ -169,7 +169,8 @@ describe Strelka::App do
 
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status_line.should == 'HTTP/1.1 204 No Content'
-		res.body.should == ''
+		res.body.rewind
+		res.body.read.should == ''
 	end
 
 
@@ -190,7 +191,8 @@ describe Strelka::App do
 
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status_line.should == 'HTTP/1.1 304 Not Modified'
-		res.body.should == ''
+		res.body.rewind
+		res.body.read.should == ''
 	end
 
 
@@ -211,7 +213,8 @@ describe Strelka::App do
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status_line.should == 'HTTP/1.1 403 Forbidden'
 		res.content_type.should == 'text/plain'
-		res.body.should == "You aren't allowed to look at that.\n"
+		res.body.rewind
+		res.body.read.should == "You aren't allowed to look at that.\n"
 	end
 
 
@@ -233,7 +236,8 @@ describe Strelka::App do
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status_line.should == 'HTTP/1.1 403 Forbidden'
 		res.content_type.should == 'text/html'
-		res.body.should == "You aren't allowed to look at that.\n"
+		res.body.rewind
+		res.body.read.should == "You aren't allowed to look at that.\n"
 	end
 
 	it "sets the error status info in the transaction notes for error responses" do
@@ -302,7 +306,8 @@ describe Strelka::App do
 
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.content_type.should == 'text/plain'
-		res.body.should be_empty()
+		res.body.rewind
+		res.body.read.should == ''
 		res.headers.content_length.should == "Rendered output.\n".bytesize
 	end
 
@@ -347,7 +352,8 @@ describe Strelka::App do
 		res.should be_a( Mongrel2::HTTPResponse )
 		res.status.should == HTTP::SERVER_ERROR
 		res.content_type = 'text/plain'
-		res.body.should =~ /internal server error/i
+		res.body.rewind
+		res.body.read.should =~ /internal server error/i
 	end
 
 	it "isn't in 'developer mode' by default" do
@@ -415,7 +421,8 @@ describe Strelka::App do
 
 			res.should be_a( Mongrel2::HTTPResponse )
 			res.status_line.should == 'HTTP/1.1 200 OK'
-			res.body.should == "Request was funted by Cragnux/1.1.3!\n"
+			res.body.rewind
+			res.body.read.should == "Request was funted by Cragnux/1.1.3!\n"
 		end
 
 

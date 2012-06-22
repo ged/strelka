@@ -52,7 +52,8 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.for( 'application/json' ) { %{["a JSON dump"]} }
 			@res.for( 'application/x-yaml' ) { "---\na: YAML dump\n\n" }
 
-			@res.negotiated_body.should == "---\na: YAML dump\n\n"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "---\na: YAML dump\n\n"
 			@res.content_type.should == "application/x-yaml"
 			@res.header_data.should =~ /accept(?!-)/i
 		end
@@ -64,7 +65,8 @@ describe Strelka::HTTPResponse::Negotiation do
 				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
 			end
 
-			@res.negotiated_body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
 				"\"name\":\"Harlot's Garden\"}"
 			@res.content_type.should == "application/json"
 			@res.header_data.should =~ /accept(?!-)/i
@@ -77,7 +79,8 @@ describe Strelka::HTTPResponse::Negotiation do
 				{ uuid: 'fc85e35b-c9c3-4675-a882-25bf98d11e1b', name: "Harlot's Garden" }
 			end
 
-			@res.negotiated_body.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "{\"uuid\":\"fc85e35b-c9c3-4675-a882-25bf98d11e1b\"," +
 				"\"name\":\"Harlot's Garden\"}"
 			@res.content_type.should == "application/json"
 			@res.header_data.should =~ /accept(?!-)/i
@@ -94,7 +97,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.body = File.read( __FILE__, encoding: 'iso-8859-5' )
 			@res.content_type = 'text/plain'
 
-			@res.negotiated_body.encoding.should == Encoding::KOI8_R
+			@res.negotiated_body.external_encoding.should == Encoding::KOI8_R
 			@res.header_data.should =~ /accept-charset(?!-)/i
 		end
 
@@ -104,7 +107,7 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.body = File.read( __FILE__, encoding: 'iso-8859-5' )
 			@res.content_type = 'application/json'
 
-			@res.negotiated_body.encoding.should == Encoding::UTF_8
+			@res.negotiated_body.external_encoding.should == Encoding::UTF_8
 			@res.header_data.should =~ /accept-charset(?!-)/i
 		end
 
@@ -135,7 +138,8 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.for_language( :de ) { "German translation" }
 			@res.for_language( :sl ) { "Slovenian translation" }
 
-			@res.negotiated_body.should == "German translation"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "German translation"
 			@res.languages.should == ["de"]
 			@res.header_data.should =~ /accept-language/i
 		end
@@ -150,7 +154,8 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.for_language( :de ) { "German translation" }
 			@res.for_language( :sl ) { "Slovenian translation" }
 
-			@res.negotiated_body.should == "German translation"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "German translation"
 			@res.languages.should == ["de"]
 			@res.header_data.should =~ /accept-language/i
 		end
@@ -169,7 +174,8 @@ describe Strelka::HTTPResponse::Negotiation do
 				translations[ lang.to_sym ]
 			end
 
-			@res.negotiated_body.should == "Portuguese translation"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "Portuguese translation"
 			@res.languages.should == ["pt"]
 			@res.header_data.should =~ /accept-language/i
 		end
@@ -183,7 +189,8 @@ describe Strelka::HTTPResponse::Negotiation do
 			@res.for_language( :de ) { "German translation" }
 			@res.for_language( :sl ) { "Slovenian translation" }
 
-			@res.negotiated_body.should == "English translation"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "English translation"
 			@res.languages.should == ["en"]
 			@res.header_data.should =~ /accept-language/i
 		end
@@ -198,10 +205,11 @@ describe Strelka::HTTPResponse::Negotiation do
 
 			@res << "the text body"
 			@res.content_type = 'text/plain'
-			@res.for_encoding( :deflate ) { @res.body + " (deflated)" }
-			@res.for_encoding( :gzip ) { @res.body + " (gzipped)" }
+			@res.for_encoding( :deflate ) { @res.body << " (deflated)" }
+			@res.for_encoding( :gzip ) { @res.body << " (gzipped)" }
 
-			@res.negotiated_body.should == "the text body (gzipped)"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "the text body (gzipped)"
 			@res.encodings.should include( "gzip" )
 			@res.header_data.should =~ /accept-encoding/i
 			@res.header_data.should_not =~ /identity/i
@@ -213,10 +221,11 @@ describe Strelka::HTTPResponse::Negotiation do
 
 			@res << "the text body"
 			@res.content_type = 'text/plain'
-			@res.for_encoding( :deflate ) { @res.body + " (deflated)" }
-			@res.for_encoding( :gzip ) { @res.body + " (gzipped)" }
+			@res.for_encoding( :deflate ) { @res.body << " (deflated)" }
+			@res.for_encoding( :gzip ) { @res.body << " (gzipped)" }
 
-			@res.negotiated_body.should == "the text body (deflated)"
+			@res.negotiated_body.rewind
+			@res.negotiated_body.read.should == "the text body (deflated)"
 			@res.encodings.should include( "deflate" )
 			@res.header_data.should =~ /accept-encoding/i
 			@res.header_data.should_not =~ /identity/i

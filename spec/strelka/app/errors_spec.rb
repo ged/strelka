@@ -73,7 +73,8 @@ describe Strelka::App::Errors do
 			res = @app.new.handle( req )
 
 			res.status.should == HTTP::OK
-			res.body.should == "Oh yeah! Kool-Aid!\n"
+			res.body.rewind
+			res.body.read.should == "Oh yeah! Kool-Aid!\n"
 		end
 
 		it "raises an error if a handler is declared with both a template and a block" do
@@ -105,7 +106,8 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.body.should =~ /internal server error/i
+			res.body.rewind
+			res.body.read.should =~ /internal server error/i
 		end
 
 		it "calls a callback-style handler for any status when finished with BAD_REQUEST" do
@@ -124,7 +126,8 @@ describe Strelka::App::Errors do
 			res = @app.new.handle( req )
 
 			res.status.should == HTTP::BAD_REQUEST
-			res.body.should == '(400) Filthy banana'
+			res.body.rewind
+			res.body.read.should == '(400) Filthy banana'
 		end
 
 
@@ -139,7 +142,8 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.body.should == 'NOPE!'
+			res.body.rewind
+			res.body.read.should == 'NOPE!'
 		end
 
 
@@ -154,7 +158,8 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.body.should == 'Error:  JAMBA'
+			res.body.rewind
+			res.body.read.should == 'Error:  JAMBA'
 		end
 
 		it "sets the error status info in the transaction notes when the response is handled by a status-handler" do
@@ -196,7 +201,8 @@ describe Strelka::App::Errors do
 			res.notes[:status_info][:status].should == HTTP::SERVER_ERROR
 			res.notes[:status_info][:message].should == "An uncaught exception"
 			res.notes[:status_info][:exception].should be_a( RuntimeError )
-			res.body.should == "RuntimeError"
+			res.body.rewind
+			res.body.read.should == "RuntimeError"
 		end
 
 
@@ -228,7 +234,8 @@ describe Strelka::App::Errors do
 				req = @request_factory.get( '/foom' )
 				res = @app.new.handle( req )
 
-				res.body.should =~ /error-handler template/i
+				res.body.rewind
+				res.body.read.should =~ /error-handler template/i
 			end
 		end
 

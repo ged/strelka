@@ -24,6 +24,7 @@ require 'strelka/httpresponse/negotiation'
 #       add_content_type :tnetstring, 'text/x-tnetstring' do |response|
 #           tnetstr = nil
 #           begin
+#               response.body.rewind
 #               tnetstr = TNetString.dump( response.body )
 #           rescue => err
 #               self.log.error "%p while transforming entity body to a TNetString: %s" %

@@ -181,9 +181,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 			finish_with( HTTP::BAD_REQUEST, "Malformed request (no content type?)" )
 		end
 
+		self.body.rewind
+
 		case self.headers.content_type.split( ';' ).first
 		when 'application/x-www-form-urlencoded'
-			return merge_query_args( URI.decode_www_form(self.body) )
+			return merge_query_args( URI.decode_www_form(self.body.read) )
 		when 'application/json', 'text/javascript'
 			return Yajl.load( self.body )
 		when 'text/x-yaml', 'application/x-yaml'

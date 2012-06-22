@@ -122,12 +122,14 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Try to find a character set for the request, using the #charset attribute first,
 	### then the 'charset' parameter from the content-type header, then the Encoding object
-	### associated with the entity body, then the default external encoding (if it's set). If
-	### none of those are found, this method returns ISO-8859-1.
+	### associated with the entity body, then the default internal and external encodings
+	### (if they're set, in that order). If none of those are found, this method returns
+	### ISO-8859-1.
 	def find_header_charset
 		return ( self.charset ||
 		         self.content_type_charset ||
-		         self.entity_body_charset ||
+		         self.entity_body_charset  ||
+				 Encoding.default_internal ||
 		         Encoding.default_external ||
 		         Encoding::ISO_8859_1 )
 	end
@@ -150,20 +152,13 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	### couldn't be determined.
 	def entity_body_charset
 		self.log.debug "Deriving charset from the entity body..."
+		enc = nil
 
-		# Have to use the instance variable instead of #body because plugins can
-		# override #body
+		enc ||= @body.internal_encoding if @body.respond_to?( :internal_encoding )
+		enc ||= @body.external_encoding if @body.respond_to?( :external_encoding )
 
-		if @body.respond_to?( :encoding )
-			self.log.debug "  String-ish API. Encoding is: %p" % [ @body.encoding ]
-			return @body.encoding
-		elsif @body.respond_to?( :external_encoding )
-			self.log.debug "  IO-ish API. Encoding is: %p" % [ @body.external_encoding ]
-			return @body.external_encoding
-		end
-
-		self.log.debug "  Body didn't respond to either #encoding or #external_encoding."
-		return nil
+		self.log.debug "  Body didn't respond to either #internal_encoding or #external_encoding." unless enc
+		return enc
 	end
 
 
