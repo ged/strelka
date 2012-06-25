@@ -250,7 +250,8 @@ RSpec.configure do |c|
 	c.mock_with( :rspec )
 
 	c.extend( Strelka::TestConstants )
-	c.extend( Strelka::TestConstants )
+	c.extend( Mongrel2::TestConstants )
+
 	c.include( Strelka::TestConstants )
 	c.include( Loggability::SpecHelpers )
 	c.include( Mongrel2::SpecHelpers )
