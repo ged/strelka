@@ -377,6 +377,17 @@ describe Strelka::App do
 		end
 	end
 
+	it "closes async uploads with a 413 Request Entity Too Large by default" do
+		@req.headers.x_mongrel2_upload_start = 'an/uploaded/file/path'
+
+		app = @app.new
+		app.conn.should_receive( :reply ).with( an_instance_of(Strelka::HTTPResponse) )
+		app.conn.should_receive( :reply_close ).with( @req )
+
+		res = app.handle_async_upload_start( @req )
+
+		res.should be_nil()
+	end
 
 	describe "process name" do
 

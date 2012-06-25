@@ -12,6 +12,7 @@ require 'strelka' unless defined?( Strelka )
 require 'strelka/httpresponse'
 require 'strelka/cookieset'
 require 'strelka/mixins'
+require 'strelka/multipartparser'
 
 # An HTTP request class.
 class Strelka::HTTPRequest < Mongrel2::HTTPRequest
@@ -175,6 +176,9 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	end
 
 
+	# multipart/form-data: http://tools.ietf.org/html/rfc2388
+	# Content-disposition header: http://tools.ietf.org/html/rfc2183
+
 	### Return a Hash of request form data.
 	def parse_form_data
 		unless self.headers.content_type
@@ -191,8 +195,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		when 'text/x-yaml', 'application/x-yaml'
 			return YAML.load( self.body )
 		when 'multipart/form-data'
-			raise NotImplementedError, "%p doesn't handle multipart form data yet" %
-				[ self.class ]
+			boundary = self.headers.content_type[ /\bboundary=(\S+)/, 1 ] or
+				raise Strelka::ParseError, "no boundary found for form data: %p" %
+				[ self.headers.content_type ]
+			boundary = dequote( boundary )
+
+			parser = Strelka::MultipartParser.new( self.body, boundary )
+			return parser.parse
 		else
 			raise Strelka::Error, "don't know how to handle %p form data" %
 				[ self.headers.content_type ]
@@ -203,6 +212,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	#######
 	private
 	#######
+
+	### Strip surrounding double quotes from a copy of the specified string
+	### and return it.
+	def dequote( string )
+		return string[ /^"(?<quoted_string>(?:[^"]+|\\.)*)"/, :quoted_string ] || string.dup
+	end
+
 
 	### Return the given +enum+ containing query arguments (such as those returned from
 	### URI.decode_www_form) as a Hash, combining multiple values for the same key

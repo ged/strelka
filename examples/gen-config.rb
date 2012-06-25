@@ -22,7 +22,7 @@ server 'examples' do
 	chroot       '/var/mongrel2'
 	pid_file     '/run/mongrel2.pid'
 
-	bind_addr    '127.0.0.1'
+	bind_addr    '0.0.0.0'
 	port         8113
 
 	host 'localhost' do
@@ -34,6 +34,7 @@ server 'examples' do
 		route '/sessions', handler( 'tcp://127.0.0.1:9905', 'sessions-demo' )
 		route '/auth', handler( 'tcp://127.0.0.1:9910', 'auth-demo' )
 		route '/formauth', handler( 'tcp://127.0.0.1:9915', 'auth-demo2' )
+		route '/upload', handler( 'tcp://127.0.0.1:9925', 'upload-demo' )
 		route '/ws', handler( 'tcp://127.0.0.1:9920', 'ws-echo' )
 
 	end
@@ -42,7 +43,10 @@ end
 
 setting "zeromq.threads", 1
 
-mkdir_p 'var'
+setting 'limits.content_length', 8096
+setting 'upload.temp_store', 'var/uploads/mongrel2.upload.XXXXXX'
+
+mkdir_p 'var/uploads'
 mkdir_p 'run'
 mkdir_p 'logs'
 

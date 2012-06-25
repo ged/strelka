@@ -22,17 +22,17 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'trollop',         '~> 1.16'
-	self.dependency 'highline',        '~> 1.6'
-	self.dependency 'sysexits',        '~> 1.0'
-	self.dependency 'formvalidator',   '~> 0.1'
-	self.dependency 'inversion',       '~> 0.10'
-	self.dependency 'mongrel2',        '~> 0.25'
-	self.dependency 'uuidtools',       '~> 2.1'
-	self.dependency 'configurability', '~> 1.0'
-	self.dependency 'pluginfactory',   '~> 1.0'
-	self.dependency 'loggability',     '~> 0.4'
+	self.dependency 'configurability', '~> 1.2'
 	self.dependency 'foreman',         '~> 0.47'
+	self.dependency 'formvalidator',   '~> 0.1'
+	self.dependency 'highline',        '~> 1.6'
+	self.dependency 'inversion',       '~> 0.10'
+	self.dependency 'loggability',     '~> 0.4'
+	self.dependency 'mongrel2',        '~> 0.26'
+	self.dependency 'pluginfactory',   '~> 1.0'
+	self.dependency 'sysexits',        '~> 1.0'
+	self.dependency 'trollop',         '~> 1.16'
+	self.dependency 'uuidtools',       '~> 2.1'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
 	self.dependency 'hoe-manualgen',   '~> 0.3', :developer

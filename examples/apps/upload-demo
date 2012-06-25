@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+require 'strelka'
+
+# An example of a file upload handler.
+class UploadDemo < Strelka::App
+
+	# The route appid that will configure this app if no appid is specified
+	ID = 'upload-demo'
+
+
+	plugins :templating, :routing, :parameters
+
+	default_type 'text/html'
+
+	layout 'templates/layout.tmpl'
+	templates \
+		form: 'templates/upload-form.tmpl',
+		success: 'templates/upload-success.tmpl'
+
+
+	### Show the form for any GET
+	get do |req|
+		return :form
+	end
+
+
+	### Show the upload for POST requests
+	post do |req|
+		req.params.add( :description, :string )
+		req.params.add( :uploadfile ) do |input|
+			if input.respond_to?( :filename ) && input.respond_to?( :content_type )
+				input
+			else
+				nil
+			end
+		end
+
+		unless req.content_type.start_with?( 'multipart/form-data' )
+			self.log.error "Not a multipart/form-data request?!"
+			finish_with HTTP::BAD_REQUEST,
+				"Expecting a mutlipart/form-data request, got: %p" % [ req.content_type ]
+		end
+
+		unless req.params.okay?
+			self.log.error "Parameter validation error: %s" %
+				[ req.params.error_messages.join(', ') ]
+			finish_with HTTP::BAD_REQUEST,
+				"Form errors: %s" % [ req.params.error_messages.join(', ') ]
+		end
+
+		self.log.debug "Successful upload of file %s." % [ req.params[:uploadfile].filename ]
+
+		tmpl = template :success
+		tmpl.upload = req.params[:uploadfile]
+		tmpl.description = req.params[:description]
+
+		return tmpl
+	end
+
+
+	### Override the upload-started notification to allow spooled (asynchronous)
+	### uploads.
+	def handle_async_upload_start( request )
+		self.log.info "Asynchronous upload notice. Spooling entity body to %p" %
+			[ request.headers.x_mongrel_upload_start ]
+		return nil
+	end
+
+end # class UploadDemo
+
+
+# Run the app
+UploadDemo.run if __FILE__ == $0

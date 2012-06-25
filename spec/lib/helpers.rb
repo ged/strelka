@@ -71,6 +71,22 @@ module Strelka::SpecHelpers
 	end
 
 
+	### Create a temporary working directory and return
+	### a Pathname object for it.
+	###
+	def make_tempdir
+		dirname = "%s.%d.%0.4f" % [
+			'strelka_spec',
+			Process.pid,
+			(Time.now.to_f % 3600),
+		  ]
+		tempdir = Pathname.new( Dir.tmpdir ) + dirname
+		tempdir.mkpath
+
+		return tempdir
+	end
+
+
 	#
 	# Matchers
 	#
@@ -250,13 +266,10 @@ RSpec.configure do |c|
 	c.mock_with( :rspec )
 
 	c.extend( Strelka::TestConstants )
-	c.extend( Mongrel2::TestConstants )
 
-	c.include( Strelka::TestConstants )
 	c.include( Loggability::SpecHelpers )
 	c.include( Mongrel2::SpecHelpers )
 	c.include( Strelka::SpecHelpers )
-	# c.include( Strelka::Matchers )
 end
 
 # vim: set nosta noet ts=4 sw=4:

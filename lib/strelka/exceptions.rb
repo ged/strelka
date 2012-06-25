@@ -22,6 +22,9 @@ module Strelka
 
 	end # class RequestError
 
+	# An exception that's raised when parsing of some structured data fails.
+	class ParseError < Error; end
+
 	# An exception raised when there is a problem with an application plugin.
 	class PluginError < Error; end
 

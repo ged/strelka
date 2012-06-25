@@ -21,7 +21,7 @@ defaultsession:
 
 templates:
   template_paths:
-    - examples/templates
+    - templates
 
 logging:
   strelka: debug (color)

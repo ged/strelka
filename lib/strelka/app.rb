@@ -246,7 +246,7 @@ class Strelka::App < Mongrel2::Handler
 
 	### Run the app -- overriden to set the process name to something interesting.
 	def run
-		procname = "%p %s" % [ self.class, self.conn ]
+		procname = "%s %s: %p %s" % [ RUBY_ENGINE, RUBY_VERSION, self.class, self.conn ]
 		$0 = procname
 
 		super
@@ -286,6 +286,28 @@ class Strelka::App < Mongrel2::Handler
 
 		status_info = { :status => HTTP::SERVER_ERROR, :message => 'internal server error' }
 		return self.prepare_status_response( request, status_info )
+	end
+
+
+	### Handle uploads larger than the server's configured limit with a 413: Request Entity
+	### Too Large before dropping the connection.
+	def handle_async_upload_start( request )
+		status_info = { :status => HTTP::REQUEST_ENTITY_TOO_LARGE, :message => 'Request too large.' }
+		response = self.prepare_status_response( request, status_info )
+		response.headers.connection = 'close'
+		self.conn.reply( response )
+
+		explanation = "If you wish to handle requests like this, either set your server's "
+		explanation << "'limits.content_length' setting to a higher value than %d, or override " %
+			 [ request.content_length ]
+		explanation << "#handle_async_upload_start."
+
+		self.log.warn "Async upload from %s dropped." % [ request.remote_ip ]
+		self.log.info( explanation )
+
+		self.conn.reply_close( request )
+
+		return nil
 	end
 
 
