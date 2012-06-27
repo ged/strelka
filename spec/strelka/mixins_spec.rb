@@ -197,6 +197,11 @@ describe Strelka, "mixins" do
 			Strelka::DataUtilities.deep_copy( :a_symbol ).should be( :a_symbol )
 		end
 
+		it "doesn't try to dup modules/classes" do
+			klass = Class.new
+			Strelka::DataUtilities.deep_copy( klass ).should be( klass )
+		end
+
 		it "makes distinct copies of arrays and their members" do
 			original = [ 'foom', Set.new([ 1,2 ]), :a_symbol ]
 
