@@ -135,7 +135,7 @@ Here's a tentative list of what kinds of stuff we have planned:
 
 You'll be able to package up your applications as Rubygems for easy deployment.
 The Strelka::App class already supports application discovery, but we
-want to hook that up to the 'leash' command line tool so you can install
+want to hook that up to the 'strelka' command line tool so you can install
 and run them with a minimum of manual monkeying around with directories,
 migrations, etc.
 
