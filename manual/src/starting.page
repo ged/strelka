@@ -24,7 +24,7 @@ We're going to assume you've already built and installed the Mongrel2 daemon.  I
 # Set up logs and runtime state directory for Mongrel2. The functions from
 # FileUtils are added to the DSL's namespace by the m2sh.rb tool.
 mkdir_p 'run'
-mkdir_p 'logs
+mkdir_p 'logs'
 
 server 'strelka-tester' do
 	chroot '.'
