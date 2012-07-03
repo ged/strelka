@@ -199,7 +199,7 @@ class Strelka::CLICommand
 
 	### Run the command with the specified +command+ and +args+.
 	def run( command, *args )
-		command ||= 'shell'
+		command ||= 'help'
 		cmd_method = nil
 
 		# Set the datadir override if it's given
