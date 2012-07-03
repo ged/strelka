@@ -18,7 +18,7 @@ h3. Working With Plugins
 
 As mentioned on the <?link Getting Started ?> page, our default application doesn't afford us many conveniences over using a raw @Mongrel2::Handler@.  Strelka breaks most of its niceties into a plugin system, so you can add only what you require, keeping your apps nice and streamlined.
 
-The plugins system is contained in the <?api Strelka::App::Plugins ?> mixin, which is included in <?api Strelka::App ?> already. This adds the +plugins+ declarative, which you use from your app to load the plugins you want to use.
+The plugins system is contained in the <?api Strelka::App::Plugins ?> mixin, which is included in <?api Strelka::App ?> already. This adds the @plugins@ declarative, which you use from your app to load the plugins you want to use.
 
 If you're interested in hooking into the HTTP conversation yourself, or just want to factor your common application code up to a reusable plugin, you can <?link Write Your Own Strelka Plugin ?>, too.
 
@@ -50,7 +50,7 @@ end
 
 The example app above responds only to 'GET' requests.  Anything under the @/goodbye@ URI responds with a departure message, while any other request (anywhere in the URI space!) responds with a friendly greeting.  You can think of this almost as wildcard routing, effectively dividing up the URI space into individual handler blocks.  A lack of a URI argument is the same thing as declaring one with @/@.
 
-This introduces some important concepts, as well.   All blocks are passed the <?api Strelka::HTTPRequest ?> object and should return a <?api Strelka::HTTPResponse ?> object.  You can either append content to it directly, or set it via the @#body=@ attribute.
+This introduces some important concepts, as well.   All blocks are passed the <?api Strelka::HTTPRequest ?> object and should return a <?api Strelka::HTTPResponse ?> object. Both the request and response are wrappers around _streams_ (input and output, respectively), similar to STDIN and STDOUT in a command-line utility. These streams contain the *body* of the request and response, and can be any @IO@-like object.
 
 
 h3. More Explicit Routing
@@ -81,7 +81,7 @@ class HelloWorldApp < Strelka::App
 end
 <?end example ?>
 
-This application now serves requests to only @/@ and @/goodbye@.  Anything else is met with a +NOT_FOUND+ message.
+This application now serves requests to only @/@ and @/goodbye@.  Anything else is met with a @404 NOT FOUND@ response.
 
 
 h3. Setting Content-Types
@@ -130,7 +130,7 @@ class HelloWorldApp < Strelka::App
 end
 <?end example ?>
 
-Try passing @/?name=there@ to the handler.  By default, no validity checking is done, it'll just return the query arguments as Strelka saw them.
+Try passing @/?name=there@ to the handler.  By default, no validity-checking is done; it'll just return the query arguments as Strelka saw them.
 
 Strelka offers a +parameters+ plugin that provides a framework for describing parameters globally.  It manages validation and untainting, and you can override the global descriptions on a per-route basis.
 
@@ -151,7 +151,7 @@ class HelloWorldApp < Strelka::App
 end
 <?end example ?>
 
-Loading the plugin gives you the +param+ method, which you use to pre-declare all of the available parameters your application might use.  It already has a bunch of built in matchers for common things like email and hostnames.  You can continue using the @params@ attribute as a Hash, but it now is much smarter than that.
+Loading the plugin gives you the +param+ method, which you use to declare all of the global parameters your application might use.  It already has a bunch of built in matchers for common things like email and hostnames.  You can continue using the @params@ attribute as a Hash, but it now is much smarter than it was before.
 
 <?example { lang: Ruby, caption: "Using the 'parameters' Plugin" } ?>
 class HelloWorldApp < Strelka::App
@@ -164,14 +164,14 @@ class HelloWorldApp < Strelka::App
 	param :email, 'An RFC822 email address'
 
 	get '/' do |req|
-		response        = req.response
-		response.body   = req.params.inspect
-		response.body << "\n"
+		response = req.response
+
+		response.puts( req.params.inspect )
 
 		if req.params.okay?
-			response.body << "Hello, %s!\n" % [ req.params['name'] ]
+			response << "Hello, %s!\n" % [ req.params['name'] ]
 		else
-			response.body << "Aaahhhh noooaaahhhh!!\n"
+			response << "Aaahhhh noooaaahhhh!!\n"
 			req.params.error_messages.each do |err|
 				response.body << " - %s\n" % [ err ]
 			end
@@ -212,7 +212,8 @@ class HelloWorldApp < Strelka::App
 	param :name, :alpha
 	param :email, 'An RFC822 email address'
 
-	get '/', :params => { :email => /\w+@\w+/ } do |req|
+	get '/' do |req|
+		req.params.override( :email, /\w+@\w+/ )
 		name = req.params['name'] || 'Handsome'
 		req.response << "Hello, %s!" % [ name ]
 		return req.response
@@ -222,10 +223,10 @@ class HelloWorldApp < Strelka::App
 		response = req.response
 
 		if req.params.okay?
-			response.body   = "Name: %s" % [ req.params['name'] ]
+			response.puts "Name: %s" % [ req.params['name'] ]
 		else
 			response.status = HTTP::BAD_REQUEST
-			response.body   = req.params.error_messages.join( "\n" )
+			response.puts( *req.params.error_messages )
 		end
 
 		return response
@@ -235,7 +236,11 @@ end
 
 The above example shows how to selectively override the @email@ parameter for the @/@ route, and how to incorporate a parameter into a route.  There are many, many more options for the param object.  Please see the <?api "Strelka API documentation":Strelka::ParamValidator ?> for more information.
 
-_TODO_: Named match groups.
+To document:
+
+* Named match groups
+* Validating uploaded files (mediatype, size, etc.)
+* Validating non-form entity bodies (YAML, JSON, etc.)
 
 
 h3. Accessing Headers

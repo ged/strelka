@@ -61,20 +61,20 @@ A minimal application would look something like:
 #!/usr/bin/env ruby
 
 require 'strelka'
-Mongrel2::Config.configure( :configdb => 'config.sqlite' )
 
 class HelloWorldApp < Strelka::App
 
 	def handle_request( request )
 		response = request.response
-		response.headers[:content_type] = 'text/plain'
-		response.body = "Hello, World!"
+		response.content_type = 'text/plain'
+		response.puts( "Hello, World!" )
 		return response
 	end
 
 end # class HelloWorldApp
 
 # Run the app
+Strelka.load_config( 'config.yaml' )
 HelloWorldApp.run if __FILE__ == $0
 <?end example ?>
 

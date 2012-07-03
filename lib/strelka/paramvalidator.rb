@@ -27,6 +27,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #	validator.add( :name, /^(?<lastname>\S+), (?<firstname>\S+)$/, "Customer Name" )
 #	validator.add( :email, "Customer Email" )
 #	validator.add( :feedback, :printable, "Customer Feedback" )
+#	validator.override( :email, :printable, "Your Email Address" )
 #
 #   # Untaint all parameter values which match their constraints
 #   validate.untaint_all_constraints = true
