@@ -16,12 +16,12 @@ contrib/hoetemplate/data/project/templates/layout.tmpl.erb
 contrib/hoetemplate/data/project/templates/top.tmpl.erb
 contrib/hoetemplate/lib/file_name.rb.erb
 contrib/hoetemplate/spec/file_name_spec.rb.erb
-examples/.env
 examples/Procfile
 examples/apps/auth-demo
 examples/apps/auth-demo2
 examples/apps/hello-world
 examples/apps/sessions-demo
+examples/apps/upload-demo
 examples/config.yml
 examples/gen-config.rb
 examples/static/examples.css
@@ -29,6 +29,8 @@ examples/static/examples.html
 examples/templates/auth-form.tmpl
 examples/templates/auth-success.tmpl
 examples/templates/layout.tmpl
+examples/templates/upload-form.tmpl
+examples/templates/upload-success.tmpl
 lib/strelka.rb
 lib/strelka/app.rb
 lib/strelka/app/auth.rb
@@ -57,6 +59,7 @@ lib/strelka/httpresponse.rb
 lib/strelka/httpresponse/negotiation.rb
 lib/strelka/httpresponse/session.rb
 lib/strelka/mixins.rb
+lib/strelka/multipartparser.rb
 lib/strelka/paramvalidator.rb
 lib/strelka/plugins.rb
 lib/strelka/router.rb
@@ -66,6 +69,15 @@ lib/strelka/session.rb
 lib/strelka/session/db.rb
 lib/strelka/session/default.rb
 spec/data/error.tmpl
+spec/data/forms/2_images.form
+spec/data/forms/singleupload.form
+spec/data/forms/testform.form
+spec/data/forms/testform_bad.form
+spec/data/forms/testform_badheaders.form
+spec/data/forms/testform_metadataonly.form
+spec/data/forms/testform_msie.form
+spec/data/forms/testform_multivalue.form
+spec/data/forms/testform_truncated_metadata.form
 spec/data/layout.tmpl
 spec/data/main.tmpl
 spec/lib/constants.rb
@@ -95,6 +107,7 @@ spec/strelka/httpresponse/negotiation_spec.rb
 spec/strelka/httpresponse/session_spec.rb
 spec/strelka/httpresponse_spec.rb
 spec/strelka/mixins_spec.rb
+spec/strelka/multipartparser_spec.rb
 spec/strelka/paramvalidator_spec.rb
 spec/strelka/plugins_spec.rb
 spec/strelka/router/default_spec.rb
