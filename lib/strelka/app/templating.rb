@@ -167,7 +167,8 @@ module Strelka::App::Templating
 	### and return them in a hash keyed by name (Symbol).
 	def load_template_map
 		return self.class.template_map.inject( {} ) do |map, (name, path)|
-			map[ name ] = Inversion::Template.load( path )
+			enc = Encoding.default_internal || Encoding::UTF_8
+			map[ name ] = Inversion::Template.load( path, encoding: enc )
 			map
 		end
 	end
@@ -177,7 +178,8 @@ module Strelka::App::Templating
 	### If none was declared, returns +nil+.
 	def load_layout_template
 		return nil unless ( lt_path = self.class.layout_template )
-		return Inversion::Template.load( lt_path )
+		enc = Encoding.default_internal || Encoding::UTF_8
+		return Inversion::Template.load( lt_path, encoding: enc )
 	end
 
 

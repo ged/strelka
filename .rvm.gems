@@ -5,7 +5,7 @@ formvalidator -v0.1.5
 highline -v1.6.13
 hoe-deveiate -v0.1.1
 hoe-manualgen -v0.3.0
-inversion -v0.10.1
+inversion -v0.11.0
 loggability -v0.4.0
 mongrel2 -v0.27.0
 pluginfactory -v1.0.8
