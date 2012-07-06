@@ -291,7 +291,7 @@ class Strelka::CLICommand
 
 		header "Starting the %s app%s" % [
 			appname,
-			gemname == '' ? '' : " the #{gemname} gem"
+			gemname == '' ? '' : " from the #{gemname} gem"
 		]
 		fork do
 			self.log.debug "  in the child."
