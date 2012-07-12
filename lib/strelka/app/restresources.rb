@@ -165,7 +165,7 @@ module Strelka::App::RestResources
 		### OPTIONS /resources
 		def add_options_handler( route, rsrcobj, options )
 			# :TODO: Documentation for HTML mode (possibly using http://swagger.wordnik.com/)
-			self.log.debug "Adding OPTIONS handler for %p" % [ route, rsrcobj ]
+			self.log.debug "Adding OPTIONS handler for %s (%p)" % [ route, rsrcobj ]
 			self.add_route( :OPTIONS, route, options ) do |req|
 				self.log.debug "OPTIONS handler!"
 				verbs = self.class.resource_verbs[ route ].sort
