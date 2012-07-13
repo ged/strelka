@@ -64,7 +64,8 @@ module Strelka::App::RestResources
 
 	# Class methods to add to classes with REST resources.
 	module ClassMethods # :nodoc:
-		include Sequel::Inflections
+		include Sequel::Inflections,
+		        Strelka::Constants
 
 		# Set of verbs that are valid for a resource, keyed by the resource path
 		@resource_verbs = Hash.new {|h,k| h[k] = Set.new }
@@ -173,9 +174,11 @@ module Strelka::App::RestResources
 
 				self.log.debug "  making a reply with Allowed: %s" % [ verbs.join(', ') ]
 				res.header.allowed = verbs.join(', ')
-				res.content_type = 'text/plain'
-				res.body = ''
-				res.status = HTTP::OK
+				res.for( :json, :yaml ) do |req|
+					{ 'methods' => verbs }
+				end
+				res.for( :text ) { "Methods: #{verbs.join(', ')}" }
+
 
 				return res
 			end
