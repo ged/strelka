@@ -49,6 +49,7 @@ module Strelka::HTTPResponse::Negotiation
 	STRINGIFIERS = {
 		'application/x-yaml' => YAML.method( :dump ),
 		'application/json'   => Yajl.method( :dump ),
+		'text/plain'         => Proc.new {|obj| obj.to_s },
 	}
 
 	# Transcoding to Unicode is likely enough to work to warrant auto-transcoding. These
