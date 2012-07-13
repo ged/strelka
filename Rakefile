@@ -28,7 +28,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'highline',        '~> 1.6'
 	self.dependency 'inversion',       '~> 0.11'
 	self.dependency 'loggability',     '~> 0.4'
-	self.dependency 'mongrel2',        '~> 0.28'
+	self.dependency 'mongrel2',        '~> 0.29'
 	self.dependency 'pluginfactory',   '~> 1.0'
 	self.dependency 'sysexits',        '~> 1.0'
 	self.dependency 'trollop',         '~> 1.16'
