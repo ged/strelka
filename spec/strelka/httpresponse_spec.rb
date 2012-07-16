@@ -94,6 +94,10 @@ describe Strelka::HTTPResponse do
 		@res.header_data.should_not =~ /charset/i
 	end
 
+	it "doesn't try to add an encoding to a response that doesn't have a content type" do
+		@res.content_type = nil
+		@res.header_data.should_not =~ /charset/
+	end
 
 	it "adds a Content-encoding header if there is one encoding" do
 		@res.encodings << 'gzip'
