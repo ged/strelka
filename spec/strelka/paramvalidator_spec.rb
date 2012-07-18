@@ -57,12 +57,17 @@ describe Strelka::ParamValidator do
 			@validator.param_names.should include( 'a_field' )
 		end
 
-		it "doesn't allow a constraint to be added twice" do
+		it "ignores identical duplicate constraints to be added twice" do
+			@validator.add( :a_field, :string )
+			@validator.add( :a_field, :string )
+			@validator.param_names.should include( 'a_field' )
+		end
+
+		it "throws an error if a constraint is re-added with different values" do
 			@validator.add( :a_field, :string )
 			expect {
-				@validator.add( :a_field, :string )
-			}.to raise_error( /parameter "a_field" is already defined/i )
-			@validator.param_names.should include( 'a_field' )
+				@validator.add( :a_field, :integer )
+			}.to raise_error( /parameter "a_field" is already defined as a 'string'/i )
 		end
 
 		it "allows an existing constraint to be overridden" do

@@ -4,6 +4,7 @@
 
 require 'set'
 require 'sequel'
+require 'sequel/extensions/pretty_table'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -84,12 +85,11 @@ module Strelka::App::RestResources
 		def self::extended( obj )
 			super
 
+			# Enable text tables for text/plain responses
+			Sequel.extension( :pretty_table )
+
 			# Load the plugins this one depends on if they aren't already
 			obj.plugins :routing, :negotiation, :parameters
-
-			# Add validations for the limit and offset parameters
-			obj.param :limit, :integer
-			obj.param :offset, :integer
 
 			# Use the 'exclusive' router instead of the more-flexible
 			# Mongrel2-style default one
@@ -121,12 +121,20 @@ module Strelka::App::RestResources
 			self.log.debug "Adding REST resource for %p" % [ rsrcobj ]
 			options = self.service_options.merge( options )
 
+			# Add a parameter for the primary key
+			pkey = rsrcobj.primary_key
+			pkey_schema = rsrcobj.db_schema[ pkey.to_sym ] or
+				raise ArgumentError,
+					"cannot generate services for %p: resource has no schema" % [ rsrcobj ]
+			self.param( pkey, pkey_schema[:type] ) unless
+				self.paramvalidator.param_names.include?( pkey.to_s )
+
 			# Figure out what the resource name is, and make the route from it
 			name = options[:name] || rsrcobj.implicit_table_name
 			route = [ options[:prefix], name ].compact.join( '/' )
 
-			# Set up parameters
-			self.add_parameters( rsrcobj, options )
+			# Ensure validated parameters are untainted
+			self.untaint_all_constraints
 
 			# Make and install handler methods
 			self.log.debug "  adding readers"
@@ -151,17 +159,6 @@ module Strelka::App::RestResources
 		end
 
 
-		### Add parameter declarations for parameters related to +rsrcobj+.
-		def add_parameters( rsrcobj, options )
-			self.log.debug "Declaring validations for columns from %p" % [ rsrcobj ]
-			self.untaint_all_constraints
-			rsrcobj.db_schema.each do |col, config|
-				self.log.debug "  %s (%p)" % [ col, config[:type] ]
-				param col, config[:type]
-			end
-		end
-
-
 		### Add a handler method for discovery for the specified +rsrcobj+.
 		### OPTIONS /resources
 		def add_options_handler( route, rsrcobj, options )
@@ -169,15 +166,28 @@ module Strelka::App::RestResources
 			self.log.debug "Adding OPTIONS handler for %s (%p)" % [ route, rsrcobj ]
 			self.add_route( :OPTIONS, route, options ) do |req|
 				self.log.debug "OPTIONS handler!"
-				verbs = self.class.resource_verbs[ route ].sort
 				res = req.response
+
+				# Gather up metadata describing the resource
+				verbs = self.class.resource_verbs[ route ].sort
+				columns = rsrcobj.allowed_columns || rsrcobj.columns
+				attributes = columns.each_with_object({}) do |col, hash|
+					hash[ col ] = rsrcobj.db_schema[ col ][:type]
+				end
 
 				self.log.debug "  making a reply with Allowed: %s" % [ verbs.join(', ') ]
 				res.header.allowed = verbs.join(', ')
 				res.for( :json, :yaml ) do |req|
-					{ 'methods' => verbs }
+					{
+						'methods' => verbs,
+						'attributes' => attributes,
+					}
 				end
-				res.for( :text ) { "Methods: #{verbs.join(', ')}" }
+				res.for( :text ) do
+					"Methods: #{verbs.join(', ')}\n" +
+					"Attributes: \n" +
+					attributes.map {|name,type| "  "}
+				end
 
 
 				return res
@@ -187,9 +197,8 @@ module Strelka::App::RestResources
 		end
 
 
-		### Add a handler method for reading a single instance of the specified +rsrcobj+, which should be a
-		### Sequel::Model class or a ducktype-alike.
-		### GET /resources/{id}
+		### Add a handler method for reading a single instance of the specified +rsrcobj+, which
+		### should be a Sequel::Model class or a ducktype-alike. GET /resources/{id}
 		def add_read_handler( route_prefix, rsrcobj, options )
 			pkey = rsrcobj.primary_key
 			route = "#{route_prefix}/:#{pkey}"
@@ -205,6 +214,7 @@ module Strelka::App::RestResources
 
 				res = req.response
 				res.for( :json, :yaml ) { resource }
+				res.for( :text ) { Sequel::PrettyTable.string(resource) }
 
 				return res
 			end
@@ -213,19 +223,36 @@ module Strelka::App::RestResources
 		end
 
 
-		### Add a handler method for reading a collection of the specified +rsrcobj+, which should be a
-		### Sequel::Model class or a ducktype-alike.
+		### Add a handler method for reading a collection of the specified +rsrcobj+, which should
+		### be a Sequel::Model class or a ducktype-alike.
 		### GET /resources
 		def add_collection_read_handler( route, rsrcobj, options )
-			self.log.debug "Creating handler for reading collections of %p: GET %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for reading collections of %p: GET %s" %
+				[ rsrcobj, route ]
+
+			# Make a column regexp for validating the order field
+			colunion = Regexp.union( (rsrcobj.allowed_columns || rsrcobj.columns).map(&:to_s) )
+			colre = /^(?<column>#{colunion})$/
+
 			self.add_route( :GET, route, options ) do |req|
+				# Add validations for limit, offset, and order parameters
+				req.params.add :limit, :integer
+				req.params.add :offset, :integer
+				req.params.add :order, colre
+
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
 
-				limit, offset = req.params.values_at( :limit, :offset )
+				limit, offset, order = req.params.values_at( :limit, :offset, :order )
 				res = req.response
 
 				dataset = rsrcobj.dataset
+				if order
+					order = Array( order ).map( &:to_sym )
+					self.log.debug "Ordering result set by %p" % [ order ]
+					dataset = dataset.order( *order )
+				end
+
 				if limit
 					self.log.debug "Limiting result set to %p records" % [ limit ]
 					dataset = dataset.limit( limit, offset )
@@ -233,6 +260,7 @@ module Strelka::App::RestResources
 
 				self.log.debug "Returning collection: %s" % [ dataset.sql ]
 				res.for( :json, :yaml ) { dataset.all }
+				res.for( :text ) { Sequel::PrettyTable.string(dataset) }
 
 				return res
 			end
@@ -244,9 +272,11 @@ module Strelka::App::RestResources
 		### Add a handler method for creating a new instance of +rsrcobj+.
 		### POST /resources
 		def add_collection_create_handler( route, rsrcobj, options )
-			self.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for creating %p resources: POST %s" %
+				[ rsrcobj, route ]
 
 			self.add_route( :POST, route, options ) do |req|
+				add_resource_params( req, rsrcobj )
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
 
@@ -282,8 +312,10 @@ module Strelka::App::RestResources
 			pkey = rsrcobj.primary_key
 			route = "#{route_prefix}/:#{pkey}"
 
-			self.log.debug "Creating handler for creating %p resources: POST %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for creating %p resources: POST %s" %
+				[ rsrcobj, route ]
 			self.add_route( :PUT, route, options ) do |req|
+				add_resource_params( req, rsrcobj )
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
 
@@ -315,9 +347,11 @@ module Strelka::App::RestResources
 		### PUT /resources
 		def add_collection_update_handler( route, rsrcobj, options )
 			pkey = rsrcobj.primary_key
-			self.log.debug "Creating handler for updating every %p resources: PUT %s" % [ rsrcobj, route ]
+			self.log.debug "Creating handler for updating every %p resources: PUT %s" %
+				[ rsrcobj, route ]
 
 			self.add_route( :PUT, route, options ) do |req|
+				add_resource_params( req, rsrcobj )
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
 
@@ -344,8 +378,8 @@ module Strelka::App::RestResources
 		end
 
 
-		### Add a handler method for deleting an instance of +rsrcobj+ with +route_prefix+ as the base
-		### URI path.
+		### Add a handler method for deleting an instance of +rsrcobj+ with +route_prefix+ as the
+		### base URI path.
 		### DELETE /resources/{id}
 		def add_delete_handler( route_prefix, rsrcobj, options )
 			pkey = rsrcobj.primary_key
@@ -445,8 +479,13 @@ module Strelka::App::RestResources
 		def add_dataset_read_handler( path, rsrcobj, dsname, param, options )
 			self.log.debug "Adding dataset method read handler: %s" % [ path ]
 
+			config = rsrcobj.db_schema[ param ] or
+				raise ArgumentError, "no such column %p for %p" % [ col, rsrcobj ]
+			param( param, config[:type] )
+
 			self.add_route( :GET, path, options ) do |req|
-				self.log.debug "Resource dataset GET request for dataset %s on %p" % [ dsname, rsrcobj ]
+				self.log.debug "Resource dataset GET request for dataset %s on %p" %
+					[ dsname, rsrcobj ]
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
 
@@ -467,6 +506,7 @@ module Strelka::App::RestResources
 				# :TODO: Handle other mediatypes
 				self.log.debug "  returning collection: %s" % [ dataset.sql ]
 				res.for( :json, :yaml ) { dataset.all }
+				res.for( :text ) { Sequel::PrettyTable.string(dataset) }
 
 				return res
 			end
@@ -476,10 +516,18 @@ module Strelka::App::RestResources
 		### Add a GET route for the specified +association+ of the +rsrcobj+ at the given
 		### +path+.
 		def add_composite_read_handler( path, rsrcobj, association, options )
-			pkey = rsrcobj.primary_key
 			self.log.debug "Adding composite read handler for association: %s" % [ association ]
 
+			pkey = rsrcobj.primary_key
+			colunion = Regexp.union( (rsrcobj.allowed_columns || rsrcobj.columns).map(&:to_s) )
+			colre = /^(?<column>#{colunion})$/
+
 			self.add_route( :GET, path, options ) do |req|
+
+				# Add validations for limit, offset, and order parameters
+				req.params.add :limit, :integer
+				req.params.add :offset, :integer
+				req.params.add :order, colre
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
 
@@ -489,23 +537,30 @@ module Strelka::App::RestResources
 
 				# Look up the resource, and if it exists, use it to fetch its associated
 				# objects
-				rsrcobj.db.transaction do
-					resource = rsrcobj[ id ] or
-						finish_with( HTTP::NOT_FOUND, "No such %s [%p]" % [rsrcobj.table_name, id] )
+				resource = rsrcobj[ id ] or
+					finish_with( HTTP::NOT_FOUND, "No such %s [%p]" % [rsrcobj.table_name, id] )
 
-					# Apply limit and offset parameters if they exist
-					limit, offset = req.params.values_at( :limit, :offset )
-					dataset = resource.send( "#{association}_dataset" )
-					if limit
-						self.log.debug "Limiting result set to %p records" % [ limit ]
-						dataset = dataset.limit( limit, offset )
-					end
+				limit, offset, order = req.params.values_at( :limit, :offset, :order )
+				dataset = resource.send( "#{association}_dataset" )
 
-					# Fetch and return the records as JSON or YAML
-					# :TODO: Handle other mediatypes
-					self.log.debug "Returning collection: %s" % [ dataset.sql ]
-					res.for( :json, :yaml ) { dataset.all }
+				# Apply the order parameter if it exists
+				if order
+					order = Array( order ).map( &:to_sym )
+					self.log.debug "Ordering result set by %p" % [ order ]
+					dataset = dataset.order( *order )
 				end
+
+				# Apply limit and offset parameters if they exist
+				if limit
+					self.log.debug "Limiting result set to %p records" % [ limit ]
+					dataset = dataset.limit( limit, offset )
+				end
+
+				# Fetch and return the records as JSON or YAML
+				# :TODO: Handle other mediatypes
+				self.log.debug "Returning collection: %s" % [ dataset.sql ]
+				res.for( :json, :yaml ) { dataset.all }
+				res.for( :text ) { Sequel::PrettyTable.string(dataset) }
 
 				return res
 			end
@@ -519,6 +574,24 @@ module Strelka::App::RestResources
 	def handle_request( * ) # :nodoc:
 		self.log.debug "[:restresources] handling request for REST resource."
 		super
+	end
+
+
+	#######
+	private
+	#######
+
+	### Add parameter validations for the given +columns+ of the specified resource object +rsrcobj+
+	### to the specified +req+uest. 
+	def add_resource_params( req, rsrcobj, *columns )
+		columns = rsrcobj.allowed_columns || rsrcobj.columns if columns.empty?
+
+		columns.each do |col|
+			config = rsrcobj.db_schema[ col ] or
+				raise ArgumentError, "no such column %p for %p" % [ col, rsrcobj ]
+			req.params.add( col, config[:type] ) unless req.params.param_names.include?( col.to_s )
+		end
+
 	end
 
 end # module Strelka::App::RestResources

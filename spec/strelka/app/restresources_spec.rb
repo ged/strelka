@@ -28,7 +28,7 @@ describe Strelka::App::RestResources do
 	include Mongrel2::Config::DSL
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging()
 		setup_config_db()
 
 		@request_factory = Mongrel2::RequestFactory.new( route: '/api/v1' )
@@ -42,7 +42,7 @@ describe Strelka::App::RestResources do
 	it_should_behave_like( "A Strelka::App Plugin" )
 
 
-	describe "an including App" do
+	describe "included in an App" do
 
 		before( :each ) do
 			@app = Class.new( Strelka::App ) do
@@ -54,7 +54,7 @@ describe Strelka::App::RestResources do
 		end
 
 
-		it "knows what resources are mounted where" do
+		it "keeps track of what resources are mounted where" do
 			@app.resource_verbs.should be_a( Hash )
 			@app.resource_verbs.should be_empty()
 		end
@@ -70,7 +70,7 @@ describe Strelka::App::RestResources do
 				end
 			end
 
-			it "knows about the mounted resource" do
+			it "keeps track of what resources are mounted where" do
 				@app.resource_verbs.should have( 1 ).member
 				@app.resource_verbs.should include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
@@ -107,7 +107,7 @@ describe Strelka::App::RestResources do
 				end
 			end
 
-			it "knows about the mounted resource" do
+			it "keeps track of what resources are mounted where" do
 				@app.resource_verbs.should have( 1 ).member
 				@app.resource_verbs.should include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
@@ -136,17 +136,20 @@ describe Strelka::App::RestResources do
 		end
 
 
-		describe "route behaviors" do
+		describe "auto-generates routes:" do
 
 			before( :each ) do
 				# Create two servers in the config db to test with
 				server 'test-server' do
+					name "Test"
 					host 'main'
 					host 'monitor'
 					host 'adminpanel'
 					host 'api'
 				end
-				server 'step-server'
+				server 'step-server' do
+					name 'Step'
+				end
 
 				@app.class_eval do
 					resource Mongrel2::Config::Server
@@ -158,7 +161,8 @@ describe Strelka::App::RestResources do
 				Mongrel2::Config.subclasses.each {|klass| klass.truncate }
 			end
 
-			context "OPTIONS routes" do
+
+			context "OPTIONS route" do
 
 				it "responds to a top-level OPTIONS request with a resource description (JSON Schema?)"
 
@@ -173,7 +177,7 @@ describe Strelka::App::RestResources do
 			end # OPTIONS routes
 
 
-			context "GET routes" do
+			context "GET route" do
 				it "has a GET route to fetch the resource collection" do
 					req = @request_factory.get( '/api/v1/servers', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
@@ -207,6 +211,31 @@ describe Strelka::App::RestResources do
 
 					body.should have( 1 ).member
 					body[0]['uuid'].should == 'step-server'
+				end
+
+				it "supports ordering the result by a single column" do
+					req = @request_factory.get( '/api/v1/servers?order=name', 'Accept' => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					res.content_type.should == 'application/json'
+					body = Yajl.load( res.body )
+
+					body.should have( 2 ).members
+					body[0]['name'].should == 'Step'
+				end
+
+				it "supports ordering the result by multiple columns" do
+					pending "fixing the multi-value paramvalidator bug"
+					req = @request_factory.get( '/api/v1/servers?order=id;order=name', 'Accept' => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					res.content_type.should == 'application/json'
+					body = Yajl.load( res.body )
+
+					body.should have( 2 ).members
+					body[0]['name'].should == 'Test'
 				end
 
 				it "has a GET route to fetch a single resource by its ID" do
@@ -282,7 +311,7 @@ describe Strelka::App::RestResources do
 			end # GET routes
 
 
-			context "POST routes" do
+			context "POST route" do
 
 				before( :each ) do
 					@server_values = {
@@ -330,7 +359,7 @@ describe Strelka::App::RestResources do
 			end # POST routes
 
 
-			context "PUT routes" do
+			context "PUT route" do
 
 				before( :each ) do
 					@posted_values = {
@@ -368,7 +397,7 @@ describe Strelka::App::RestResources do
 			end # PUT routes
 
 
-			context "DELETE routes" do
+			context "DELETE route" do
 
 				it "has a DELETE route to delete single instances in the resource collection" do
 					req = @request_factory.delete( '/api/v1/servers/1' )
@@ -395,7 +424,7 @@ describe Strelka::App::RestResources do
 		end # route behaviors
 
 
-		describe "supports inheritance" do
+		describe "supports inheritance:" do
 
 			subject do
 				@app.resource( Mongrel2::Config::Server )

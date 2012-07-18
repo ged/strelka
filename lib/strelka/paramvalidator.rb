@@ -279,12 +279,18 @@ class Strelka::ParamValidator < ::FormValidator
 	### a constraint, a description, and one or more flags.
 	def add( name, *args, &block )
 		name = name.to_s
-		raise ArgumentError,
-			"parameter %p is already defined; perhaps you meant to use #override?" % [name] if
-			self.param_names.include?( name )
+		constraint = self.make_param_validator( name, args, &block )
+
+		# No-op if there's already a parameter with the same name and constraint
+		if self.param_names.include?( name )
+			return if self.profile[:constraints][ name ] == constraint
+			raise ArgumentError,
+				"parameter %p is already defined as a '%s'; perhaps you meant to use #override?" %
+					[ name, self.profile[:constraints][name] ]
+		end
 
 		self.log.debug "Adding parameter '%s' to profile" % [ name ]
-		self.set_param( name, *args, &block )
+		self.set_param( name, constraint, *args, &block )
 	end
 
 
@@ -296,8 +302,30 @@ class Strelka::ParamValidator < ::FormValidator
 			"no parameter %p defined; perhaps you meant to use #add?" % [name] unless
 			self.param_names.include?( name )
 
+		constraint = self.make_param_validator( name, args, &block )
 		self.log.debug "Overriding parameter '%s' in profile" % [ name ]
-		self.set_param( name, *args, &block )
+		self.set_param( name, constraint, *args, &block )
+	end
+
+
+	### Extract a validator from the given +args+ and return it.
+	def make_param_validator( name, args, &block )
+		self.log.debug "Finding param validator out of: %s, %p, %p" % [ name, args, block ]
+		args.unshift( block ) if block
+
+		# Custom validator -- either a callback or a regex
+		if args.first.is_a?( Regexp ) || args.first.respond_to?( :call )
+			return args.shift
+
+		# Builtin match validator, either explicit or implied by the name
+		else
+			return args.shift if args.first.is_a?( Symbol ) && !FLAGS.include?( args.first )
+
+			raise ArgumentError, "no builtin %p validator" % [ name ] unless
+				self.respond_to?( "match_#{name}" )
+			return name
+		end
+
 	end
 
 
@@ -376,23 +404,8 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Set the parameter +name+ in the profile to validate using the given +args+,
 	### which are the same as the ones passed to #add and #override.
-	def set_param( name, *args, &block )
-		args.unshift( block ) if block
-
-		# Custom validator -- either a callback or a regex
-		if args.first.is_a?( Regexp ) ||
-			args.first.respond_to?( :call )
-			self.profile[:constraints][ name ] = args.shift
-
-		# Builtin match validator, either explicit or implied by the name
-		else
-			constraint = args.shift if args.first.is_a?( Symbol ) && !FLAGS.include?( args.first )
-			constraint ||= name
-
-			raise ArgumentError, "no builtin %p validator" % [ constraint ] unless
-				self.respond_to?( "match_#{constraint}" )
-			self.profile[:constraints][ name ] = constraint
-		end
+	def set_param( name, validator, *args, &block )
+		self.profile[:constraints][ name ] = validator
 
 		self.profile[:descriptions][ name ] = args.shift if args.first.is_a?( String )
 
@@ -407,7 +420,7 @@ class Strelka::ParamValidator < ::FormValidator
 		if args.include?( :untaint )
 			self.profile[:untaint_constraint_fields] |= [ name ]
 		else
-			self.profile[:untaint_constraint_fields].delete( :name )
+			self.profile[:untaint_constraint_fields].delete( name )
 		end
 
 		self.revalidate if self.validated?

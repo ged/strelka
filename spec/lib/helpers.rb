@@ -41,6 +41,8 @@ require 'strelka'
 
 require 'spec/lib/constants'
 
+Loggability.format_with( :color ) if $stdout.tty?
+
 
 ### RSpec helper functions.
 module Strelka::SpecHelpers

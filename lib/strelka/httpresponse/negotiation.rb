@@ -334,7 +334,7 @@ module Strelka::HTTPResponse::Negotiation
 
 		new_body = callback.call( mimetype ) or return false
 
-		self.log.debug "  successfully transformed! Setting up response."
+		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body ]
 		new_body = STRINGIFIERS[ mimetype ].call( new_body ) if
 			STRINGIFIERS.key?( mimetype ) && !new_body.is_a?( String )
 
