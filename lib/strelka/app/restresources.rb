@@ -480,7 +480,7 @@ module Strelka::App::RestResources
 			self.log.debug "Adding dataset method read handler: %s" % [ path ]
 
 			config = rsrcobj.db_schema[ param ] or
-				raise ArgumentError, "no such column %p for %p" % [ col, rsrcobj ]
+				raise ArgumentError, "no such column %p for %p" % [ param, rsrcobj ]
 			param( param, config[:type] )
 
 			self.add_route( :GET, path, options ) do |req|
