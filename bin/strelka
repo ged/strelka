@@ -295,8 +295,8 @@ class Strelka::CLICommand
 		]
 		fork do
 			self.log.debug "  in the child."
-			Strelka.load_config( self.options.config ) if self.options.config
 			apps = Strelka::App.load( path )
+			Strelka.load_config( self.options.config ) if self.options.config
 			self.log.debug "  loaded: %p" % [ apps ]
 			apps.first.run
 		end
