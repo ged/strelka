@@ -224,7 +224,7 @@ module Strelka
 	# A collection of methods for declaring other methods.
 	#
 	#   class MyClass
-	#       include Strelka::MethodUtilities
+	#       extend Strelka::MethodUtilities
 	#
 	#       singleton_attr_accessor :types
 	#       singleton_method_alias :kinds, :types
