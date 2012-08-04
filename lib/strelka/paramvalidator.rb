@@ -123,6 +123,7 @@ class Strelka::ParamValidator < ::FormValidator
 		:email        => /^(?<email>#{RFC822_EMAIL_ADDRESS})$/,
 		:hostname     => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
 		:uri          => /^(?<uri>#{URI::URI_REF})$/,
+		:uuid         => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i
 	}
 
 	# Pattern to use to strip binding operators from parameter patterns so they
