@@ -78,6 +78,33 @@ describe Strelka::HTTPRequest do
 	end
 
 
+	context "instance with URI-escaped characters in its path" do
+
+		before( :each ) do
+			@req = @request_factory.get( '/directory/user%20info/ged%00' )
+		end
+
+		it "knows what the request's parsed URI is" do
+			@req.uri.should be_a( URI )
+			@req.uri.to_s.should == 'http://localhost:8080/directory/user%20info/ged%00'
+		end
+
+		it "knows what Mongrel2 route it followed" do
+			@req.pattern.should == "/directory"
+		end
+
+		it "knows what the URI of the route handling the request is" do
+			@req.base_uri.should be_a( URI )
+			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+		end
+
+		it "knows what the path of the request past its route is" do
+			@req.app_path.should == "/user info/ged\0"
+		end
+
+	end
+
+
 	context "instance with a query string" do
 
 		before( :each ) do

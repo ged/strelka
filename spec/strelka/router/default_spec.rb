@@ -258,6 +258,11 @@ describe Strelka::Router::Default do
 			@router.route_request( req ).should match_route( :as_pdf )
 		end
 
+		it "doesn't route /foo%1B.pdf to the regexp action" do
+			req = @request_factory.get( "/user/foo%1B.pdf" )
+			@router.route_request( req ).should_not match_route( :as_pdf )
+		end
+
 		it "routes /zanzibar.pdf to the regexp action" do
 			req = @request_factory.get( '/user/zanzibar.pdf' )
 			@router.route_request( req ).should match_route( :as_pdf )

@@ -94,13 +94,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   # => #<URI::HTTP:0x007fe34d16b2e0 URL:http://localhost:8080/user>
 	def base_uri
 		rval = self.uri
-		rval.path = self.route
+		rval.path = self.headers.pattern
 		rval.query = nil
 		return rval
 	end
 
 
-	### Return the portion of the Request's path that was routed by Mongrel2. This and the
+	### Return the unescaped portion of the Request's path that was routed by Mongrel2. This and the
 	### #app_path make up the #path.
 	###
 	###   # For a handler with a route of '/user', for the request:
@@ -108,20 +108,20 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.route
 	###   # => "/user"
 	def route
-		return self.headers.pattern
+		return URI.unescape( self.headers.pattern )
 	end
 	alias_method :pattern, :route
 
 
-	### Return the portion of the Request's path relative to the request's #route.
+	### Return the unescaped portion of the Request's path relative to the request's #route.
 	###
 	###   # For a handler with a route of '/user', for the request:
 	###   # "GET /user/1/profile HTTP/1.1"
 	###   request.app_path
 	###   # => "/1/profile"
 	def app_path
-		rval = self.uri.path.dup
-		rval.slice!( 0, self.route.length )
+		rval = URI.unescape( self.uri.path )
+		rval.slice!( 0, self.route.bytesize )
 		return rval
 	end
 
