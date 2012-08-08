@@ -181,13 +181,13 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	### Return a Hash of request form data.
 	def parse_form_data
-		unless self.headers.content_type
+		unless self.content_type
 			finish_with( HTTP::BAD_REQUEST, "Malformed request (no content type?)" )
 		end
 
 		self.body.rewind
 
-		case self.headers.content_type.split( ';' ).first
+		case self.content_type.split( ';' ).first
 		when 'application/x-www-form-urlencoded'
 			return merge_query_args( URI.decode_www_form(self.body.read) )
 		when 'application/json', 'text/javascript'
@@ -195,16 +195,17 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		when 'text/x-yaml', 'application/x-yaml'
 			return YAML.load( self.body )
 		when 'multipart/form-data'
-			boundary = self.headers.content_type[ /\bboundary=(\S+)/, 1 ] or
+			boundary = self.content_type[ /\bboundary=(\S+)/, 1 ] or
 				raise Strelka::ParseError, "no boundary found for form data: %p" %
-				[ self.headers.content_type ]
+				[ self.content_type ]
 			boundary = dequote( boundary )
 
 			parser = Strelka::MultipartParser.new( self.body, boundary )
 			return parser.parse
 		else
-			raise Strelka::Error, "don't know how to handle %p form data" %
-				[ self.headers.content_type ]
+			self.log.debug "don't know how to handle %p form data" %
+				[ self.content_type ]
+			return {}
 		end
 	end
 

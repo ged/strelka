@@ -34,7 +34,7 @@ Content-Disposition: form-data; name="thingfish-metadata-namespace"
 
 testing
 --sillyboundary
-Content-Di form-data; name="thingfish-metadata-rating"
+Content-Disposition: form-data; name="thingfish-metadata-rating"
 
 5
 --sillyboundary--

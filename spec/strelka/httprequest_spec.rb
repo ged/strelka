@@ -23,7 +23,7 @@ require 'strelka/cookie'
 describe Strelka::HTTPRequest do
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging()
 		@request_factory = Mongrel2::RequestFactory.new( route: '/directory' )
 	end
 
@@ -237,14 +237,17 @@ describe Strelka::HTTPRequest do
 
 			before( :each ) do
 				@req = @request_factory.post( '/directory/path', '',
-					'Content-type' => 'multipart/form-data' )
+					'Content-type' => 'multipart/form-data; boundary=--a_boundary' )
 			end
 
-			it "returns nil for an empty body" do
-				pending "multipart/form-data support" do
-					@req.body = ''
-					@req.params.should be_nil()
-				end
+			it "returns a hash for form parameters" do
+				@req.body = "----a_boundary\r\n" +
+					%{Content-Disposition: form-data; name="title"\r\n} +
+					%{\r\n} +
+					%{An Impossible Task\r\n} +
+					%{----a_boundary--\r\n}
+
+				@req.params.should == {'title' => 'An Impossible Task'}
 			end
 
 		end
