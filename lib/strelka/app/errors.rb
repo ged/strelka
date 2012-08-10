@@ -183,7 +183,7 @@ module Strelka::App::Errors
 		# to the default handler instead
 		handler = self.status_handler_for( status ) or
 			throw( :finish, status_info )
-		self.log.info "Using custom handler %p for status response: %d: %s" % [ handler, status, status_info ]
+		self.log.debug "Custom %d handler: %p" % [ status, handler ]
 
 		# Set up the request's response with the right status code
 		request.notes[:status_info] = status_info
