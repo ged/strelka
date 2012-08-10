@@ -203,8 +203,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 			parser = Strelka::MultipartParser.new( self.body, boundary )
 			return parser.parse
 		else
-			self.log.debug "don't know how to handle %p form data" %
-				[ self.content_type ]
+			self.log.debug "no form data in a %p request" % [ self.content_type ]
 			return {}
 		end
 	end
