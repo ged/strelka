@@ -80,7 +80,7 @@ class Strelka::MultipartParser
 			self.bufsize  = Integer( options[:bufsize] )   || CONFIG_DEFAULTS[:bufsize]
 			self.spooldir = Pathname( options[:spooldir] ) || CONFIG_DEFAULTS[:spooldir]
 		else
-			self.log.debug "Configuring %p with defaults" % [ self, CONFIG_DEFAULTS ]
+			self.log.debug "Configuring %p with defaults: %p" % [ self, CONFIG_DEFAULTS ]
 			self.bufsize  = CONFIG_DEFAULTS[:bufsize]
 			self.spooldir = CONFIG_DEFAULTS[:spooldir]
 		end
