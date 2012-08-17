@@ -455,10 +455,12 @@ module Strelka::App::RestResources
 				# Use the name of the dataset block's parameter
 				# :TODO: Handle the case where the parameter name doesn't match a column
 				#        or a parameter-type more gracefully.
-				param = proc.parameters.first[1]
-				route = "%s/%s/:%s" % [ route_prefix, name, param ]
-				self.log.debug "  route for dataset method %s: %s" % [ name, route ]
-				self.add_dataset_read_handler( route, rsrcobj, name, param, options )
+				unless proc.parameters.empty?
+					param = proc.parameters.first[1]
+					route = "%s/%s/:%s" % [ route_prefix, name, param ]
+					self.log.debug "  route for dataset method %s: %s" % [ name, route ]
+					self.add_dataset_read_handler( route, rsrcobj, name, param, options )
+				end
 			end
 
 			# Add composite service routes for each association
