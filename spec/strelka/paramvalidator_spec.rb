@@ -918,8 +918,8 @@ describe Strelka::ParamValidator do
 			end
 
 			it "rejects invalid UUIDs" do
-				@validator.add( :alpha )
-				@validator.validate( 'alpha' => '21bebfcd-d222-4c40-g31e-26730dc9531f' )
+				@validator.add( :uuid )
+				@validator.validate( 'uuid' => '21bebfcd-d222-4c40-g31e-26730dc9531f' )
 
 				@validator.should_not be_okay()
 				@validator.should have_errors()
