@@ -719,6 +719,12 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
+	### Match valid UUIDs.
+	def match_uuid( val )
+		return self.match_builtin_constraint( val, :uuid )
+	end
+
+
 	### Match valid URIs
 	def match_uri( val )
 		return self.match_builtin_constraint( val, :uri ) do |m|

@@ -905,6 +905,31 @@ describe Strelka::ParamValidator do
 
 		end
 
+		describe ":uuid constraints" do
+
+			it "accepts valid UUIDs without regard to case" do
+				@validator.add( :uuid )
+				@validator.validate( 'uuid' => '21BEBFCD-d222-4c40-831e-26730dc9531f' )
+
+				@validator.should be_okay()
+				@validator.should_not have_errors()
+
+				@validator[:uuid].should == '21BEBFCD-d222-4c40-831e-26730dc9531f'
+			end
+
+			it "rejects invalid UUIDs" do
+				@validator.add( :alpha )
+				@validator.validate( 'alpha' => '21bebfcd-d222-4c40-g31e-26730dc9531f' )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:uuid].should be_nil()
+			end
+
+		end
+
+
 		describe ":alphanumeric constraints" do
 
 			it "accepts alphanumeric characters for fields with alphanumeric constraints" do
