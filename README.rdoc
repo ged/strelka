@@ -8,16 +8,18 @@ docs :: http://deveiate.org/code/strelka
 
 == Description
 
-Strelka is a framework for creating and deploying Mongrel2 web applications
-in Ruby, and for managing a Mongrel2 cluster.
+Strelka is a framework for creating and deploying
+"Mongrel2":http://mongrel2.org/ web applications in Ruby.
 
-It's named after the Russian dog who was one of the first space travelers
-to orbit the Earth and return alive.
+It's named after a lesser known "Russian
+cosmonaut":http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka who was
+one of the first canine space travelers to orbit the Earth and return alive.
+Her name means "little arrow".
 
 
 == Prerequisites
 
-* Mongrel2[http://mongrel2.org/]
+* Mongrel2[http://mongrel2.org/] 1.8.0 or better
 * Ruby 1.9.3 or better
 
 
@@ -26,95 +28,124 @@ to orbit the Earth and return alive.
     $ gem install strelka
 
 
-== Usage
+== Getting Started
 
-Strelka is an application framework built on top of the Ruby-Mongrel2
-connector. It also includes a command-line tool for discovering Strelka
-application gems that are installed, setting up an application's
-runtime directory, and starting a Strelka application.
+We're going to assume you've already built and installed the Mongrel2 daemon.
+If not, please refer to the  {Mongrel2
+documentation}[http://mongrel2.org/wiki/quick_start.html] and get that  ready.
+
+Mongrel2 loads its configuration from a SQLite database. You can create the 
+this database in any fashion you like, but the Mongrel2 ruby module includes a
+command-line tool called <tt>m2sh.rb</tt> that'll let you quickstart a server
+if you just want to experiment. If you've already installed the *strelka* gem,
+then it will already have been installed as a dependency.
+
+To bootstrap a basic server, configure it, and run it:
+
+    $ mkdir strelka-tryout
+    $ cd !$
+    $ m2sh.rb quickstart
+
+This will generate a Ruby DSL config, then invoke an editor on it.
+
+Make sure the config has a line like:
+
+    route '/hello', handler( 'tcp://127.0.0.1:9999',  'helloworld' )
+
+in the 'host' section; that's the part of the Mongrel2 server we'll be talking
+to.
+
+The quickstart will generate a SQLite configuration database for use with
+Mongrel2 in your current working directory, with the default required directory
+structure. Mongrel2 will listen on port 8113 (unless you changed it), and send
+all requests starting at the URI <tt>/hello</tt> to a handler called
+<tt>helloworld</tt>.
+
+If you stop the server (Ctrl-C will do so), you can restart it like so:
+
+    $ m2sh.rb start
+
+Now that the Mongrel2 daemon is up and running, we can move forward and create
+our first application!
 
 
-=== The Application Framework
 
-The application framework is primarily geared towards developing web (HTTP)
-applications at the moment, but the intention is to make Strelka useful for
-developing applications that use the other protocols supported by Mongrel2
-at some point as well.
+=== A Minimal Application
 
-The framework is centered around the Strelka::App class, which is what you'll
-subclass when creating your own applications. It's pretty minimal by itself;
-Strelka applications are composed out of plugins that mix in the specific
-framework parts you specify, so you get exactly what you need and nothing
-more.
+Strelka applications are subclasses of the Strelka::App class. Strelka::App is 
+pretty minimal by itself; it inherits most of its behavior from the basic 
+Mongrel2::Handler class, only adding a few convenience methods for common HTTP 
+tasks.
 
-The plugins system itself is contained in the Strelka::Plugins mixin,
-which is included in Strelka::App already. This adds the +plugins+
-declarative, which you use from your app to load the plugins you want to use.
-
-A very basic application might look like this:
+A minimal application would look something like:
 
     #!/usr/bin/env ruby
 
     require 'strelka'
 
-    # The Strelka admin web console.
     class HelloWorldApp < Strelka::App
 
-        # The route appid that will configure this app's
-        # connection to Mongrel2 if no appid is given
-        # to App.run
-        ID = 'hello-world'
-
-        # Use Sinatra-like routing
-        plugins :routing
-
-        # Set responses to plaintext if they don't specify differently
-        default_type 'text/plain'
-
-        # Handle all GET requests the same way
-        get do |req|
-            res = req.response
-            res.status = HTTP::OK
-            res << 'Hello, world!'
-            return res
+        def handle_request( request )
+            response = request.response
+            response.content_type = 'text/plain'
+            response.puts( "Hello, World!" )
+            return response
         end
 
     end # class HelloWorldApp
 
-
     # Run the app
+    Strelka.load_config( 'config.yaml' )
     HelloWorldApp.run if __FILE__ == $0
 
-This app uses the 'routing' plugin, which adds Sinatra-like hooks for matching
-callbacks to requests. The example app above responds only to 'GET' requests,
-and ignores the path of the request altogether.
+While functional, this application is pretty dumb, and making it do anything
+more intelligent on your own would require a bunch of additional code and
+accompanying tests.  Fortunately, Strelka already has done the heavy lifting.
+It knows how to read the Mongrel2 configuration and hook your app up with the
+right sockets to talk to the Mongrel2 front end (providing you follow one of
+several simple conventions), provides hooks into the lifecycle of an HTTP
+request, and includes a plugin system that uses these hooks to handle common
+application tasks. This allows you to mix in the specific framework parts you
+need, so you get exactly what you want and nothing more.
 
-Strelka comes with a few default plugins, but you can define your own fairly
-easily.
+
+=== Talking to Mongrel2
+
+Mongrel2 associates handlers with itself via an identifier, which is described
+in the Mongrel2 manual as a UUID, but can actually be any string consisting of
+dashes and alphanumeric characters. Strelka reads the Mongrel2 config database,
+and can automatically configure its apps to talk to the right socket with the
+right <tt>send_ident</tt> if it can find them. It gives you a couple of
+different ways of doing this. It will default to a string derived from the name
+of the class, or you can set it yourself by declaring an <tt>ID</tt> constant
+in your application class. If you need more control, you can also override the
+<tt>::run</tt> class method and <tt>super</tt> with the right <tt>appid</tt>:
+
+    class HelloWorldApp
+        # Run as a tester if not running in the production environment
+        def self::run
+            appid = if Socket.gethostname.include?( 'test' )
+                    'helloworld-test'
+                else
+                    'helloworld'
+                end
+
+            super( appid )
+        end
+    end
+
+Because our <tt>config.sqlite</tt> configuration directs requests to <tt>/</tt>
+to be sent to the <tt>helloworldapp</tt> handler, Strelka will automatically
+find and pair this route to Mongrel2 when run.
+
+Run this handler, then point a browser to <tt>http://localhost:8080/</tt>.  If
+you see the text "Hello, World!", congrats!  We'll build off of this in the
+next section, the {Strelka Tutorial}[rdoc-ref:Tutorial.rdoc].
 
 
-=== Default Plugins
+== Further Reading
 
-[auth[rdoc-ref:Strelka::App::Auth]]
-    Pluggable authentication and authorization for Strelka applications.
-[errors[rdoc-ref:Strelka::App::Errors]]
-    Custom error-handling.
-[filters[rdoc-ref:Strelka::App::Filters]]
-    Request/response filters, for doing things like compression, content-type
-    negotiation, or other things that somehow modify every request or response.
-[negotiation[rdoc-ref:Strelka::App::Negotiation]]
-    HTTP Content negotiation for Strelka applications.
-[parameters[rdoc-ref:Strelka::App::Parameters]]
-    Query and URI path-parameter validation and untainting.
-[restresources[rdoc-ref:Strelka::App::RestResources]]
-    Automatically set up RESTful service resources for Sequel::Model-derived
-    classes.
-[routing[rdoc-ref:Strelka::App::Routing]]
-    Sinatra-ish request routing.
-[sessions[rdoc-ref:Strelka::App::Sessions]]
-    Sessions for Strelka apps.
-[templating[rdoc-ref:Strelka::App::Templating]]
-    Templating via the Inversion template engine.
+You'll likely want to start with {the Tutorial}[rdoc-ref:Tutorial.rdoc].
 
 
 == Roadmap
@@ -141,8 +172,12 @@ migrations, etc.
 
 === New Application Styles
 
-Create some new handler classes for different application styles, similar to those
-in the Tir[http://tir.mongrel2.org/] framework.
+Create some new handler classes for different application styles, similar to
+those in the Tir[http://tir.mongrel2.org/] framework.
+
+=== Chunked Encoding
+
+Support for sending partial responses via the Chunked encoding.
 
 
 == Contributing

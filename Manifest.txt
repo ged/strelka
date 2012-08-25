@@ -1,11 +1,14 @@
 .gemtest
 ChangeLog
+Deploying.rdoc
 History.rdoc
 IDEAS.rdoc
 MILESTONES.rdoc
 Manifest.txt
+Plugins.rdoc
 README.rdoc
 Rakefile
+Tutorial.rdoc
 bin/strelka
 contrib/hoetemplate/History.rdoc.erb
 contrib/hoetemplate/Manifest.txt.erb
@@ -26,6 +29,7 @@ examples/config.yml
 examples/gen-config.rb
 examples/static/examples.css
 examples/static/examples.html
+examples/strelka.conf.example
 examples/templates/auth-form.tmpl
 examples/templates/auth-success.tmpl
 examples/templates/layout.tmpl
