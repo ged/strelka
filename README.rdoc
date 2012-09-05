@@ -72,10 +72,10 @@ our first application!
 
 === A Minimal Application
 
-Strelka applications are subclasses of the Strelka::App class. Strelka::App is 
-pretty minimal by itself; it inherits most of its behavior from the basic 
-Mongrel2::Handler class, only adding a few convenience methods for common HTTP 
-tasks.
+Strelka applications are subclasses of the Strelka::App class. Strelka::App is
+pretty minimal by itself; it inherits most of its behavior from the basic
+Mongrel2::Handler[http://deveiate.org/code/mongrel2/Mongrel2/Handler.html]
+class, only adding a few convenience methods for common HTTP tasks.
 
 A minimal application would look something like:
 
@@ -95,7 +95,6 @@ A minimal application would look something like:
     end # class HelloWorldApp
 
     # Run the app
-    Strelka.load_config( 'config.yaml' )
     HelloWorldApp.run if __FILE__ == $0
 
 While functional, this application is pretty dumb, and making it do anything
