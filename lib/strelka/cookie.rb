@@ -297,7 +297,7 @@ class Strelka::Cookie
 
 	### Return the cookie as a String
 	def to_s
-		rval = "%s=%s" % [ self.name, make_valuestring(self.values) ]
+		rval = "%s=%s" % [ self.name, self.make_valuestring ]
 
 		rval << make_field( "Version", self.version ) if self.version.nonzero?
 		rval << make_field( "Domain", self.domain )
@@ -324,6 +324,15 @@ class Strelka::Cookie
 		return self.name.to_s.hash
 	end
 
+
+	#########
+	protected
+	#########
+
+	### Make a uri-escaped value string for the cookie's current +values+.
+	def make_valuestring
+		return self.values.collect {|val| URI.encode_www_form_component(val) }.join('&')
+	end
 
 
 	#######
@@ -355,12 +364,6 @@ class Strelka::Cookie
 		end
 
 		return Time.parse( time )
-	end
-
-
-	### Make a uri-escaped value string for the given +values+
-	def make_valuestring( values )
-		return values.collect {|val| URI.encode_www_form_component(val) }.join('&')
 	end
 
 
