@@ -30,8 +30,8 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'loggability',     '~> 0.4'
 	self.dependency 'mongrel2',        '~> 0.30'
 	self.dependency 'pluginfactory',   '~> 1.0'
-	self.dependency 'sysexits',        '~> 1.0'
-	self.dependency 'trollop',         '~> 1.16'
+	self.dependency 'sysexits',        '~> 1.1'
+	self.dependency 'trollop',         '~> 2.0'
 	self.dependency 'uuidtools',       '~> 2.1'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
