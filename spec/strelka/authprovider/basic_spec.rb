@@ -64,10 +64,6 @@ describe Strelka::AuthProvider::Basic do
 	# Examples
 	#
 
-	it "uses the app ID as the basic auth realm if none is explicitly configured" do
-		described_class.realm.should == @app.conn.app_id
-	end
-
 	it "can be configured via the Configurability API" do
 		described_class.configure( @config )
 		described_class.realm.should == @config[:realm]

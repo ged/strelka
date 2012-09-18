@@ -14,7 +14,7 @@ require 'strelka/mixins'
 #
 # == Configuration
 #
-# The configuration for this provider is read from the 'auth' section of the config, and
+# The configuration for this provider is read from the 'basicauth' section of the config, and
 # may contain the following keys:
 #
 # [realm]::   the HTTP Basic realm. Defaults to the app's application ID
@@ -33,6 +33,11 @@ require 'strelka/mixins'
 #       jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
 #       kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
 #
+# == Caveats
+#
+# This auth provider is intended as documentation and demonstration only; you should use a
+# more cryptographically secure strategy for real-world applications.
+#
 class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 	extend Configurability,
 	       Strelka::MethodUtilities
@@ -46,13 +51,6 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 		realm: nil,
 		users: {},
 	}
-
-	# The amount of work to do while encrypting -- higher number == more work == less suceptable
-	# to brute-force attacks
-	ENCRYPT_ITERATIONS = 20_000
-
-	# The Digest class to use when encrypting passwords
-	DIGEST_CLASS = OpenSSL::Digest::SHA256
 
 
 	##
@@ -82,22 +80,6 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new Default AuthProvider.
-	def initialize( * )
-		super
-
-		# Default the authentication realm to the application's ID
-		unless self.class.realm
-			self.log.warn "No realm configured -- using the app id"
-			self.class.realm = self.app.conn.app_id
-		end
-
-		unless self.class.users
-			self.log.warn "No users configured -- using an empty user list"
-			self.class.users = {}
-		end
-	end
-
 
 	######
 	public
@@ -120,12 +102,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 
 		# Split the credentials, check for valid user
 		username, password = credentials.split( ':', 2 )
-		digest = self.class.users[ username ] or
-			self.log_failure "No such user %p." % [ username ]
-
-		# Fail if the password's hash doesn't match
-		self.log_failure "Password mismatch." unless
-			digest == Digest::SHA1.base64digest( password )
+		self.check_password( username, password )
 
 		# Success!
 		self.log.info "Authentication for %p succeeded." % [ username ]
@@ -137,25 +114,26 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 	protected
 	#########
 
+	### Return +true+ if the given +password+ is valid for the specified +username+. Always
+	### returns false for non-existant users.
+	def check_password( username, password )
+		digest = self.class.users[ username ] or
+			self.log_failure "No such user %p." % [ username ]
+
+		# Fail if the password's hash doesn't match
+		self.log_failure "Password mismatch." unless
+			digest == Digest::SHA1.base64digest( password )
+
+		return true
+	end
+
+
 	### Syntax sugar to allow returning 'false' while logging a reason for doing so.
 	### Log a message at 'info' level and return false.
 	def log_failure( reason )
 		self.log.warn "Auth failure: %s" % [ reason ]
-		header = "Basic realm=%s" % [ self.class.realm ]
+		header = "Basic realm=%s" % [ self.class.realm || self.app.conn.app_id ]
 		finish_with( HTTP::AUTH_REQUIRED, "Requires authentication.", www_authenticate: header )
-	end
-
-
-	### (undocumented)
-	def encrypt( pass, salt=nil )
-		salt   ||= OpenSSL::Random.random_bytes( 16 ) #store this with the generated value
-		iter   = ENCRYPT_ITERATIONS
-		digest = DIGEST_CLASS.new
-		len    = digest.digest_length
-
-		value  = OpenSSL::PKCS5.pbkdf2_hmac( pass, salt, iter, len, digest )
-
-		return [ value, salt ].join( ':' )
 	end
 
 
