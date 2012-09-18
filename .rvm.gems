@@ -5,11 +5,11 @@ formvalidator -v0.1.5
 highline -v1.6.13
 hoe-deveiate -v0.1.1
 hoe-manualgen -v0.3.0
-inversion -v0.11.0
+inversion -v0.11.2
 loggability -v0.4.0
 mongrel2 -v0.30.1
 pluginfactory -v1.0.8
 simplecov -v0.6.4
 sysexits -v1.0.2
-trollop -v1.16.2
+trollop -v2.0
 uuidtools -v2.1.2
