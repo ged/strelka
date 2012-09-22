@@ -21,6 +21,10 @@ require 'strelka/mixins'
 #   Copyright (c) 2002 Internet Programming with Ruby writers. All rights
 #   reserved.
 #
+# References:
+#
+# * http://tools.ietf.org/html/rfc6265
+#
 class Strelka::Cookie
 	extend Loggability
 
