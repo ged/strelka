@@ -1,5 +1,6 @@
-#!/usr/bin/ruby
-#encoding: utf-8
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'mongrel2/constants'
 require 'strelka' unless defined?( Strelka )
