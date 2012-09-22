@@ -72,6 +72,7 @@ lib/strelka/router/exclusive.rb
 lib/strelka/session.rb
 lib/strelka/session/db.rb
 lib/strelka/session/default.rb
+lib/strelka/testing.rb
 spec/data/error.tmpl
 spec/data/forms/2_images.form
 spec/data/forms/singleupload.form
