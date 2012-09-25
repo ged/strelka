@@ -28,5 +28,8 @@ module Strelka
 	# An exception raised when there is a problem with an application plugin.
 	class PluginError < Error; end
 
+	# An exception raised when there is a problem parsing or creating a cookie
+	class CookieError < Error; end
+
 end # module Strelka
 
