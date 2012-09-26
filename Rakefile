@@ -39,7 +39,11 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'simplecov',       '~> 0.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
-	self.spec_extras[:rdoc_options] = ['-f', 'fivefish', '-t', 'Strelka Web Application Toolkit']
+	self.spec_extras[:rdoc_options] = [
+		'-f', 'fivefish',
+		'-t', 'Strelka Web Application Toolkit',
+		'-w', '4',
+	]
 	self.require_ruby_version( '>=1.9.2' )
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )

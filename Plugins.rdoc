@@ -14,6 +14,7 @@ optional loading of shared behavior into any number of handlers.
 This page is a walkthrough for creating an example Strelka plugin that logs all
 HTTP accesses to a SQLite[http://www.sqlite.org/] database.
 
+
 == The Basics
 
 A Strelka plugin is just a module under the Strelka::App namespace that is
@@ -25,12 +26,12 @@ hooks.  The plugin only participates for handlers that load it via the
 Lets start by creating and naming an empty plugin.  We'll call it
 <tt>dblogger</tt>.
 
-	require 'strelka'
-	require 'strelka/app'
+    require 'strelka'
+    require 'strelka/app'
 
-	module Strelka::App::DBLogger
-		extend Strelka::Plugin
-	end
+    module Strelka::App::DBLogger
+        extend Strelka::Plugin
+    end
 
 It's important to save the plugin under a path that Strelka can locate it.  It
 can go anywhere in your <tt>$LOAD_PATH</tt>, but should be under a
@@ -39,19 +40,20 @@ can go anywhere in your <tt>$LOAD_PATH</tt>, but should be under a
 We'll save this to <tt>lib/strelka/app/dblogger.rb</tt>, and Strelka
 applications can use it like so:
 
-	require 'strelka'
+    require 'strelka'
 
-	class ExampleApplication < Strelka::App
-		plugins :routing, :dblogger
+    class ExampleApplication < Strelka::App
+        plugins :routing, :dblogger
 
-		get do |req|
-			res = req.response
-			res.content_type = 'text/plain'
-			return res.body << "Hi!  I'll be logged!"
-		end
-	end
+        get do |req|
+            res = req.response
+            res.content_type = 'text/plain'
+            return res.body << "Hi!  I'll be logged!"
+        end
+    end
 
-	ExampleApplication.run
+    ExampleApplication.run
+
 
 == Load Order
 
@@ -63,22 +65,22 @@ plugin names.
 In this example case, we want the logger to log the request before the other
 core plugins run, so any errors still make it out to the log.
 
-	require 'strelka'
-	require 'strelka/app'
+    require 'strelka'
+    require 'strelka/app'
 
-	module Strelka::App::DBLogger
-		extend Strelka::Plugin
+    module Strelka::App::DBLogger
+        extend Strelka::Plugin
 
-		run_before \
-			:auth,
-			:filters,
-			:negotiation,
-			:parameters,
-			:routing,
-			:sessions,
-			:templating
+        run_before :auth,
+            :filters,
+            :negotiation,
+            :parameters,
+            :routing,
+            :sessions,
+            :templating
 
-	end
+    end
+
 
 == Hooks
 
@@ -105,6 +107,7 @@ request/response chain passes through your plugin.
 	plugins that wish to modify or replace the response after the whole request
 	cycle is completed.
 
+
 == Completing the Example
 
 For our logging purposes, we want to hook the <tt>fixup_response</tt> method. We
@@ -115,57 +118,56 @@ hooks in the API documentation for Strelka::App.
 
 Here's the complete plugin.
 
-	require 'strelka'
-	require 'strelka/app'
-	require 'sequel'
+    require 'strelka'
+    require 'strelka/app'
+    require 'sequel'
 
-	module Strelka::App::DBLogger
-		extend Strelka::Plugin
+    module Strelka::App::DBLogger
+        extend Strelka::Plugin
 
-		run_before \
-			:auth,
-			:filters,
-			:negotiation,
-			:parameters,
-			:routing,
-			:sessions,
-			:templating
+        run_before :auth,
+            :filters,
+            :negotiation,
+            :parameters,
+            :routing,
+            :sessions,
+            :templating
 
-		def initialize( * )
-			super
+        def initialize( * )
+            super
 
-			@db = Sequel.sqlite( '////tmp/strelka_access.db' )
-			@db.create_table( :log ) do
-				timestamptz :date,      :null => false
-				varchar     :agent,     :size => 255
-				varchar     :remote_ip, :null => false
-				smallint    :status
-				varchar     :method,    :size => 8, :null => false
-				varchar     :path,      :size => 255
-				varchar     :query,     :size => 255
-				varchar     :referer,   :size => 255
-			end unless @db.table_exists?( :log )
-		end
+            @db = Sequel.sqlite( '////tmp/strelka_access.db' )
+            @db.create_table( :log ) do
+                timestamptz :date,      :null => false
+                varchar     :agent,     :size => 255
+                varchar     :remote_ip, :null => false
+                smallint    :status
+                varchar     :method,    :size => 8, :null => false
+                varchar     :path,      :size => 255
+                varchar     :query,     :size => 255
+                varchar     :referer,   :size => 255
+            end unless @db.table_exists?( :log )
+        end
 
-		attr_reader :db
+        attr_reader :db
 
-		def fixup_response( response )
-			request = response.request
+        def fixup_response( response )
+            request = response.request
 
-			self.log.debug self.db[ :log ].insert(
-				:date      => Time.now.to_s,
-				:agent     => request.headers.user_agent,
-				:remote_ip => request.remote_ip.to_s,
-				:status    => response.status,
-				:method    => request.verb.to_s,
-				:path      => request.uri.path,
-				:query     => request.uri.query,
-				:referer   => request.headers.referer
-			)
+            self.log.debug self.db[ :log ].insert(
+                :date      => Time.now.to_s,
+                :agent     => request.headers.user_agent,
+                :remote_ip => request.remote_ip.to_s,
+                :status    => response.status,
+                :method    => request.verb.to_s,
+                :path      => request.uri.path,
+                :query     => request.uri.query,
+                :referer   => request.headers.referer
+            )
 
-			super
-		end
-	end
+            super
+        end
+    end
 
 Handler startup creates the database and the logging schema, and every request
 performs an <tt>insert</tt> with the data we're after. There's plenty of room

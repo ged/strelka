@@ -6,18 +6,21 @@ Strelka uses the Rubygems plugin system to find and load applications. You don't
 need to necessarily package them up this way if you've already got a deployment
 strategy in mind, but the rest of this manual assumes you will be.
 
-* Include their static content and the apps themselves in their datadir.
-* Include any library code in <tt>lib/</tt>.
-* These instructions use Hoe[http://docs.seattlerb.org/hoe/], but you don't need
-  to necessarily use it.
+A Strelka app plugin:
+
+* Includes its static content and the apps themselves in its datadir.
+* Includes library code under <tt>lib/</tt>.
+
+These instructions use Hoe[http://docs.seattlerb.org/hoe/], but you don't need
+to necessarily use it.
+
 
 == Setting up the Project
 
 First you'll need to create the project layout. It should look something like
 this:
 
-{Example project layout screenshot}[link://img/project-layout.png]
-(example project layout screenshot missing)
+https://bitbucket.org/ged/strelka/raw/97e69307bb0c/manual/resources/images/project-layout.png
 
 The data directory should contain your apps, templates, and any static content
 your app requires in a directory with the same name as your gem. Strelka's

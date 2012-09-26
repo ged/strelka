@@ -9,10 +9,10 @@ docs :: http://deveiate.org/code/strelka
 == Description
 
 Strelka is a framework for creating and deploying
-"Mongrel2":http://mongrel2.org/ web applications in Ruby.
+Mongrel2[http://mongrel2.org/] web applications in Ruby.
 
-It's named after a lesser known "Russian
-cosmonaut":http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka who was
+It's named after a lesser known {Russian
+cosmonaut}[http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka] who was
 one of the first canine space travelers to orbit the Earth and return alive.
 Her name means "little arrow".
 
