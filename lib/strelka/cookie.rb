@@ -4,10 +4,11 @@
 
 require 'date'
 require 'time'
-require 'uri'
 require 'loggability'
 
 require 'strelka' unless defined?( Strelka )
+require 'strelka/exceptions'
+require 'strelka/constants'
 require 'strelka/mixins'
 
 # The Strelka::Cookie class, a class for parsing and generating HTTP cookies.
@@ -26,6 +27,7 @@ require 'strelka/mixins'
 # * http://tools.ietf.org/html/rfc6265
 #
 class Strelka::Cookie
+	include Strelka::Constants::CookieHeader
 	extend Loggability
 
 	# Loggability API -- set up logging under the 'strelka' log host
@@ -34,47 +36,6 @@ class Strelka::Cookie
 
 	# The format of the date field
 	COOKIE_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
-
-	### RFC 2109: HTTP State Management Mechanism
-	# When it sends a request to an origin server, the user agent sends a
-	# Cookie request header to the origin server if it has cookies that are
-	# applicable to the request, based on
-	#
-	#   * the request-host;
-	#   * the request-URI;
-	#   * the cookie's age.
-	#
-	# The syntax for the header is:
-	#
-	# cookie          =       "Cookie:" cookie-version
-	#                            1*((";" | ",") cookie-value)
-	# cookie-value    =       NAME "=" VALUE [";" path] [";" domain]
-	# cookie-version  =       "$Version" "=" value
-	# NAME            =       attr
-	# VALUE           =       value
-	# path            =       "$Path" "=" value
-	# domain          =       "$Domain" "=" value
-
-	# Parser constants
-	COOKIE_VERSION = /\$Version\s*=\s*(.+)\s*[,;]/
-	COOKIE_PATH    = /\$Path/i
-	COOKIE_DOMAIN  = /\$Domain/i
-
-	### RFC2068: Hypertext Transfer Protocol -- HTTP/1.1
-	# CTL            = <any US-ASCII control character
-	#                  (octets 0 - 31) and DEL (127)>
-	# token          = 1*<any CHAR except CTLs or tspecials>
-	#
-	# tspecials      = "(" | ")" | "<" | ">" | "@"
-	#                | "," | ";" | ":" | "\" | <">
-	#                | "/" | "[" | "]" | "?" | "="
-	#                | "{" | "}" | SP | HT
-
-	# Cookie-value parser constants
-	CTLs           = "[:cntrl:]"
-	TSPECIALS      = Regexp.quote( ' "(),/:;<=>?@[\\]{}' )
-	NON_TOKEN_CHAR = /[#{CTLs}#{TSPECIALS}]/s
-	HTTP_TOKEN     = /\A[^#{CTLs}#{TSPECIALS}]+\z/s
 
 	# Number of seconds in the various offset types
 	UNIT_SECONDS = {
@@ -90,16 +51,7 @@ class Strelka::Cookie
 	### Strip surrounding double quotes from a copy of the specified string
 	### and return it.
 	def self::dequote( string )
-		/^"((?:[^"]+|\\.)*)"/.match( string ) ? $1 : string.dup
-	end
-
-
-	### Parse a cookie value string, returning an Array of Strings
-	def self::parse_valuestring( valstr )
-		return [] unless valstr
-		valstr = dequote( valstr )
-
-		return valstr.split('&').collect{|str| URI.decode_www_form_component(str) }
+		return string.gsub( /^"|"$/, '' )
 	end
 
 
@@ -108,49 +60,33 @@ class Strelka::Cookie
 	def self::parse( header )
 		return {} if header.nil? or header.empty?
 		self.log.debug "Parsing cookie header: %p" % [ header ]
-		cookies = []
+		cookies = {}
 		version = 0
 		header = header.strip
 
 		# "$Version" = value
-		if COOKIE_VERSION.match( header )
-			self.log.debug "  Found cookie version %p" % [ $1 ]
-			version = Integer( dequote($1) )
+		if m = COOKIE_VERSION.match( header )
+			self.log.debug "  Found cookie version %p" % [ m[:version] ]
+			version = Integer( dequote(m[:version]) )
 			header.slice!( COOKIE_VERSION )
 		end
 
-		# 1*((";" | ",") NAME "=" VALUE [";" path] [";" domain])
-		header.split( /[,;]\s*/ ).each do |pair|
-			self.log.debug "  Found pair %p" % [ pair ]
-			key, valstr = pair.split( /=/, 2 ).collect {|s| s.strip }
+		# cookie-header = "Cookie:" OWS cookie-string OWS
+		# cookie-string = cookie-pair *( ";" SP cookie-pair )
+		header.split( /;\x20/ ).each do |cookie_pair|
+			self.log.debug "  parsing cookie-pair: %p" % [ cookie_pair ]
+			next unless match = cookie_pair.match( COOKIE_PAIR )
 
-			case key
-			when COOKIE_PATH
-				self.log.debug "    -> cookie-path %p" % [ valstr ]
-				cookies.last.path = dequote( valstr ) unless cookies.empty?
+			self.log.debug "  matched cookie: %p" % [ match ]
+			name = match[:cookie_name].untaint
+			value = match[:cookie_value]
+			value = self.dequote( value ) if value.start_with?( DQUOTE )
+			value = nil if value.empty?
 
-			when COOKIE_DOMAIN
-				self.log.debug "    -> cookie-domain %p" % [ valstr ]
-				cookies.last.domain = dequote( valstr ) unless cookies.empty?
-
-			when HTTP_TOKEN
-				values = parse_valuestring( valstr )
-				self.log.debug "    -> cookie-values %p" % [ values ]
-				cookies << new( key, values, :version => version )
-
-			else
-				self.log.warn \
-					"Malformed cookie header %p: %p is not a valid token; ignoring" %
-					[ header, key ]
-			end
+			cookies[ name.to_sym ] = new( name, value, :version => version )
 		end
 
-		# Turn the array into a Hash, ignoring all but the first instance of
-		# a cookie with the same name
-		return cookies.inject({}) do |hash,cookie|
-			hash[cookie.name] = cookie unless hash.key?( cookie.name )
-			hash
-		end
+		return cookies
 	end
 
 
@@ -161,33 +97,33 @@ class Strelka::Cookie
 	### Create a new Strelka::Cookie object with the specified +name+ and
 	### +values+. Valid options are:
 	###
-	### [\version]
+	### \version::
 	###   The cookie version. 0 (the default) is fine for most uses
-	### [\domain]
+	### \domain::
 	###   The domain the cookie belongs to.
-	### [\path]
+	### \path::
 	###   The path the cookie applies to.
-	### [\secure]
+	### \secure::
 	###   The cookie's 'secure' flag.
-	### [\expires]
+	### \expires::
 	###   The cookie's expiration (a Time object). See expires= for valid
 	###   values.
-	### [\max_age]
+	### \max_age::
 	###   The lifetime of the cookie, in seconds.
-	### [\comment]
-	###   Cookie comment; see #comment= for details.
-	def initialize( name, values, options={} )
-		values   = [ values ] unless values.is_a?( Array )
-		@name    = name
-		@values  = values
+	### \httponly::
+	###   HttpOnly flag.
+	def initialize( name, value, options={} )
+		self.log.debug "New cookie: %p = %p (%p)" % [ name, value, options ]
+		@name     = name
+		@value    = value
 
-		@domain  = nil
-		@path    = nil
-		@secure  = false
-		@comment = nil
-		@max_age = nil
-		@expires = nil
-		@version = 0
+		@domain   = nil
+		@path     = nil
+		@secure   = false
+		@httponly = false
+		@max_age  = nil
+		@expires  = nil
+		@version  = 0
 
 		options.each do |meth, val|
 			self.__send__( "#{meth}=", val )
@@ -203,8 +139,8 @@ class Strelka::Cookie
 	# The name of the cookie
 	attr_accessor :name
 
-	# The Array of cookie values
-	attr_accessor :values
+	# The string value of the cookie
+	attr_reader :value
 
 	# The cookie version. 0 (the default) is fine for most uses
 	attr_accessor :version
@@ -218,29 +154,65 @@ class Strelka::Cookie
 	# The cookie's 'secure' flag.
 	attr_writer :secure
 
+	# The cookie's HttpOnly flag
+	attr_accessor :httponly
+
 	# The cookie's expiration (a Time object)
 	attr_reader :expires
 
 	# The lifetime of the cookie, in seconds.
 	attr_reader :max_age
 
-	# Because cookies can contain private information about a
-	# user, the Cookie attribute allows an origin server to document its
-	# intended use of a cookie.  The user can inspect the information to
-	# decide whether to initiate or continue a session with this cookie.
-	attr_accessor :comment
 
+	### Set the new value of the cookie to +cookie_octets+. This raises an exception
+	### if +cookie_octets+ contains any invalid characters. If your value contains
+	### non-US-ASCII characters; control characters; or comma, semicolon, or backslash.
+	def value=( cookie_octets )
+		self.log.debug "Setting cookie value to: %p" % [ cookie_octets ]
+		raise Strelka::CookieError,
+			"invalid cookie value; value must be composed of non-control us-ascii characters " +
+			"other than SPACE, double-quote, comma, semi-colon, and backslash. " +
+			"Use #base64_value= for storing arbitrary data." unless
+			cookie_octets =~ /^#{COOKIE_VALUE}$/
 
-	### Return the first value stored in the cookie as a String.
-	def value
-		return @values.first
+		@value = cookie_octets
 	end
+
+
+	### Store the base64'ed +data+ as the cookie value. This is just a convenience
+	### method for:
+	###
+	###     cookie.value = [data].pack('m').strip
+	###
+	def binary_value=( data )
+		self.log.debug "Setting cookie value to base64ed %p" % [ data ]
+		self.value = [ data ].pack( 'm' ).strip
+	end
+	alias_method :wrapped_value=, :binary_value=
+
+
+	### Fetch the cookie's data after un-base64ing it. This is just a convenience
+	### method for:
+	###
+	###     cookie.value.unpack( 'm' ).first
+	###
+	def binary_value
+		return self.value.unpack( 'm' ).first
+	end
+	alias_method :wrapped_value, :binary_value
 
 
 	### Returns +true+ if the secure flag is set
 	def secure?
 		return @secure ? true : false
 	end
+
+
+	### Returns +true+ if the 'httponly' flag is set
+	def httponly?
+		return @httponly ? true : false
+	end
+
 
 	# Set the lifetime of the cookie. The value is a decimal non-negative
 	# integer.  After +delta_seconds+ seconds elapse, the client should
@@ -307,10 +279,10 @@ class Strelka::Cookie
 		rval << make_field( "Domain", self.domain )
 		rval << make_field( "Expires", make_cookiedate(self.expires) ) if self.expires
 		rval << make_field( "Max-Age", self.max_age )
-		rval << make_field( "Comment", self.comment )
 		rval << make_field( "Path", self.path )
 
-		rval << "; " << "Secure" if self.secure?
+		rval << '; ' << 'HttpOnly' if self.httponly?
+		rval << '; ' << 'Secure' if self.secure?
 
 		return rval
 	end
@@ -335,7 +307,7 @@ class Strelka::Cookie
 
 	### Make a uri-escaped value string for the cookie's current +values+.
 	def make_valuestring
-		return self.values.collect {|val| URI.encode_www_form_component(val) }.join('&')
+		return self.value
 	end
 
 
