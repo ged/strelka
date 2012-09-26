@@ -1,201 +1,177 @@
----
-title: Write Your Own Strelka Plugin
-layout: default
-index: 5
-filters:
-  - erb
-  - api
-  - links
-  - examples
-  - textile
----
+= Write Your Own Strelka Plugin
 
-h2. <%= page.config['title'] %>
+== Overview
 
-<div id="auto-toc"></div>
-
-h3. Overview
-
-Because Mongrel2 makes it easy to have discrete handler processes
-managing different URI routes, you'll quickly find benefit from
+Because Mongrel2[http://mongrel2.org/] makes it easy to have discrete handler
+processes managing different URI routes, you'll quickly find benefit from
 refactoring common code into reusable components.
 
-As mentioned in the <?link "tutorial":Strelka Tutorial ?> section,
-Strelka breaks out functionality into a set of core plugins that allow
-you to cherry pick the capabilities you need.  It's easy to create your
-own plugins for optional loading of shared behavior into any number of
-handlers.
+As mentioned in the {Strelka Tutorial}[link://oTutorial_rdoc.html] section,
+Strelka breaks out functionality into a set of core plugins that allow you to
+cherry pick the capabilities you need. It's easy to create your own plugins for
+optional loading of shared behavior into any number of handlers.
 
 This page is a walkthrough for creating an example Strelka plugin that
-logs all HTTP accesses to a "SQLite":http://www.sqlite.org/ database.
+logs all HTTP accesses to a SQLite[http://www.sqlite.org/] database.
 
-h3. The Basics
+== The Basics
 
-A Strelka plugin is just a module under the <?api Strelka::App ?>
-namespace that is extended by the <?api Strelka::Plugin ?> class.
-Once extended, the plugin participates in the @request@ -> @response@
-lifecycle, and is able to alter it via hooks.  The plugin only
-participates for handlers that load it via the @plugin@ declarative.
+A Strelka plugin is just a module under the Strelka::App namespace that is
+extended by the Strelka::Plugin class. Once extended, the plugin participates in
+the Strelka::HTTPRequest to Strelka::HTTPResponse lifecycle, and is able to
+alter it via hooks.  The plugin only participates for handlers that load it via
+the <tt>plugin</tt> declarative.
 
 Lets start by creating and naming an empty plugin.  We'll call it
-@dblogger@.
+<tt>DBLogger</tt>.
 
-<?example { lang: Ruby, caption: "A no-op plugin" } ?>
-require 'strelka'
-require 'strelka/app'
+	require 'strelka'
+	require 'strelka/app'
 
-module Strelka::App::DBLogger
-	extend Strelka::Plugin
-end
-<?end example ?>
+	module Strelka::App::DBLogger
+		extend Strelka::Plugin
+	end
 
-It's important to save the plugin under a path that Strelka can
-locate it.  It can go anywhere in your @$LOAD_PATH@, but should be under a
-@lib/strelka/app@ subdirectory, and the filename should match the class.
+It's important to save the plugin under a path that Strelka can locate it.  It
+can go anywhere in your <tt>$LOAD_PATH</tt>, but should be under a
+<tt>lib/strelka/app</tt> subdirectory, and the filename should match the class.
 
-We'll save this to @lib/strelka/app/dblogger.rb@, and Strelka
+We'll save this to <tt>lib/strelka/app/dblogger.rb</tt>, and Strelka
 applications can use it like so:
 
-<?example { lang: Ruby, caption: "Using the dblogger plugin" } ?>
-require 'strelka'
+	require 'strelka'
 
-class ExampleApplication < Strelka::App
-	plugins :routing, :dblogger
+	class ExampleApplication < Strelka::App
+		plugins :routing, :dblogger
 
-	get do |req|
-		res = req.response
-		res.content_type = 'text/plain'
-		return res.body << "Hi!  I'll be logged!"
+		get do |req|
+			res = req.response
+			res.content_type = 'text/plain'
+			return res.body << "Hi!  I'll be logged!"
+		end
 	end
-end
 
-ExampleApplication.run
-<?end example ?>
+	ExampleApplication.run
 
+== Load Order
 
-h3. Load Order
+The request is passed through plugins sequentually.  You can control where in
+the chain your plugin belongs, by using the <tt>run_before</tt> and
+<tt>run_after</tt> methods.  Both methods accept a comma separated list of other
+plugin names.
 
-The request is passed through plugins sequentually.  You can control
-where in the chain your plugin belongs, by using the @run_before@ and
-@run_after@ methods.  Both methods accept a comma separated list of
-other plugin names.
+In this example case, we want the logger to log the request before the other
+core plugins run, so any errors still make it out to the log.
 
-In this example case, we want the logger to log the request before the
-other core plugins run, so any errors still make it out to the log.
+	require 'strelka'
+	require 'strelka/app'
 
-<?example { lang: Ruby, caption: "Adding load order" } ?>
-require 'strelka'
-require 'strelka/app'
+	module Strelka::App::DBLogger
+		extend Strelka::Plugin
 
-module Strelka::App::DBLogger
-	extend Strelka::Plugin
+		run_before \
+			:auth,
+			:filters,
+			:negotiation,
+			:parameters,
+			:routing,
+			:sessions,
+			:templating
 
-	run_before \
-		:auth,
-		:filters,
-		:negotiation,
-		:parameters,
-		:routing,
-		:sessions,
-		:templating
+	end
 
-end
-<?end example ?>
+== Hooks
 
-h3. Hooks
+There are three primary extension points you can override in your plugin.  All
+hooks absolutely require you to <tt>super</tt> at some point, so the
+request/response chain passes through your plugin.
 
-There are three primary extension points you can override in your
-plugin.  All hooks absolutely require you to @super@ at some point, so
-the request/response chain passes through your plugin.
+=== fixup_request
 
-<dl>
-<dt>fixup_request</dt>
-<dd>
-	Make any changes to the @request@ that are necessary before handling it and
-	return it. This is an alternate extension-point for plugins that
-	wish to modify or replace the request before the request cycle is
-	started.
-</dd>
-<dt>handle_request</dt>
-<dd>
-	Handle the request and return a @response@. This is the main extension-point
-	for the plugin system. Without being overridden or extended by plugins, this
-	method just returns the default Mongrel2 response.
-</dd>
-<dt>fixup_response</dt>
-<dd>
-	Make any changes to the @response@ that are necessary before handing it to
-	Mongrel and return it. This is an alternate extension-point for plugins that
-	wish to modify or replace the response after the whole request cycle is
-	completed.
-</dd>
-</dl>
+Make any changes to the Strelka::HTTPRequest that are necessary before
+handling it and return it. This is an alternate extension-point for
+plugins that wish to modify or replace the request before the request
+cycle is started.
 
-For our logging purposes, we want to hook the @fixup_response@ method.
-We won't be altering the response itself, but just reading attributes
-from it and squirreling them away.  (Most notably, the @response@ has
-access to the @request@ object, and visa versa.)  You can find more detail
-for these hooks in the API documentation for <?api Strelka::App ?>.
+=== handle_request
+
+Handle the Strelka::HTTPRequest and return a Strelka::HTTPResponse. This is the
+main extension-point for the plugin system. Without being overridden or extended
+by plugins, this method just returns the default <tt>Mongrel2::HTTPResponse</tt>.
+
+=== fixup_response
+
+Make any changes to the Strelka::HTTPResponse that are necessary before
+handing it to Mongrel and return it. This is an alternate extension-
+point for plugins that wish to modify or replace the response after the
+whole request cycle is completed.
+
+== Completing the Example
+
+For our logging purposes, we want to hook the <tt>fixup_response</tt> method. We
+won't be altering the response itself, but just reading attributes from it and
+squirreling them away. Most notably, the Strelka::HTTPResponse has access to the
+Strelka::HTTPResponse object, and visa versa. You can find more detail for these
+hooks in the API documentation for Strelka::App.
 
 Here's the complete plugin.
 
-<?example { lang: Ruby, caption: "A basic DBLogger plugin" } ?>
-require 'strelka'
-require 'strelka/app'
-require 'sequel'
+	require 'strelka'
+	require 'strelka/app'
+	require 'sequel'
 
-module Strelka::App::DBLogger
-	extend Strelka::Plugin
+	module Strelka::App::DBLogger
+		extend Strelka::Plugin
 
-	run_before \
-		:auth,
-		:filters,
-		:negotiation,
-		:parameters,
-		:routing,
-		:sessions,
-		:templating
+		run_before \
+			:auth,
+			:filters,
+			:negotiation,
+			:parameters,
+			:routing,
+			:sessions,
+			:templating
 
-	def initialize( * )
-		super
+		def initialize( * )
+			super
 
-		@db = Sequel.sqlite( '////tmp/strelka_access.db' )
-		@db.create_table( :log ) do
-			timestamptz :date,      :null => false
-			varchar     :agent,     :size => 255
-			varchar     :remote_ip, :null => false
-			smallint    :status
-			varchar     :method,    :size => 8, :null => false
-			varchar     :path,      :size => 255
-			varchar     :query,     :size => 255
-			varchar     :referer,   :size => 255
-		end unless @db.table_exists?( :log )
+			@db = Sequel.sqlite( '////tmp/strelka_access.db' )
+			@db.create_table( :log ) do
+				timestamptz :date,      :null => false
+				varchar     :agent,     :size => 255
+				varchar     :remote_ip, :null => false
+				smallint    :status
+				varchar     :method,    :size => 8, :null => false
+				varchar     :path,      :size => 255
+				varchar     :query,     :size => 255
+				varchar     :referer,   :size => 255
+			end unless @db.table_exists?( :log )
+		end
+
+		attr_reader :db
+
+		def fixup_response( response )
+			request = response.request
+
+			self.log.debug self.db[ :log ].insert(
+				:date      => Time.now.to_s,
+				:agent     => request.headers.user_agent,
+				:remote_ip => request.remote_ip.to_s,
+				:status    => response.status,
+				:method    => request.verb.to_s,
+				:path      => request.uri.path,
+				:query     => request.uri.query,
+				:referer   => request.headers.referer
+			)
+
+			super
+		end
 	end
 
-	attr_reader :db
+== Final Notes
 
-	def fixup_response( response )
-		request = response.request
-
-		self.log.debug self.db[ :log ].insert(
-			:date      => Time.now.to_s,
-			:agent     => request.headers.user_agent,
-			:remote_ip => request.remote_ip.to_s,
-			:status    => response.status,
-			:method    => request.verb.to_s,
-			:path      => request.uri.path,
-			:query     => request.uri.query,
-			:referer   => request.headers.referer
-		)
-
-		super
-	end
-end
-<?end example ?>
-
-Handler startup creates the database and the logging schema, and
-every request performs an @insert@ with the data we're after.  There's
-plenty of room for improvement here (configurable db location, prepared
-statements), but hopefully that gives you a first-round idea of how easy
-it is to add pluggable functionality to Strelka.
-
+When handler starts and the plugin is initialized, the database and the logging
+schema are created, and every request performs an <tt>insert</tt> with the data
+we're after. There's plenty of room for improvement here (configurable db
+location, prepared statements), but hopefully that gives you a first-round idea
+of how easy it is to add pluggable functionality to Strelka.
