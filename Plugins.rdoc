@@ -6,24 +6,24 @@ Because Mongrel2[http://mongrel2.org/] makes it easy to have discrete handler
 processes managing different URI routes, you'll quickly find benefit from
 refactoring common code into reusable components.
 
-As mentioned in the {Strelka Tutorial}[link://oTutorial_rdoc.html] section,
-Strelka breaks out functionality into a set of core plugins that allow you to
-cherry pick the capabilities you need. It's easy to create your own plugins for
+As mentioned in the {Strelka Tutorial}[rdoc-ref:Tutorial] section, Strelka
+breaks out functionality into a set of core plugins that allow you to cherry
+pick the capabilities you need. It's easy to create your own plugins for
 optional loading of shared behavior into any number of handlers.
 
-This page is a walkthrough for creating an example Strelka plugin that
-logs all HTTP accesses to a SQLite[http://www.sqlite.org/] database.
+This page is a walkthrough for creating an example Strelka plugin that logs all
+HTTP accesses to a SQLite[http://www.sqlite.org/] database.
 
 == The Basics
 
 A Strelka plugin is just a module under the Strelka::App namespace that is
 extended by the Strelka::Plugin class. Once extended, the plugin participates in
-the Strelka::HTTPRequest to Strelka::HTTPResponse lifecycle, and is able to
-alter it via hooks.  The plugin only participates for handlers that load it via
-the <tt>plugin</tt> declarative.
+the <tt>request</tt> -> <tt>response</tt> lifecycle, and is able to alter it via
+hooks.  The plugin only participates for handlers that load it via the
+<tt>plugin</tt> declarative.
 
 Lets start by creating and naming an empty plugin.  We'll call it
-<tt>DBLogger</tt>.
+<tt>dblogger</tt>.
 
 	require 'strelka'
 	require 'strelka/app'
@@ -86,32 +86,31 @@ There are three primary extension points you can override in your plugin.  All
 hooks absolutely require you to <tt>super</tt> at some point, so the
 request/response chain passes through your plugin.
 
-=== fixup_request
+[\fixup_request]
 
-Make any changes to the Strelka::HTTPRequest that are necessary before
-handling it and return it. This is an alternate extension-point for
-plugins that wish to modify or replace the request before the request
-cycle is started.
+	Make any changes to the <tt>request</tt> that are necessary before handling
+	it and return it. This is an alternate extension-point for plugins that wish
+	to modify or replace the request before the request cycle is started.
 
-=== handle_request
+[\handle_request]
 
-Handle the Strelka::HTTPRequest and return a Strelka::HTTPResponse. This is the
-main extension-point for the plugin system. Without being overridden or extended
-by plugins, this method just returns the default <tt>Mongrel2::HTTPResponse</tt>.
+	Handle the <tt>request</tt> and return a <tt>response</tt>. This is the main
+	extension-point for the plugin system. Without being overridden or extended
+	by plugins, this method just returns the default Mongrel2 response.
 
-=== fixup_response
+[\fixup_response]
 
-Make any changes to the Strelka::HTTPResponse that are necessary before
-handing it to Mongrel and return it. This is an alternate extension-
-point for plugins that wish to modify or replace the response after the
-whole request cycle is completed.
+	Make any changes to the <tt>response</tt> that are necessary before handing
+	it to Mongrel and return it. This is an alternate extension- point for
+	plugins that wish to modify or replace the response after the whole request
+	cycle is completed.
 
 == Completing the Example
 
 For our logging purposes, we want to hook the <tt>fixup_response</tt> method. We
 won't be altering the response itself, but just reading attributes from it and
-squirreling them away. Most notably, the Strelka::HTTPResponse has access to the
-Strelka::HTTPResponse object, and visa versa. You can find more detail for these
+squirreling them away. Most notably, the <tt>response</tt> has access to the
+<tt>response</tt> object, and visa versa. You can find more detail for these
 hooks in the API documentation for Strelka::App.
 
 Here's the complete plugin.
@@ -168,10 +167,8 @@ Here's the complete plugin.
 		end
 	end
 
-== Final Notes
-
-When handler starts and the plugin is initialized, the database and the logging
-schema are created, and every request performs an <tt>insert</tt> with the data
-we're after. There's plenty of room for improvement here (configurable db
-location, prepared statements), but hopefully that gives you a first-round idea
-of how easy it is to add pluggable functionality to Strelka.
+Handler startup creates the database and the logging schema, and every request
+performs an <tt>insert</tt> with the data we're after. There's plenty of room
+for improvement here (configurable db location, prepared statements), but
+hopefully that gives you a first-round idea of how easy it is to add pluggable
+functionality to Strelka.
