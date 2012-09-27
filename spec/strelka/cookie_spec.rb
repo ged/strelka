@@ -139,6 +139,22 @@ describe Strelka::Cookie do
 		it "uses the hash of its name as its hash value" do
 			@cookie.hash.should == @cookie.name.to_s.hash
 		end
+
+		it "can return its options as a Hash" do
+			@cookie.domain = '.example.com'
+			@cookie.secure = true
+
+			@cookie.options.should == {
+				domain:   '.example.com',
+				path:     nil,
+				secure:   true,
+				httponly: false,
+				expires:  nil,
+				max_age:  nil,
+				version:  0,
+			}
+		end
+
 	end
 
 

@@ -131,6 +131,20 @@ class Strelka::Cookie
 	end
 
 
+	### Return the cookie's options as a hash.
+	def options
+		return {
+			domain:   self.domain,
+			path:     self.path,
+			secure:   self.secure?,
+			httponly: self.httponly?,
+			expires:  self.expires,
+			max_age:  self.max_age,
+			version:  self.version,
+		}
+	end
+
+
 
 	######
 	public
