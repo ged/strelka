@@ -78,13 +78,19 @@ describe Strelka::Cookie do
 		end
 
 		it "stringifies with a domain if one is set" do
-			@cookie.domain = '.example.com'
-			@cookie.to_s.should =~ /; Domain=.example.com/
+			@cookie.domain = 'example.com'
+			@cookie.to_s.should =~ /; Domain=example.com/
 		end
 
-		it "stringifies with a dot prepended to the domain if the set doesn't have one" do
+		it "stringifies with the leading '.' in the domain" do
+			@cookie.domain = '.example.com'
+			@cookie.to_s.should =~ /; Domain=example.com/
+		end
+
+		it "doesn't stringify with a domain if it is reset" do
 			@cookie.domain = 'example.com'
-			@cookie.to_s.should =~ /; Domain=.example.com/i
+			@cookie.domain = nil
+			@cookie.to_s.should_not =~ /; Domain=/
 		end
 
 		it "raises an exception if the cookie value would be invalid when serialized" do
@@ -145,7 +151,7 @@ describe Strelka::Cookie do
 			@cookie.secure = true
 
 			@cookie.options.should == {
-				domain:   '.example.com',
+				domain:   'example.com',
 				path:     nil,
 				secure:   true,
 				httponly: false,

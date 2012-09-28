@@ -125,9 +125,12 @@ class Strelka::Cookie
 		@expires  = nil
 		@version  = 0
 
+		self.log.debug "  setting options..."
 		options.each do |meth, val|
+			self.log.debug "    cookie.%s= %p" % [ meth, val ]
 			self.__send__( "#{meth}=", val )
 		end
+		self.log.debug "  done setting options..."
 	end
 
 
@@ -233,14 +236,24 @@ class Strelka::Cookie
 	# discard the cookie.  A value of zero means the cookie should be
 	# discarded immediately.
 	def max_age=( delta_seconds )
-		@max_age = Integer( delta_seconds )
+		if delta_seconds.nil?
+			@max_age = nil
+		else
+			@max_age = Integer( delta_seconds )
+		end
 	end
 
 
-	### Set the domain for which the cookie is valid.
+	### Set the domain for which the cookie is valid. Leading '.' characters
+	### will be stripped.
 	def domain=( newdomain )
-		newdomain = ".#{newdomain}" unless newdomain[0] == ?.
-		@domain = newdomain.dup
+		if newdomain.nil?
+			@domain = nil
+		else
+			newdomain = newdomain.dup
+			newdomain.slice!( 0 ) while newdomain.start_with?( '.' )
+			@domain = newdomain
+		end
 	end
 
 
