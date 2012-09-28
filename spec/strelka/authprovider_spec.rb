@@ -59,6 +59,11 @@ describe Strelka::AuthProvider do
 				@provider.authenticate( req ).should == 'anonymous'
 			end
 
+			it "has a callback for adding authentication information to the request" do
+				req = @request_factory.get( '/admin/console' )
+				@provider.auth_succeeded( req, 'anonymous' ) # No-op by default
+			end
+
 		end
 
 

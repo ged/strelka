@@ -105,7 +105,7 @@ class Strelka::AuthProvider::Basic < Strelka::AuthProvider
 		self.check_password( username, password )
 
 		# Success!
-		self.log.info "Authentication for %p succeeded." % [ username ]
+		self.auth_succeeded( request, username )
 		return username
 	end
 

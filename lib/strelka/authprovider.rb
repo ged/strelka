@@ -74,9 +74,18 @@ class Strelka::AuthProvider
 	end
 
 
-	### If the +callback+ is set, call it with the specified +credentials+, and +request. Override this in
-	### your own AuthProvider to provide +additional_arguments+ to the +callback+, and/or to provide
-	### additional generic authorization.
+	### Callback for auth success; the auth provider should use this to add cookies, headers, or
+	### whatever to the request or response when the client becomes authenticated. This is a no-op
+	### by default.
+	def auth_succeeded( request, credentials )
+		self.log.info "Authentication for %p succeeded." % [ credentials ]
+		# No-op by default
+	end
+
+
+	### If the +callback+ is set, call it with the specified +credentials+, and +request. Override
+	### this in your own AuthProvider to provide +additional_arguments+ to the +callback+, and/or
+	### to provide additional generic authorization.
 	def authorize( credentials, request, *additional_arguments, &callback )
 		return true unless callback
 		return true if callback.call( credentials, request, *additional_arguments )
