@@ -35,7 +35,6 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'uuidtools',       '~> 2.1'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
-	self.dependency 'hoe-manualgen',   '~> 0.3', :developer
 	self.dependency 'simplecov',       '~> 0.6', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
