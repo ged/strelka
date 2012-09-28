@@ -129,10 +129,8 @@ class Strelka::Cookie
 
 		self.log.debug "  setting options: %p" % [ options ]
 		options.each do |meth, val|
-			self.log.debug "    cookie.%s= %p" % [ meth, val ]
 			self.__send__( "#{meth}=", val )
 		end
-		self.log.debug "  done setting options..."
 	end
 
 
