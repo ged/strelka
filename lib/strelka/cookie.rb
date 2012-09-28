@@ -113,7 +113,9 @@ class Strelka::Cookie
 	### \httponly::
 	###   HttpOnly flag.
 	def initialize( name, value, options={} )
+		options ||= {}
 		self.log.debug "New cookie: %p = %p (%p)" % [ name, value, options ]
+
 		@name     = name
 		@value    = value
 
@@ -125,7 +127,7 @@ class Strelka::Cookie
 		@expires  = nil
 		@version  = 0
 
-		self.log.debug "  setting options..."
+		self.log.debug "  setting options: %p" % [ options ]
 		options.each do |meth, val|
 			self.log.debug "    cookie.%s= %p" % [ meth, val ]
 			self.__send__( "#{meth}=", val )

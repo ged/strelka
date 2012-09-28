@@ -61,6 +61,10 @@ describe Strelka::Cookie do
 		result.should == {}
 	end
 
+	it "guards against a nil options hash" do
+		Strelka::Cookie.new( :name, 'value', nil ).should be_a( Strelka::Cookie )
+	end
+
 
 	context "instance" do
 
