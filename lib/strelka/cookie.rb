@@ -66,7 +66,7 @@ class Strelka::Cookie
 
 		# "$Version" = value
 		if m = COOKIE_VERSION.match( header )
-			self.log.debug "  Found cookie version %p" % [ m[:version] ]
+			# self.log.debug "  Found cookie version %p" % [ m[:version] ]
 			version = Integer( dequote(m[:version]) )
 			header.slice!( COOKIE_VERSION )
 		end
@@ -74,10 +74,10 @@ class Strelka::Cookie
 		# cookie-header = "Cookie:" OWS cookie-string OWS
 		# cookie-string = cookie-pair *( ";" SP cookie-pair )
 		header.split( /;\x20/ ).each do |cookie_pair|
-			self.log.debug "  parsing cookie-pair: %p" % [ cookie_pair ]
+			# self.log.debug "  parsing cookie-pair: %p" % [ cookie_pair ]
 			next unless match = cookie_pair.match( COOKIE_PAIR )
 
-			self.log.debug "  matched cookie: %p" % [ match ]
+			# self.log.debug "  matched cookie: %p" % [ match ]
 			name = match[:cookie_name].untaint
 			value = match[:cookie_value]
 			value = self.dequote( value ) if value.start_with?( DQUOTE )
@@ -114,7 +114,7 @@ class Strelka::Cookie
 	###   HttpOnly flag.
 	def initialize( name, value, options={} )
 		options ||= {}
-		self.log.debug "New cookie: %p = %p (%p)" % [ name, value, options ]
+		# self.log.debug "New cookie: %p = %p (%p)" % [ name, value, options ]
 
 		@name     = name
 		@value    = value
@@ -127,7 +127,7 @@ class Strelka::Cookie
 		@expires  = nil
 		@version  = 0
 
-		self.log.debug "  setting options: %p" % [ options ]
+		# self.log.debug "  setting options: %p" % [ options ]
 		options.each do |meth, val|
 			self.__send__( "#{meth}=", val )
 		end
@@ -185,7 +185,7 @@ class Strelka::Cookie
 	### if +cookie_octets+ contains any invalid characters. If your value contains
 	### non-US-ASCII characters; control characters; or comma, semicolon, or backslash.
 	def value=( cookie_octets )
-		self.log.debug "Setting cookie value to: %p" % [ cookie_octets ]
+		# self.log.debug "Setting cookie value to: %p" % [ cookie_octets ]
 		raise Strelka::CookieError,
 			"invalid cookie value; value must be composed of non-control us-ascii characters " +
 			"other than SPACE, double-quote, comma, semi-colon, and backslash. " +
@@ -202,7 +202,7 @@ class Strelka::Cookie
 	###     cookie.value = [data].pack('m').strip
 	###
 	def binary_value=( data )
-		self.log.debug "Setting cookie value to base64ed %p" % [ data ]
+		# self.log.debug "Setting cookie value to base64ed %p" % [ data ]
 		self.value = [ data ].pack( 'm' ).strip
 	end
 	alias_method :wrapped_value=, :binary_value=
@@ -317,7 +317,7 @@ class Strelka::Cookie
 
 	### Return +true+ if other_cookie has the same name as the receiver.
 	def eql?( other_cookie )
-		self.log.debug "Comparing %p with other cookie: %p" % [ self, other_cookie ]
+		# self.log.debug "Comparing %p with other cookie: %p" % [ self, other_cookie ]
 		return (self.name == other_cookie.name) ? true : false
 	end
 
