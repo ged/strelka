@@ -293,16 +293,11 @@ class Strelka::CLICommand
 			appname,
 			gemname == '' ? '' : " from the #{gemname} gem"
 		]
-		fork do
-			self.log.debug "  in the child."
-			apps = Strelka::App.load( path )
-			Strelka.load_config( self.options.config ) if self.options.config
-			self.log.debug "  loaded: %p" % [ apps ]
-			apps.first.run
-		end
 
-		message "started. Waiting for shutdown."
-		Process.wait
+		apps = Strelka::App.load( path )
+		Strelka.load_config( self.options.config ) if self.options.config
+		self.log.debug "  loaded: %p" % [ apps ]
+		apps.first.run
 	end
 	help :start, "Start a Strelka app"
 
