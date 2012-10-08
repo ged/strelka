@@ -83,12 +83,17 @@ class Strelka::AuthProvider
 	end
 
 
-	### If the +callback+ is set, call it with the specified +credentials+, and +request. Override
-	### this in your own AuthProvider to provide +additional_arguments+ to the +callback+, and/or
-	### to provide additional generic authorization.
-	def authorize( credentials, request, *additional_arguments, &callback )
-		return true unless callback
-		return true if callback.call( credentials, request, *additional_arguments )
+	### You should override this method if you want to provide authorization in your
+	### provider. The +credentials+ will be the same object as the one returned by #authenticate,
+	### the +request+ is the current Strelka::HTTPRequest, and +perms+ is the Array of Symbols
+	### the represents the permissions that apply to the request as specified by the
+	### application's +require_perms_for+ and +no_perms_for+ declarations, as an Array of
+	### Symbols.
+	###
+	### The default behavior is to throw an 403 FORBIDDEN response if any +perms+ were
+	### required.
+	def authorize( credentials, request, perms )
+		return true if perms.empty?
 		self.require_authorization
 	end
 

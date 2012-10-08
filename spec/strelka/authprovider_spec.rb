@@ -45,9 +45,17 @@ describe Strelka::AuthProvider do
 
 	describe "a subclass" do
 
+		before( :all ) do
+			@appclass = Class.new( Strelka::App ) do
+				def initialize( appid='authprovider-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
+					super
+				end
+			end
+		end
+
 		before( :each ) do
 			@subclass = Class.new( described_class )
-			@app = mock( "Application" )
+			@app = @appclass.new
 			@provider = @subclass.new( @app )
 		end
 
@@ -69,25 +77,18 @@ describe Strelka::AuthProvider do
 
 		context "Authorization" do
 
-			it "doesn't fail if the application doesn't provide an authz callback" do
+			it "doesn't fail if the application doesn't require any perms" do
 				req = @request_factory.get( '/admin/console' )
 				expect {
-					@provider.authorize( 'anonymous', req )
+					@provider.authorize( 'anonymous', req, [] )
 				}.to_not throw_symbol()
 			end
 
-			it "doesn't fail if the application's authz callback returns true" do
-				req = @request_factory.get( '/admin/console' )
-				expect {
-					@provider.authorize( 'anonymous', req ) { true }
-				}.to_not throw_symbol()
-			end
-
-			it "fails with a 403 (Forbidden) if the app's authz callback returns false" do
+			it "fails with a 403 (Forbidden) if the app does require perms" do
 				req = @request_factory.get( '/admin/console' )
 
 				expect {
-					@provider.authorize( 'anonymous', req ) { false }
+					@provider.authorize( 'anonymous', req, [:write] )
 				}.to finish_with( HTTP::FORBIDDEN, /you are not authorized/i )
 			end
 
