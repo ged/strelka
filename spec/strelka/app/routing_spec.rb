@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,7 +13,7 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/routing'
 
 require 'strelka/behavior/plugin'
@@ -39,15 +41,12 @@ describe Strelka::App::Routing do
 	describe "an including App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :routing
 				def initialize( appid='params-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
 				end
 			end
-			Strelka.log.debug "  new instance is: %p, routes array: 0x%016x" %
-				[ @app, @app.routes.object_id * 2 ]
 		end
 
 
@@ -183,14 +182,23 @@ describe Strelka::App::Routing do
 			]
 		end
 
+		it "allows a route to specify a path via a Regex" do
+			@app.class_eval do
+				get /\.pdf$/ do
+				end
+			end
 
-		it "uses the Strelka::App::DefaultRouter as it's router by default" do
+			@app.routes.first[0,2].should == [ :GET, [/\.pdf$/] ]
+		end
+
+
+		it "uses the Strelka::Router::Default as it's router by default" do
 			@app.routerclass.should == :default
-			@app.new.router.should be_a( Strelka::App::DefaultRouter )
+			@app.new.router.should be_a( Strelka::Router::Default )
 		end
 
 		it "can specify a different Router class than the default" do
-			class MyRouter < Strelka::App::Router; end
+			class MyRouter < Strelka::Router; end
 			@app.class_eval do
 				router MyRouter
 			end
@@ -201,6 +209,7 @@ describe Strelka::App::Routing do
 
 		it "has its routes inherited by subclasses" do
 			@app.class_eval do
+				router :deep
 				get( '/info' ) {}
 				get( '/about' ) {}
 				get( '/origami' ) {}
@@ -218,6 +227,8 @@ describe Strelka::App::Routing do
 			subclass.routes.should include(
 				[ :GET, ['origami'], {action: subclass.instance_method(:GET_origami), options: {}} ]
 			)
+
+			subclass.routerclass.should == @app.routerclass
 		end
 
 		describe "that also uses the :parameters plugin" do
@@ -234,8 +245,8 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with ^ and $ for the route" do
@@ -246,8 +257,8 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\A and \\z for the route" do
@@ -258,8 +269,8 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
-					   {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "unbinds parameter patterns bound with \\Z for the route" do
@@ -270,8 +281,8 @@ describe Strelka::App::Routing do
 				end
 
 				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>(?i-mx:[a-z]\w+))/],
-					  {action: @app.instance_method(:POST_userinfo__username), options: {}} ]]
+					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
 			end
 
 			it "merges parameters from the route path into the request's param validator" do

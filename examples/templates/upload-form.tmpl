@@ -1,0 +1,17 @@
+<?import request ?>
+
+<?publish title ?>Upload/Multipart-FormData Demo<?end publish ?>
+
+<form action="[?call request.uri ?]" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+
+	<label for="uploadfile">Upload a file:</label>
+	<input type="file" name="uploadfile" value="" id="uploadfile-input">
+
+	<br />
+
+	<label for="description">Description</label>
+	<input type="text" name="description" value="" id="description-input">
+
+	<p><input type="submit" value="Upload &rarr;"></p>
+</form>
+

@@ -1,0 +1,13 @@
+<?import request ?>
+
+<h2>Upload Successful</h2>
+
+<p>You successfully uploaded a file: <tt><?call upload.filename ?></tt>
+	(<?call "%0.2fK" % upload.content_length / 1024.0 ?> of
+	'<?call upload.content_type ?>' data) with a description of
+	<tt><?escape description ?></tt></p>
+
+<hr />
+
+<?include upload-form.tmpl ?>
+

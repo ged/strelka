@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -6,7 +8,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 
 # Request/response filters plugin for Strelka::App.
 module Strelka::App::Filters
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing, :templating
 
@@ -19,6 +21,19 @@ module Strelka::App::Filters
 
 		# The list of filters
 		attr_reader :filters
+
+
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+
+			sub_filters = {
+				:request  => self.filters[:request].dup,
+				:response => self.filters[:response].dup,
+				:both     => self.filters[:both].dup
+			}
+			subclass.instance_variable_set( :@filters, sub_filters )
+		end
 
 
 		### Get/set the router class to use for mapping requests to handlers to +newclass.
@@ -49,6 +64,8 @@ module Strelka::App::Filters
 	### Apply filters to the given +request+ before yielding back to the App, then apply
 	### filters to the response that comes back.
 	def handle_request( request )
+		self.log.debug "[:filters] Wrapping request with request/response filters."
+
 		self.apply_request_filters( request )
 		response = super
 		self.apply_response_filters( response )

@@ -1,0 +1,51 @@
+# vim: set sta et ts=4 sw=4 ft=yaml:
+
+### This is an example configuration file for a Strelka application.  It
+### includes options for creating the Mongrel2 settings database, along with
+### behavioral knobs for specific Strelka components.
+
+# The location on disk where the sqlite database will be stored.
+mongrel2:
+  configdb: amalgalite://mongrel2.sqlite
+
+# Use the Basic authentication provider for
+# any routes that require user validation.
+auth:
+  provider: basic
+
+# Configuration for the Basic auth provider.
+basicauth:
+  realm: Examples
+  users:
+    ged: "dn44fsIrKF6KmBw0im4GIJktSpM="
+    jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
+    kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
+
+# Use built in (in-process) session storage.
+sessions:
+  type: default
+
+# Configuration for the built in session provider.
+defaultsession:
+  cookie_name: "session-demo"
+  cookie_options:
+    expires: +5m
+
+# Inversion templating.
+templates:
+  template_paths:
+    - templates
+  ignore_unknown_tags: true
+  on_render_error: ignore
+  debugging_comments: false
+  strip_tag_lines: false
+  stat_delay: 300
+
+# Logging behaviors for classes that are extended with Loggability.
+logging:
+  strelka: debug (color)
+  inversion: info (color)
+  configurability: debug (color)
+  mongrel2: debug (color)
+
+

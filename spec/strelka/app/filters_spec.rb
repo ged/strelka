@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,7 +13,7 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/filters'
 
 require 'strelka/behavior/plugin'
@@ -39,17 +41,26 @@ describe Strelka::App::Filters do
 	describe "an including App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :filters
 				def initialize( appid='params-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
 				end
 			end
-			Strelka.log.debug "  new instance is: %p, filters array: 0x%016x" %
-				[ @app, @app.filters.object_id * 2 ]
 		end
 
+		it "has its filters config inherited by subclasses" do
+			@app.filter :request do |req|
+				req.notes['blap'] = true
+			end
+			subclass = Class.new( @app )
+
+			subclass.filters.should == @app.filters
+			subclass.filters.should_not equal( @app.filters )
+			subclass.filters[:request].should_not equal( @app.filters[:request] )
+			subclass.filters[:response].should_not equal( @app.filters[:response] )
+			subclass.filters[:both].should_not equal( @app.filters[:both] )
+		end
 
 		it "has a Hash of filters" do
 			@app.filters.should be_a( Hash )
@@ -74,10 +85,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -103,8 +114,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == 'filtered notes'
-				res.body.should == 'filtered body'
+				req.notes[:saw][:request].should be_true()
+				res.notes[:saw][:response].should be_true()
 			end
 
 		end
@@ -114,10 +125,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter( :request ) do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -143,8 +154,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == 'filtered notes'
-				res.body.should_not == 'filtered body'
+				req.notes[:saw][:request].should be_true()
+				res.notes[:saw][:response].should be_empty()
 			end
 
 		end
@@ -154,10 +165,10 @@ describe Strelka::App::Filters do
 			before( :each ) do
 				@app.class_eval do
 					filter( :response ) do |reqres|
-						if reqres.respond_to?( :notes )
-							reqres.notes[:test] = 'filtered notes'
+						if reqres.is_a?( Strelka::HTTPRequest )
+							reqres.notes[:saw][:request] = true
 						else
-							reqres.body = 'filtered body'
+							reqres.notes[:saw][:response] = true
 						end
 					end
 				end
@@ -183,8 +194,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:test].should == {}
-				res.body.should == 'filtered body'
+				req.notes[:saw][:request].should be_empty()
+				res.notes[:saw][:response].should be_true()
 			end
 
 		end

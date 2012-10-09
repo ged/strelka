@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -11,7 +13,7 @@ require 'strelka/httpresponse/negotiation'
 # HTTP Content negotiation for Strelka applications.
 #
 # The application can test the request for which types are accepted, set
-# different response blocks for different acceptable content types, provides 
+# different response blocks for different acceptable content types, provides
 # tranformations for entity bodies and set transformations for new content
 # types.
 #
@@ -22,6 +24,7 @@ require 'strelka/httpresponse/negotiation'
 #       add_content_type :tnetstring, 'text/x-tnetstring' do |response|
 #           tnetstr = nil
 #           begin
+#               response.body.rewind
 #               tnetstr = TNetString.dump( response.body )
 #           rescue => err
 #               self.log.error "%p while transforming entity body to a TNetString: %s" %
@@ -38,7 +41,7 @@ require 'strelka/httpresponse/negotiation'
 #
 module Strelka::App::Negotiation
 	include Strelka::Constants
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
 	run_before :routing
 	run_after  :filters, :templating, :parameters
@@ -56,6 +59,14 @@ module Strelka::App::Negotiation
 		attr_reader :transform_names
 
 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@content_type_transforms, @content_type_transforms.dup )
+			subclass.instance_variable_set( :@transform_names, @transform_names.dup )
+		end
+
+
 		### Define a new media-type associated with the specified +name+ and +mimetype+. Responses
 		### whose requests accept content of the given +mimetype+ will pass their response to the
 		### specified +transform_block+, which should re-write the response's entity body if it can
@@ -69,10 +80,10 @@ module Strelka::App::Negotiation
 	end # module ClassMethods
 
 
-	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation 
+	### Extension callback -- extend the HTTPRequest and HTTPResponse classes with Negotiation
 	### support when this plugin is loaded.
 	def self::included( object )
-		Strelka.log.debug "Extending Request and Response with Negotiation mixins"
+		self.log.debug "Extending Request and Response with Negotiation mixins"
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Negotiation }
 		Strelka::HTTPResponse.class_eval { include Strelka::HTTPResponse::Negotiation }
 		super
@@ -81,6 +92,8 @@ module Strelka::App::Negotiation
 
 	### Start content-negotiation when the response has returned.
 	def handle_request( request )
+		self.log.debug "[:negotiation] Wrapping response with HTTP content negotiation."
+
 		response = super
 		response.negotiate
 

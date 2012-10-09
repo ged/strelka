@@ -25,7 +25,8 @@ describe Strelka::HTTPResponse do
 	end
 
 	before( :each ) do
-		@res = @request_factory.get( '/glossary/reduct' ).response
+		@req = @request_factory.get( '/glossary/reduct' )
+		@res = @req.response
 	end
 
 	after( :all ) do
@@ -33,14 +34,14 @@ describe Strelka::HTTPResponse do
 	end
 
 
-	it "adds a charset to the response's content-type header if one is explicitly set" do
+	it "adds a charset to the response's content-type header if it's text/* and one is explicitly set" do
 		@res.content_type = 'text/html'
 		@res.charset = Encoding::UTF_8
 
 		@res.header_data.should =~ %r{Content-type: text/html; charset=UTF-8}i
 	end
 
-	it "replaces the existing content-type header charset if one is explicitly set" do
+	it "replaces the existing content-type header charset if it's text/* and one is explicitly set" do
 		@res.content_type = 'text/html; charset=iso-8859-1'
 		@res.charset = Encoding::UTF_8
 
@@ -49,7 +50,7 @@ describe Strelka::HTTPResponse do
 	end
 
 	it "adds a charset to the response's content-type header based on the entity body's encoding " +
-	   "if there isn't already one set on the request or the header" do
+	   "if it's text/* and there isn't already one set on the request or the header" do
 		@res.body = "Стрелке".encode( 'koi8-r' )
 		@res.content_type = 'text/plain'
 
@@ -57,14 +58,14 @@ describe Strelka::HTTPResponse do
 	end
 
 	it "adds a charset to the response's content-type header based on the entity body's " +
-	   "external encoding if there isn't already one set on the request or the header" do
+	   "external encoding if it's text/* and there isn't already one set on the request or the header" do
 		@res.body = File.open( __FILE__, 'r:iso-8859-5' )
 		@res.content_type = 'text/plain'
 
 		@res.header_data.should =~ /charset=iso-8859-5/i
 	end
 
-	it "doesn't replace a charset in the content-type header with one based on the entity body" do
+	it "doesn't replace a charset in a text/* content-type header with one based on the entity body" do
 		@res.body = "Стрелке".encode( 'iso-8859-5' )
 		@res.content_type = 'text/plain; charset=utf-8'
 
@@ -80,6 +81,11 @@ describe Strelka::HTTPResponse do
 		@res.header_data.should_not =~ /charset/i
 	end
 
+	it "doesn't add a charset to the response's content-type header if it's not text/*" do
+		@res.content_type = 'application/octet-stream'
+		@res.header_data.should_not =~ /charset/i
+	end
+
 	it "strips an existing charset from the response's content-type header if it's explicitly " +
 	   "set to ASCII-8BIT" do
 		@res.content_type = 'text/plain; charset=ISO-8859-15'
@@ -88,6 +94,10 @@ describe Strelka::HTTPResponse do
 		@res.header_data.should_not =~ /charset/i
 	end
 
+	it "doesn't try to add an encoding to a response that doesn't have a content type" do
+		@res.content_type = nil
+		@res.header_data.should_not =~ /charset/
+	end
 
 	it "adds a Content-encoding header if there is one encoding" do
 		@res.encodings << 'gzip'
@@ -108,6 +118,24 @@ describe Strelka::HTTPResponse do
 	it "adds a Content-language header if there is more than one language" do
 		@res.languages << 'en' << 'sv-chef'
 		@res.header_data.should =~ /content-language: en, sv-chef\s*$/i
+	end
+
+
+	it "allows cookies to be set via a Hash-like interface" do
+		@res.cookies[:foom] = 'chuckUfarly'
+		@res.header_data.should =~ /set-cookie: foom=chuckufarly/i
+	end
+
+	it "allows cookies to be appended" do
+		@res.cookies << Strelka::Cookie.new( 'session', '64a3a92eb7403a8199301e03e8b83810' )
+		@res.cookies << Strelka::Cookie.new( 'cn', '18', :expires => '+1d' )
+		@res.header_data.should =~ /set-cookie: session=64a3a92eb7403a8199301e03e8b83810/i
+		@res.header_data.should =~ /set-cookie: cn=18; expires=/i
+	end
+
+
+	it "shares a 'notes' Hash with its associated request" do
+		@res.notes.should be( @req.notes )
 	end
 
 end

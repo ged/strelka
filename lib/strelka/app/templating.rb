@@ -1,24 +1,103 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'inversion'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 
-# Templating plugin for Strelka::Apps.
+# A templated content-generation plugin for Strelka::Apps. It uses the
+# Inversion[http://deveiate.org/projects/Inversion] templating system.
+#
+# It adds:
+#
+# * a preloaded/cached template table
+# * a mechanism for fetching templates from the table
+# * a global layout template which is automatically wrapped around responses
+#
+# == Usage
+#
+# To use it, just load the <tt>:templating</tt> plugin in your app:
+#
+#   plugins :templating
+#
+# and declare one or more templates that your application will use:
+#
+#   templates :console =>   'views/console.tmpl',
+#             :proctable => 'partials/proctable.tmpl'
+#
+# Then, inside your app, you can fetch a copy of one or more of the templates and
+# return it as the reponse:
+#
+#   def handle_request( req )
+#       super do
+#           res = request.response
+#
+#           proctable = template :proctable
+#           proctable.processes = ProcessList.fetch
+#
+#           tmpl = template :console
+#           tmpl.message = "Everything's up."
+#           tmpl.proctable = proctable
+#           res.body = tmpl
+#
+#           return res
+#       end
+#   end
+#
+# You can also just return the template if you don't need to do anything else to the
+# response.
+#
+# When returning a template, either in the body of the response or directly, it will
+# automatically set a few attributes for commonly-used objects:
+#
+# request ::          The current Strelka::HTTPRequest
+# strelka_version ::  Strelka.version_string( true )
+# mongrel2_version :: Mongrel2.version_string( true )
+# route ::            If the :routing plugin is loaded, this will be set to the
+#                     'routing_info' of the chosen route. See
+#                     Strelka::Router#add_route for details.
+#
+# If your app will *only* be loading and returning a template without doing anything
+# with it, you can return just its name:
+#
+#   def handle_request( req )
+#       super { :console }
+#   end
+#
+# It will be loaded, set as the response body, and the above common objects added to it.
+#
+# === Layouts
+#
+# Very often, you'll want all or most of the views in your app to share a common page
+# layout. To accomplish this, you can declare a layout template:
+#
+#   layout 'layout.tmpl'
+#
+# Any template that you return will be set as the 'body' attribute of this layout
+# template (which you'd place into the layout with <tt><?attr body ?></tt>) and the
+# layout rendered as the body of the response.
+#
+# Note that if you want any of the "common objects" from above with a layout template,
+# they'll be set on it since it's the top-level template, but you can still access them
+# using the <tt><?import ?></tt> directive:
+#
+#   <?import request, strelka_version, route ?>
+#
 module Strelka::App::Templating
 	include Strelka::Constants
-	extend Strelka::App::Plugin
+	extend Strelka::Plugin
 
-	run_before :routing, :negotiation
+	run_before :routing, :negotiation, :errors
 	run_after :filters
 
 
 	# Class methods to add to classes with templating.
-	module ClassMethods # :nodoc:
+	module ClassMethods
 
 		# The map of template names to template file paths.
 		@template_map = {}
@@ -28,7 +107,15 @@ module Strelka::App::Templating
 		attr_accessor :layout_template
 
 
-		### Get/set the templates declared for the App. 
+		### Extension callback -- add instance variables to extending objects.
+		def inherited( subclass )
+			super
+			subclass.instance_variable_set( :@template_map, @template_map.dup )
+			subclass.instance_variable_set( :@layout_template, @layout_template.dup ) if @layout_template
+		end
+
+
+		### Get/set the templates declared for the App.
 		def templates( newhash=nil )
 			if newhash
 				self.template_map.merge!( newhash )
@@ -62,12 +149,12 @@ module Strelka::App::Templating
 	# The map of template names to Inversion::Template instances.
 	attr_reader :template_map
 
-	# The layout template (an Inversion::Template), if one was declarted
-	attr_reader :layout
+	# The layout template (an Inversion::Template), if one was declared
+	attr_accessor :layout
 
 
 	### Return the template keyed by the given +name+.
-	### :TODO: Add auto-reloading, 
+	### :TODO: Add auto-reloading,
 	def template( name )
 		template = self.template_map[ name ] or
 			raise ArgumentError, "no %p template registered!" % [ name ]
@@ -80,7 +167,8 @@ module Strelka::App::Templating
 	### and return them in a hash keyed by name (Symbol).
 	def load_template_map
 		return self.class.template_map.inject( {} ) do |map, (name, path)|
-			map[ name ] = Inversion::Template.load( path )
+			enc = Encoding.default_internal || Encoding::UTF_8
+			map[ name ] = Inversion::Template.load( path, encoding: enc )
 			map
 		end
 	end
@@ -90,75 +178,84 @@ module Strelka::App::Templating
 	### If none was declared, returns +nil+.
 	def load_layout_template
 		return nil unless ( lt_path = self.class.layout_template )
-		return Inversion::Template.load( lt_path )
+		enc = Encoding.default_internal || Encoding::UTF_8
+		return Inversion::Template.load( lt_path, encoding: enc )
 	end
 
 
 	### Intercept responses on the way back out and turn them into a Mongrel2::HTTPResponse
-	### with a String for its entity body. It will take action if the response is one of:
-	###
-	### 1. A Mongrel2::Response with an Inversion::Template as its body.
-	### 2. An Inversion::Template by itself.
-	### 3. A Symbol that matches one of the keys of the registered templates.
-	###
-	### In all three of these cases, the return value will be a Mongrel2::Response with a
-	### body set to the rendered value of the template in question, and with its status
-	### set to '200 OK' unless it is already set to something else.
-	###
-	### If there is a registered layout template, and any of the three cases is true, the
-	### layout template is loaded, its #body attributes set to the content template,
-	### and its rendered output set as the body of the response instead.
-	###
-	### Every other response is returned without modification.
+	### with a String for its entity body.
 	def handle_request( request, &block )
 		response = super
 
 		self.log.debug "Templating: examining %p response." % [ response.class ]
-		template = nil
-
-		# Response is a template name
-		if response.is_a?( Symbol ) && self.template_map.key?( response )
-			self.log.debug "  response is a template name (Symbol); using the %p template" % [ response ]
-			template = self.template( response )
-			response = request.response
-
-		# Template object
-		elsif response.is_a?( Inversion::Template )
-			self.log.debug "  response is an %p; wrapping it in a Response object" % [ response.class ]
-			template = response
-			response = request.response
-
-		# Template object already in a Response
-		elsif response.is_a?( Mongrel2::Response ) && response.body.is_a?( Inversion::Template )
-			template = response.body
-			self.log.debug "  response is a %p in the body of a %p" % [ template.class, response.class ]
-
-		# Not templated; returned as-is
-		else
-			self.log.debug "  response isn't templated; returning it as-is"
+		template = self.extract_template_from_response( response ) or
 			return response
-		end
 
 		# Wrap the template in a layout if there is one
-		if self.layout
-			l_template = self.layout.dup
-			self.log.debug "  wrapping response in layout %p" % [ l_template ]
-			l_template.body = template
-			template = l_template
-		end
+		template = self.wrap_in_layout( template, request )
 
 		# Set some default stuff on the top-level template
-		template.request          = request
-		template.strelka_version  = Strelka.version_string( true )
-		template.mongrel2_version = Mongrel2.version_string( true )
-		template.route            = request.notes[:routing][:route]
+		self.set_common_attributes( template, request )
 
 		# Now render the response body
 		self.log.debug "  rendering the template into the response body"
+		response = request.response unless response.is_a?( Mongrel2::Response )
 		response.body = template.render
 		response.status ||= HTTP::OK
 
 		return response
+	end
+
+
+	### Fetch the template from the +response+ (if there is one) and return it. If
+	### +response+ itself is a template.
+	def extract_template_from_response( response )
+
+		# Response is a template name
+		if response.is_a?( Symbol ) && self.template_map.key?( response )
+			self.log.debug "  response is a template name (Symbol); using the %p template" % [ response ]
+			return self.template( response )
+
+		# Template object
+		elsif response.respond_to?( :render )
+			self.log.debug "  response is a #renderable %p; returning it as-is" % [ response.class ]
+			return response
+
+		# Template object already in a Response
+		elsif response.is_a?( Mongrel2::Response ) && response.body.respond_to?( :render )
+			self.log.debug "  response is a %p in the body of a %p" % [ response.body.class, response.class ]
+			return response.body
+
+		# Not templated; returned as-is
+		else
+			self.log.debug "  response isn't templated; returning nil"
+			return nil
+		end
+	end
+
+
+	### Wrap the specified +content+ template in the layout template and
+	### return it. If there isn't a layout declared, just return +content+ as-is.
+	def wrap_in_layout( content, request )
+		return content unless self.layout
+
+		self.layout.reload if self.layout.changed?
+		l_template = self.layout.dup
+		self.log.debug "  wrapping response in layout %p" % [ l_template ]
+		l_template.body = content
+
+		return l_template
+	end
+
+
+	### Set some default values from the +request+ in the given top-level +template+.
+	def set_common_attributes( template, request )
+		template.request          = request
+		template.app              = self
+		template.strelka_version  = Strelka.version_string( true )
+		template.mongrel2_version = Mongrel2.version_string( true )
+		template.route            = request.notes[:routing][:route]
 	end
 
 end # module Strelka::App::Templating

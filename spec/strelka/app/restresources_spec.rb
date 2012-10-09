@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,7 +13,7 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/restresources'
 
 require 'strelka/behavior/plugin'
@@ -26,7 +28,7 @@ describe Strelka::App::RestResources do
 	include Mongrel2::Config::DSL
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging()
 		setup_config_db()
 
 		@request_factory = Mongrel2::RequestFactory.new( route: '/api/v1' )
@@ -40,10 +42,9 @@ describe Strelka::App::RestResources do
 	it_should_behave_like( "A Strelka::App Plugin" )
 
 
-	describe "an including App" do
+	describe "included in an App" do
 
 		before( :each ) do
-			Strelka.log.debug "Creating a new Strelka::App"
 			@app = Class.new( Strelka::App ) do
 				plugin :restresources
 				def initialize( appid='rest-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
@@ -53,7 +54,7 @@ describe Strelka::App::RestResources do
 		end
 
 
-		it "knows what resources are mounted where" do
+		it "keeps track of what resources are mounted where" do
 			@app.resource_verbs.should be_a( Hash )
 			@app.resource_verbs.should be_empty()
 		end
@@ -69,7 +70,7 @@ describe Strelka::App::RestResources do
 				end
 			end
 
-			it "knows about the mounted resource" do
+			it "keeps track of what resources are mounted where" do
 				@app.resource_verbs.should have( 1 ).member
 				@app.resource_verbs.should include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
@@ -106,7 +107,7 @@ describe Strelka::App::RestResources do
 				end
 			end
 
-			it "knows about the mounted resource" do
+			it "keeps track of what resources are mounted where" do
 				@app.resource_verbs.should have( 1 ).member
 				@app.resource_verbs.should include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
@@ -135,17 +136,20 @@ describe Strelka::App::RestResources do
 		end
 
 
-		describe "route behaviors" do
+		describe "auto-generates routes:" do
 
 			before( :each ) do
 				# Create two servers in the config db to test with
 				server 'test-server' do
+					name "Test"
 					host 'main'
 					host 'monitor'
 					host 'adminpanel'
 					host 'api'
 				end
-				server 'step-server'
+				server 'step-server' do
+					name 'Step'
+				end
 
 				@app.class_eval do
 					resource Mongrel2::Config::Server
@@ -157,8 +161,11 @@ describe Strelka::App::RestResources do
 				Mongrel2::Config.subclasses.each {|klass| klass.truncate }
 			end
 
-			context "OPTIONS routes" do
+
+			context "OPTIONS route" do
+
 				it "responds to a top-level OPTIONS request with a resource description (JSON Schema?)"
+
 				it "responds to an OPTIONS request for a particular resource with details about it" do
 					req = @request_factory.options( '/api/v1/servers' )
 					res = @app.new.handle( req )
@@ -166,10 +173,11 @@ describe Strelka::App::RestResources do
 					res.status.should == HTTP::OK
 					res.headers.allowed.split( /\s*,\s*/ ).should include(*%w[GET HEAD POST PUT DELETE])
 				end
+
 			end # OPTIONS routes
 
 
-			context "GET routes" do
+			context "GET route" do
 				it "has a GET route to fetch the resource collection" do
 					req = @request_factory.get( '/api/v1/servers', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
@@ -205,6 +213,31 @@ describe Strelka::App::RestResources do
 					body[0]['uuid'].should == 'step-server'
 				end
 
+				it "supports ordering the result by a single column" do
+					req = @request_factory.get( '/api/v1/servers?order=name', 'Accept' => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					res.content_type.should == 'application/json'
+					body = Yajl.load( res.body )
+
+					body.should have( 2 ).members
+					body[0]['name'].should == 'Step'
+				end
+
+				it "supports ordering the result by multiple columns" do
+					pending "fixing the multi-value paramvalidator bug"
+					req = @request_factory.get( '/api/v1/servers?order=id;order=name', 'Accept' => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					res.content_type.should == 'application/json'
+					body = Yajl.load( res.body )
+
+					body.should have( 2 ).members
+					body[0]['name'].should == 'Test'
+				end
+
 				it "has a GET route to fetch a single resource by its ID" do
 					req = @request_factory.get( '/api/v1/servers/1', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
@@ -221,7 +254,8 @@ describe Strelka::App::RestResources do
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::NOT_FOUND
-					res.body.should =~ /no such server/i
+					res.body.rewind
+					res.body.read.should =~ /no such server/i
 				end
 
 				it "returns a NOT FOUND response when fetching a resource with an invalid ID" do
@@ -229,7 +263,8 @@ describe Strelka::App::RestResources do
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::NOT_FOUND
-					res.body.should =~ /requested resource was not found/i
+					res.body.rewind
+					res.body.read.should =~ /requested resource was not found/i
 				end
 
 				it "has a GET route for fetching the resource via one of its dataset methods" do
@@ -276,7 +311,7 @@ describe Strelka::App::RestResources do
 			end # GET routes
 
 
-			context "POST routes" do
+			context "POST route" do
 
 				before( :each ) do
 					@server_values = {
@@ -324,7 +359,7 @@ describe Strelka::App::RestResources do
 			end # POST routes
 
 
-			context "PUT routes" do
+			context "PUT route" do
 
 				before( :each ) do
 					@posted_values = {
@@ -362,7 +397,7 @@ describe Strelka::App::RestResources do
 			end # PUT routes
 
 
-			context "DELETE routes" do
+			context "DELETE route" do
 
 				it "has a DELETE route to delete single instances in the resource collection" do
 					req = @request_factory.delete( '/api/v1/servers/1' )
@@ -387,6 +422,29 @@ describe Strelka::App::RestResources do
 			end # DELETE routes
 
 		end # route behaviors
+
+
+		describe "supports inheritance:" do
+
+			subject do
+				@app.resource( Mongrel2::Config::Server )
+				Class.new( @app )
+			end
+
+
+			it "has its config inherited by subclass" do
+				subject.service_options.should == @app.service_options
+				subject.service_options.should_not be( @app.service_options )
+			end
+
+			it "has its metadata inherited by subclasses" do
+				subject.resource_verbs.should have( 1 ).member
+				subject.resource_verbs.should include( 'servers' )
+				subject.resource_verbs[ 'servers' ].
+					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
+			end
+
+		end # supports inheritance
 
 	end
 

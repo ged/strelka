@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,7 +13,7 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/negotiation'
 require 'strelka/behavior/plugin'
 
@@ -51,6 +53,18 @@ describe Strelka::App::Negotiation do
 			@app = nil
 		end
 
+
+		it "has its config inherited by subclasses" do
+			@app.add_content_type :text, 'text/plain' do
+				"It's all text now, baby"
+			end
+			subclass = Class.new( @app )
+
+			subclass.transform_names.should == @app.transform_names
+			subclass.transform_names.should_not equal( @app.transform_names )
+			subclass.content_type_transforms.should == @app.content_type_transforms
+			subclass.content_type_transforms.should_not equal( @app.content_type_transforms )
+		end
 
 		it "gets requests that have been extended with content-negotiation" do
 			req = @request_factory.get( '/service/user/estark' )

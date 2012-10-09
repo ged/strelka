@@ -1,4 +1,6 @@
-#!usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'set'
 require 'yaml'
@@ -10,7 +12,7 @@ require 'strelka/httpresponse' unless defined?( Strelka::HTTPResponse )
 
 
 # The mixin that adds methods to Strelka::HTTPResponse for content-negotiation.
-# 
+#
 #    response = request.response
 #    response.for( 'text/html' ) {...}
 #    response.for( :json ) {...}
@@ -47,7 +49,17 @@ module Strelka::HTTPResponse::Negotiation
 	STRINGIFIERS = {
 		'application/x-yaml' => YAML.method( :dump ),
 		'application/json'   => Yajl.method( :dump ),
+		'text/plain'         => Proc.new {|obj| obj.to_s },
 	}
+
+	# Transcoding to Unicode is likely enough to work to warrant auto-transcoding. These
+	# are the charsets that will be used for auto-transcoding in the case where the whole
+	# entity body isn't in memory
+	UNICODE_CHARSETS = [
+		Encoding::UTF_8,
+		Encoding::UTF_16BE,
+		Encoding::UTF_32BE,
+	]
 
 
 	### Add some instance variables for negotiation.
@@ -113,18 +125,13 @@ module Strelka::HTTPResponse::Negotiation
 
 	### Stringify the response -- overridden to use the negotiated body.
 	def to_s
-		return [
-			self.status_line,
-			self.header_data,
-			self.negotiated_body
-		].join( "\r\n" )
+		self.negotiate
+		super
 	end
 
 
 	### Transform the entity body if it doesn't meet the criteria
 	def negotiated_body
-		return '' if self.bodiless?
-
 		self.negotiate
 		return self.body
 	end
@@ -187,7 +194,7 @@ module Strelka::HTTPResponse::Negotiation
 		#   value of "ISO-8859-1" when received via HTTP. [RFC2616 3.7.1]
 		if charset == Encoding::ASCII_8BIT
 			return true unless self.content_type.start_with?( 'text/' )
-			charset = Encoding::ISO8859_1 
+			charset = Encoding::ISO8859_1
 		end
 
 		answer = req.accepts_charset?( charset )
@@ -214,7 +221,7 @@ module Strelka::HTTPResponse::Negotiation
 		return true if self.languages.empty?
 
 		# If any of the languages present for the body are accepted, the
-		# request is acceptable. Or at least that's what I got out of 
+		# request is acceptable. Or at least that's what I got out of
 		# reading RFC2616, Section 14.4.
 		answer = self.languages.any? {|lang| req.accepts_language?(lang) }
 		self.log.warn "Content-language %p NOT acceptable: %s" %
@@ -225,7 +232,7 @@ module Strelka::HTTPResponse::Negotiation
 	alias_method :has_acceptable_language?, :acceptable_language?
 
 
-	### Returns true if all of the receiver's #encodings were designated 
+	### Returns true if all of the receiver's #encodings were designated
 	### as acceptable by the originating request, if there was no originating
 	### request, or if no #encodings have been set.
 	def acceptable_encoding?
@@ -255,7 +262,7 @@ module Strelka::HTTPResponse::Negotiation
 	### the desired mimetype, and should return the new value for the entity
 	### body if it successfully transformed the body, or a false value if
 	### the next alternative should be tried instead.
-	### If successful, the response's body will be set to the new value, 
+	### If successful, the response's body will be set to the new value,
 	### its content_type set to the new mimetype, and its status changed
 	### to HTTP::OK.
 	def for( *mediatypes, &callback )
@@ -269,7 +276,7 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Returns Strelka::HTTPRequest::MediaType objects for mediatypes that have 
+	### Returns Strelka::HTTPRequest::MediaType objects for mediatypes that have
 	### a higher qvalue than the current response's entity body (if any).
 	def better_mediatypes
 		req = self.request or return []
@@ -294,11 +301,11 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Iterate over the originating request's acceptable content types in 
+	### Iterate over the originating request's acceptable content types in
 	### qvalue+listed order, looking for a content negotiation callback for
 	### each mediatype. If any are found, they are tried in declared order
 	### until one returns a true-ish value, which becomes the new entity
-	### body. If the body object is not a String, 
+	### body. If the body object is not a String,
 	def transform_content_type
 		return if self.mediatype_callbacks.empty?
 
@@ -327,12 +334,12 @@ module Strelka::HTTPResponse::Negotiation
 
 		new_body = callback.call( mimetype ) or return false
 
-		self.log.debug "  successfully transformed! Setting up response."
+		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body ]
 		new_body = STRINGIFIERS[ mimetype ].call( new_body ) if
 			STRINGIFIERS.key?( mimetype ) && !new_body.is_a?( String )
 
 		self.body = new_body
-		self.content_type = mimetype
+		self.content_type = mimetype.dup # :TODO: Why is this frozen?
 		self.status ||= HTTP::OK
 
 		return true
@@ -362,7 +369,7 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Returns Strelka::HTTPRequest::Language objects for natural languages that have 
+	### Returns Strelka::HTTPRequest::Language objects for natural languages that have
 	### a higher qvalue than the current response's entity body (if any).
 	def better_languages
 		req = self.request or return []
@@ -389,8 +396,8 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### If there are any languages that have a higher qvalue than the one/s in #languages, 
-	### look for a negotiation callback that provides that language. If any are found, they 
+	### If there are any languages that have a higher qvalue than the one/s in #languages,
+	### look for a negotiation callback that provides that language. If any are found, they
 	### are tried in declared order until one returns a true-ish value, which becomes the new
 	### entity body.
 	def transform_language
@@ -425,7 +432,7 @@ module Strelka::HTTPResponse::Negotiation
 	# :section: Charset negotiation callbacks
 	#
 
-	### Returns Strelka::HTTPRequest::Charset objects for accepted character sets that have 
+	### Returns Strelka::HTTPRequest::Charset objects for accepted character sets that have
 	### a higher qvalue than the one used by the current response.
 	def better_charsets
 		req = self.request or return []
@@ -453,50 +460,70 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Iterate over the originating request's acceptable charsets in 
+	### Iterate over the originating request's acceptable charsets in
 	### qvalue+listed order, attempting to transcode the current entity body
 	### if it
 	def transform_charset
 		self.log.debug "Looking for charset transformations."
-		self.better_charsets.each do |charset|
-			self.log.debug "  trying to transcode to: %s" % [ charset ]
+		if self.body.respond_to?( :string ) || self.body.respond_to?( :fileno )
 
-			if self.body.respond_to?( :encode )
-				self.log.debug "  body is a string; trying direct transcoding"
-				if self.transcode_body_string( charset )
-					self.log.debug "  success; body is now %p" % [ self.body.encoding ]
+			# Try each charset that's better than what we have already
+			self.better_charsets.each do |charset|
+				self.log.debug "  trying to transcode to: %s" % [ charset ]
+
+				# If it succeeds, indicate that transcoding took place in the Vary header
+				if self.transcode_body( charset )
+					self.log.debug "  success; body is now %p" % [ charset ]
 					self.vary_fields.add( 'accept-charset' )
 					break
 				end
-
-			# Can change the external_encoding if it's a File that has a #path
-			elsif self.body.respond_to?( :external_encoding )
-				raise NotImplementedError,
-					"Support for transcoding %p objects isn't done." % [ self.body.class ]
-			else
-				self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 			end
+		else
+			self.log.warn "Don't know how to transcode a %p" % [ self.body.class ]
 		end
 	end
 
 
-	### Try to transcode the entity body String to one of the specified +charsets+. Returns
+	### Try to transcode the entity body stream to one of the specified +charsets+. Returns
 	### the succesful Encoding object if transcoding succeeded, or +nil+ if transcoding
 	### failed.
-	def transcode_body_string( charset )
+	def transcode_body( charset )
 		unless enc = charset.encoding_object
 			self.log.warn "    unsupported charset: %s" % [ charset ]
 			return false
 		end
 
-		succeeded = false
 		begin
-			succeeded = self.body.encode!( enc )
+
+			# StringIOs get their internal string transcoded directly
+			if self.body.respond_to?( :string )
+				self.body.string.encode!( enc )
+				return true
+
+			# For other IO objects, the situation is trickier -- we can't know that
+			# encoding will succeed for more-restrictive charsets, so we only do
+			# automatic transcoding if the 'wanted' one is a Unicode charset.
+			# This probably isn't perfect, either.
+			# :FIXME: Probably need a list of exceptions, i.e., charsets that don't
+			# always transcode nicely into Unicode.
+			elsif self.body.respond_to?( :fileno ) && UNICODE_CHARSETS.include?( enc )
+				self.log.info "Assuming %s data can be transcoded into %s" %
+					[ self.body.internal_encoding, enc ]
+
+				# Don't close the FD when this IO goes out of scope
+				oldbody = self.body
+				oldbody.auto_close = false
+
+				# Re-open the same file descriptor, but transcoding to the wanted encoding
+				self.body = IO.for_fd( oldbody.fileno, internal_encoding: enc )
+				return true
+			end
+
 		rescue Encoding::UndefinedConversionError => err
 			self.log.error "%p while transcoding: %s" % [ err.class, err.message ]
 		end
 
-		return succeeded
+		return false
 	end
 
 
@@ -522,7 +549,7 @@ module Strelka::HTTPResponse::Negotiation
 	end
 
 
-	### Returns Strelka::HTTPRequest::Encoding objects for accepted encodings that have 
+	### Returns Strelka::HTTPRequest::Encoding objects for accepted encodings that have
 	### a higher qvalue than the one used by the current response.
 	def better_encoding
 		req = self.request or return []

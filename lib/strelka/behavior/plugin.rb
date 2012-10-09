@@ -1,17 +1,19 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'rspec'
 
 require 'strelka'
 require 'strelka/app'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 
 # This is a shared behavior for specs which different Strelka::App
 # plugins share in common. If you're creating a Strelka::App plugin,
 # you can test its conformity to the expectations placed on them by
 # adding this to your spec:
-# 
+#
 #    require 'strelka/behavior/plugin'
 #
 #    describe YourPlugin do
@@ -27,8 +29,8 @@ shared_examples_for "A Strelka::App Plugin" do
 	end
 
 
-	it "extends Strelka::App::Plugin" do
-		plugin.should be_a( Strelka::App::Plugin )
+	it "extends Strelka::Plugin" do
+		plugin.should be_a( Strelka::Plugin )
 	end
 
 end

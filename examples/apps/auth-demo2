@@ -1,0 +1,38 @@
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+#encoding: utf-8
+
+require 'strelka'
+
+# Another demo of the :auth plugin, this time implemented as form-based session
+# auth.
+
+class AuthDemo2 < Strelka::App
+
+	# The Mongrel2 appid of this app
+	ID = 'auth-demo2'
+
+	plugins :auth, :errors, :templating, :routing
+
+	default_type 'text/html'
+
+	layout 'templates/layout.tmpl'
+	templates \
+		form: 'templates/auth-form.tmpl',
+		success: 'templates/auth-success.tmpl'
+
+	on_status HTTP::AUTH_REQUIRED, :form
+
+
+	### Handle any (authenticated) HTTP request
+	get do |req|
+		return :success
+	end
+
+
+end # class AuthDemo2
+
+
+AuthDemo2.run if __FILE__ == $0
+
+

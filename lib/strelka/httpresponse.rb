@@ -1,12 +1,21 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
+require 'loggability'
 require 'mongrel2/httpresponse'
 require 'strelka' unless defined?( Strelka )
+require 'strelka/cookieset'
 
 # An HTTP response class.
 class Strelka::HTTPResponse < Mongrel2::HTTPResponse
-	include Strelka::Loggable,
-	        Strelka::Constants
+	extend Loggability
+	include Strelka::Constants,
+	        Strelka::DataUtilities
+
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
 
 
 	# Pattern for matching a 'charset' parameter in a media-type string, such as the
@@ -16,9 +25,11 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add some instance variables to new HTTPResponses.
 	def initialize( * ) # :notnew:
-		@charset = nil
+		@charset   = nil
 		@languages = []
 		@encodings = []
+		@notes     = Hash.new( &method(:autovivify) )
+		@cookies   = nil
 
 		super
 	end
@@ -49,6 +60,11 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	# client. Defaults to the empty Array.
 	attr_accessor :languages
 
+	# A auto-vivifying nested Hash that plugins can use to pass data amongst themselves.
+	# The notes hash is shared between the request and response objects if
+	# the request is set on the response with #request=.
+	attr_reader :notes
+
 
 	### Overridden to add charset, encodings, and languages to outgoing
 	### headers if any of them are set.
@@ -58,6 +74,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		self.add_content_type_charset( headers )
 		headers.content_encoding ||= self.encodings.join(', ') unless self.encodings.empty?
 		headers.content_language ||= self.languages.join(', ') unless self.languages.empty?
+		self.add_cookie_headers( headers )
 
 		return headers
 	end
@@ -73,6 +90,20 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	end
 
 
+	### Returns a Strelka::CookieSet that can be used to manipulate the cookies that are
+	### sent with the response, creating it if necessary.
+	def cookies
+		@cookies = Strelka::CookieSet.new unless @cookies
+		return @cookies
+	end
+
+
+	### Set the request object associated with this response to +request+.
+	def request=( request )
+		super
+		@notes = request.notes
+	end
+
 
 	#########
 	protected
@@ -80,23 +111,29 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add a charset to the content-type header in +headers+ if possible.
 	def add_content_type_charset( headers )
+		return unless headers.content_type && 
+			headers.content_type.start_with?( 'text' )
+
 		charset = self.find_header_charset
 		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset.name ]
 
 		headers.content_type.slice!( CONTENT_TYPE_CHARSET_RE ) and
 			self.log.debug "  removed old charset parameter."
-		headers.content_type += "; charset=#{charset.name}" unless charset == Encoding::ASCII_8BIT
+		headers.content_type += "; charset=#{charset.name}" unless
+			charset == Encoding::ASCII_8BIT
 	end
 
 
 	### Try to find a character set for the request, using the #charset attribute first,
 	### then the 'charset' parameter from the content-type header, then the Encoding object
-	### associated with the entity body, then the default external encoding (if it's set). If
-	### none of those are found, this method returns ISO-8859-1.
+	### associated with the entity body, then the default internal and external encodings
+	### (if they're set, in that order). If none of those are found, this method returns
+	### ISO-8859-1.
 	def find_header_charset
-		return ( self.charset || 
+		return ( self.charset ||
 		         self.content_type_charset ||
-		         self.entity_body_charset || 
+		         self.entity_body_charset  ||
+				 Encoding.default_internal ||
 		         Encoding.default_external ||
 		         Encoding::ISO_8859_1 )
 	end
@@ -119,20 +156,22 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 	### couldn't be determined.
 	def entity_body_charset
 		self.log.debug "Deriving charset from the entity body..."
+		enc = nil
 
-		# Have to use the instance variable instead of #body because plugins can
-		# override #body
+		enc ||= @body.internal_encoding if @body.respond_to?( :internal_encoding )
+		enc ||= @body.external_encoding if @body.respond_to?( :external_encoding )
 
-		if @body.respond_to?( :encoding )
-			self.log.debug "  String-ish API. Encoding is: %p" % [ @body.encoding ]
-			return @body.encoding
-		elsif @body.respond_to?( :external_encoding )
-			self.log.debug "  IO-ish API. Encoding is: %p" % [ @body.external_encoding ]
-			return @body.external_encoding
+		self.log.debug "  encoding of the entity body is: %p" % [ enc ]
+		return enc
+	end
+
+
+	### Add Set-Cookie members to +headers+ if the response has any cookies.
+	def add_cookie_headers( headers )
+		return unless @cookies
+		@cookies.each do |cookie|
+			headers.append( :set_cookie => cookie.to_s )
 		end
-
-		self.log.debug "  Body didn't respond to either #encoding or #external_encoding."
-		return nil
 	end
 
 end # class Strelka::HTTPResponse

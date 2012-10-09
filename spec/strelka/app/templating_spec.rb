@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -12,7 +14,7 @@ require 'inversion'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/templating'
 
 require 'strelka/behavior/plugin'
@@ -51,6 +53,17 @@ describe Strelka::App::Templating do
 			@req = @request_factory.get( '/user/info' )
 		end
 
+
+		it "has its config inherited by subclasses" do
+			@app.templates :text => '/tmp/blorp'
+			@app.layout 'layout.tmpl'
+			subclass = Class.new( @app )
+
+			subclass.template_map.should == @app.template_map
+			subclass.template_map.should_not equal( @app.template_map )
+			subclass.layout_template.should == @app.layout_template
+			subclass.layout_template.should_not equal( @app.layout_template )
+		end
 
 		it "has a Hash of templates" do
 			@app.templates.should be_a( Hash )
@@ -103,7 +116,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -116,7 +130,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -133,7 +148,8 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A template for testing the Templating plugin.\n"
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 				res.status.should == 200
 			end
 
@@ -154,9 +170,30 @@ describe Strelka::App::Templating do
 
 				res = @app.new.handle( @req )
 
-				res.body.should == "A minimal layout template.\n" +
+				res.body.rewind
+				res.body.read.should == "A minimal layout template.\n" +
 					"A template for testing the Templating plugin.\n\n"
 				res.status.should == 200
+			end
+
+			it "doesn't wrap the layout around non-template responses" do
+				@app.class_eval do
+					layout 'layout.tmpl'
+
+					def handle_request( req )
+						# Super through the plugins and then load the template into the response
+						super do
+							res = req.response
+							res.body = self.template( :main ).render
+							res
+						end
+					end
+				end
+
+				res = @app.new.handle( @req )
+
+				res.body.rewind
+				res.body.read.should == "A template for testing the Templating plugin.\n"
 			end
 
 		end

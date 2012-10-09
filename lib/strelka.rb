@@ -1,16 +1,27 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'mongrel2'
+require 'loggability'
 require 'configurability'
 require 'configurability/config'
 
-# An application framework for Ruby-mongrel2
-# 
+
+# A Ruby application framework for Mongrel2[http://mongrel2.org/].
+#
 # == Author/s
 #
 # * Michael Granger <ged@FaerieMUD.org>
-# 
+#
+# :title: Strelka Web Application Framework
+# :main: README.rdoc
+#
 module Strelka
+	extend Loggability
+
+	# Loggability API -- Set up this module as a log host.
+	log_as :strelka
 
 	# Library version constant
 	VERSION = '0.0.1'
@@ -18,18 +29,13 @@ module Strelka
 	# Version-control revision constant
 	REVISION = %q$Revision$
 
-
-	require 'strelka/logging'
-	extend Strelka::Logging
-
-	# Combine Strelka, Mongrel2, and Configurability logging
-	Mongrel2.logger = Strelka.logger
-	Configurability.logger = Strelka.logger
-
 	require 'strelka/constants'
+	require 'strelka/exceptions'
 	include Strelka::Constants
 
-	require 'strelka/exceptions'
+	require 'strelka/app'
+	require 'strelka/httprequest'
+	require 'strelka/httpresponse'
 
 
 	### Get the library version. If +include_buildnum+ is true, the version string will
@@ -40,9 +46,6 @@ module Strelka
 		return vstring
 	end
 
-	require 'strelka/app'
-	require 'strelka/httprequest'
-
 
 	# The installed Configurability::Config object
 	@config = nil
@@ -51,8 +54,10 @@ module Strelka
 
 	### Convenience method -- Load the Configurability::Config from +configfile+
 	### and install it.
-	def self::load_config( configfile, defaults={} )
-		Strelka.log.info "Loading universal config from %p" % [ configfile ]
+	def self::load_config( configfile, defaults=nil )
+		defaults ||= Configurability.gather_defaults
+		self.log.info "Loading universal config from %p with defaults for sections: %p." %
+			[ configfile, defaults.keys ]
 		self.config = Configurability::Config.load( configfile, defaults )
 		self.config.install
 	end

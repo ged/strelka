@@ -1,34 +1,103 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'rubygems' # For the Rubygems API
 
+require 'loggability'
+require 'configurability'
 require 'mongrel2/handler'
 require 'strelka' unless defined?( Strelka )
+require 'strelka/mixins'
+require 'strelka/plugins'
 
 
-# The application base class.
+# The Strelka HTTP application base class.
+#
 class Strelka::App < Mongrel2::Handler
-	include Strelka::Loggable,
-	        Strelka::Constants
+	extend Loggability,
+	       Configurability,
+	       Strelka::MethodUtilities,
+	       Strelka::PluginLoader
+	include Strelka::Constants,
+	        Strelka::ResponseHelpers
 
-	# Load the plugin system
-	require 'strelka/app/plugins'
-	include Strelka::App::Plugins
+	# Loggability API -- set up logging
+	log_to :strelka
+
+	# Configurability API -- use the 'app' section of the config file.
+	config_key :app
 
 
 	# Glob for matching Strelka apps relative to a gem's data directory
 	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
+	APP_GLOB_PATTERN.freeze
+
+	# The glob for matching data directories relative to the PWD
+	LOCAL_DATA_DIRS = 'data/*'
+	LOCAL_DATA_DIRS.freeze
+
+	# Default config
+	CONFIG_DEFAULTS = {
+		devmode: false,
+		app_glob_pattern: APP_GLOB_PATTERN,
+		local_data_dirs: LOCAL_DATA_DIRS,
+	}.freeze
 
 
 	# Class instance variables
-	@default_type = nil
-	@loading_file = nil
-	@subclasses   = Hash.new {|h,k| h[k] = [] }
+	@devmode          = false
+	@default_type     = nil
+	@loading_file     = nil
+	@subclasses       = Hash.new {|h,k| h[k] = [] }
+	@app_glob_pattern = APP_GLOB_PATTERN
+	@local_data_dirs  = LOCAL_DATA_DIRS
 
 
-	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were 
+	##
+	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were
 	# loaded from, or +nil+ if they weren't loaded via ::load.
-	class << self; attr_reader :subclasses; end
+	singleton_attr_reader :subclasses
+
+	##
+	# 'Developer mode' flag.
+	singleton_attr_writer :devmode
+
+	##
+	# The glob(3) pattern for matching Apps during discovery
+	singleton_attr_accessor :app_glob_pattern
+
+	##
+	# The glob(3) pattern for matching local data directories during discovery. Local
+	# data directories are evaluated relative to the CWD.
+	singleton_attr_accessor :local_data_dirs
+
+
+	### Returns +true+ if the application has been configured to run in 'developer mode'.
+	### Developer mode is mostly informational by default (it just makes logging more
+	### verbose), but plugins and such might alter their behavior based on this setting.
+	def self::devmode?
+		return @devmode
+	end
+	singleton_method_alias :in_devmode?, :devmode?
+
+
+	### Configure the App. Override this if you wish to add additional configuration
+	### to the 'app' section of the config that will be passed to you when the config
+	### is loaded.
+	def self::configure( config=nil )
+		if config
+			self.devmode          = true if config[:devmode]
+			self.app_glob_pattern = config[:app_glob_pattern]
+			self.local_data_dirs  = config[:local_data_dirs]
+		else
+			self.devmode          = $DEBUG ? true : false
+			self.app_glob_pattern = APP_GLOB_PATTERN
+			self.local_data_dirs  = LOCAL_DATA_DIRS
+		end
+
+		self.log.info "Enabled developer mode." if self.devmode?
+	end
 
 
 	### Inheritance callback -- add subclasses to @subclasses so .load can figure out which
@@ -39,32 +108,30 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+
 	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if
 	### one is not specified, and automatically install the config DB if it hasn't been
 	### already.
 	def self::run( appid=nil )
 		appid ||= self.default_appid
-
-		Strelka.logger.level = Logger::DEBUG if $VERBOSE
-
+		self.log.info "Starting up with appid %p." % [ appid ]
 		super( appid )
-
 	end
 
 
-	### Calculate a default application ID for the class based on either its ID 
+	### Calculate a default application ID for the class based on either its ID
 	### constant or its name and return it.
 	def self::default_appid
-		Strelka.log.info "Looking up appid for %p" % [ self.class ]
+		self.log.info "Looking up appid for %p" % [ self.class ]
 		appid = nil
 
 		if self.const_defined?( :ID )
 			appid = self.const_get( :ID )
-			Strelka.log.info "  app has an ID: %p" % [ appid ]
+			self.log.info "  app has an ID: %p" % [ appid ]
 		else
 			appid = ( self.name || "anonymous#{self.object_id}" ).downcase
 			appid.gsub!( /[^[:alnum:]]+/, '-' )
-			Strelka.log.info "  deriving one from the class name: %p" % [ appid ]
+			self.log.info "  deriving one from the class name: %p" % [ appid ]
 		end
 
 		return appid
@@ -75,7 +142,7 @@ class Strelka::App < Mongrel2::Handler
 	### keyed by gemspec name .
 	def self::discover_paths
 		appfiles = {
-			'strelka' => Pathname.glob( DATADIR + APP_GLOB_PATTERN )
+			'' => Pathname.glob( File.join(self.local_data_dirs, self.app_glob_pattern) )
 		}
 
 		# Find all the gems that depend on Strelka
@@ -83,7 +150,7 @@ class Strelka::App < Mongrel2::Handler
 			gemspec.dependencies.find {|dep| dep.name == 'strelka'}
 		end
 
-		Strelka.log.debug "Found %d gems with a Strelka dependency" % [ gems.length ]
+		self.log.debug "Found %d gems with a Strelka dependency" % [ gems.length ]
 
 		# Find all the files under those gems' data directories that match the application
 		# pattern
@@ -92,11 +159,11 @@ class Strelka::App < Mongrel2::Handler
 			next if appfiles.key?( gemspec.name )
 			appfiles[ gemspec.name ] = []
 
-			Strelka.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
+			self.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
 			pattern = File.join( gemspec.full_gem_path, "data", gemspec.name, APP_GLOB_PATTERN )
-			Strelka.log.debug "    glob pattern is: %p" % [ pattern ]
+			self.log.debug "    glob pattern is: %p" % [ pattern ]
 			gemapps = Pathname.glob( pattern )
-			Strelka.log.debug "    found %d app files" % [ gemapps.length ]
+			self.log.debug "    found %d app files" % [ gemapps.length ]
 			appfiles[ gemspec.name ] += gemapps
 		end
 
@@ -109,22 +176,22 @@ class Strelka::App < Mongrel2::Handler
 		discovered_apps = []
 		app_paths = self.discover_paths
 
-		Strelka.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
+		self.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
 		app_paths.each do |gemname, paths|
-			Strelka.log.debug "  loading gem %s" % [ gemname ]
-			gem( gemname ) unless gemname == 'strelka'
+			self.log.debug "  loading gem %s" % [ gemname ]
+			gem( gemname ) unless gemname == ''
 
-			Strelka.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
+			self.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
 			paths.each do |path|
 				classes = begin
 					Strelka::App.load( path )
 				rescue StandardError, ScriptError => err
-					Strelka.log.error "%p while loading Strelka apps from %s: %s" %
+					self.log.error "%p while loading Strelka apps from %s: %s" %
 						[ err.class, path, err.message ]
-					Strelka.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
+					self.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
 					[]
 				end
-				Strelka.log.debug "  loaded app classes: %p" % [ classes ]
+				self.log.debug "  loaded app classes: %p" % [ classes ]
 
 				discovered_apps += classes
 			end
@@ -137,12 +204,12 @@ class Strelka::App < Mongrel2::Handler
 	### Load the specified +file+, and return any Strelka::App subclasses that are loaded
 	### as a result.
 	def self::load( file )
-		Strelka.log.debug "Loading application/s from %p" % [ file ]
+		self.log.debug "Loading application/s from %p" % [ file ]
 		@loading_file = Pathname( file ).expand_path
 		self.subclasses.delete( @loading_file )
 		Kernel.load( @loading_file.to_s )
 		new_subclasses = self.subclasses[ @loading_file ]
-		Strelka.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
+		self.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
 
 		return new_subclasses
 	ensure
@@ -166,13 +233,20 @@ class Strelka::App < Mongrel2::Handler
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
+	### Dump the application stack when a new instance is created.
+	def initialize( * )
+		self.class.dump_application_stack
+		super
+	end
+
+
 	######
 	public
 	######
 
 	### Run the app -- overriden to set the process name to something interesting.
 	def run
-		procname = "%p %s" % [ self.class, self.conn ]
+		procname = "%s %s: %p %s" % [ RUBY_ENGINE, RUBY_VERSION, self.class, self.conn ]
 		$0 = procname
 
 		super
@@ -186,11 +260,15 @@ class Strelka::App < Mongrel2::Handler
 
 		# Dispatch the request after allowing plugins to to their thing
 		status_info = catch( :finish ) do
+			self.log.debug "Starting dispatch of request %p" % [ request ]
 
 			# Run fixup hooks on the request
 			request = self.fixup_request( request )
+			self.log.debug "  done with request fixup"
 			response = self.handle_request( request )
+			self.log.debug "  done with handler"
 			response = self.fixup_response( response )
+			self.log.debug "  done with response fixup"
 
 			nil # rvalue for the catch
 		end
@@ -203,8 +281,7 @@ class Strelka::App < Mongrel2::Handler
 
 		return response
 	rescue => err
-		msg = "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
-		self.log.error( msg )
+		self.log.error "%s: %s %s" % [ err.class.name, err.message, err.backtrace.first ]
 		err.backtrace[ 1..-1 ].each {|frame| self.log.debug('  ' + frame) }
 
 		status_info = { :status => HTTP::SERVER_ERROR, :message => 'internal server error' }
@@ -212,38 +289,72 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Handle uploads larger than the server's configured limit with a 413: Request Entity
+	### Too Large before dropping the connection.
+	def handle_async_upload_start( request )
+		status_info = { :status => HTTP::REQUEST_ENTITY_TOO_LARGE, :message => 'Request too large.' }
+		response = self.prepare_status_response( request, status_info )
+		response.headers.connection = 'close'
+		self.conn.reply( response )
+
+		explanation = "If you wish to handle requests like this, either set your server's "
+		explanation << "'limits.content_length' setting to a higher value than %d, or override " %
+			 [ request.content_length ]
+		explanation << "#handle_async_upload_start."
+
+		self.log.warn "Async upload from %s dropped." % [ request.remote_ip ]
+		self.log.info( explanation )
+
+		self.conn.reply_close( request )
+
+		return nil
+	end
+
+
 	#########
 	protected
 	#########
 
-	### Make any changes to the +request+ that are necessary before handling it and 
-	### return it. This is an alternate extension-point for plugins that 
+	### Make any changes to the +request+ that are necessary before handling it and
+	### return it. This is an alternate extension-point for plugins that
 	### wish to modify or replace the request before the request cycle is
 	### started.
 	def fixup_request( request )
-		self.log.debug "Fixing up request: %p" % [ request ]
-		request = super
-		self.log.debug "  after fixup: %p" % [ request ]
-
 		return request
 	end
 
 
 	### Handle the request and return a +response+. This is the main extension-point
 	### for the plugin system. Without being overridden or extended by plugins, this
-	### method just returns the default Mongrel2::HTTPRequest#response.
+	### method just returns the default Mongrel2::HTTPRequest#response. If you override
+	### this directly in your App subclass, you'll need to +super+ with a block if you
+	### wish the plugins to run on the request, then do whatever it is you want in the
+	### block and return the response, which the plugins will again have an opportunity
+	### to modify.
+	###
+	### Example:
+	###
+	###     class MyApp < Strelka::App
+	###         def handle_request( request )
+	###             super do |req|
+	###                 res = req.response
+	###                 res.content_type = 'text/plain'
+	###                 res.puts "Hello!"
+	###                 return res
+	###             end
+	###         end
+	###     end
 	def handle_request( request, &block )
-		self.log.debug "Strelka::App#handle_request"
 		if block
-			return super( request, &block )
+			return block.call( request )
 		else
-			return super( request ) {|r| r.response }
+			return request.response
 		end
 	end
 
 
-	### Make any changes to the +response+ that are necessary before handing it to 
-	### Mongrel and return it. This is an alternate extension-point for plugins that 
+	### Make any changes to the +response+ that are necessary before handing it to
+	### Mongrel and return it. This is an alternate extension-point for plugins that
 	### wish to modify or replace the response after the whole request cycle is
 	### completed.
 	def fixup_response( response )
@@ -253,7 +364,7 @@ class Strelka::App < Mongrel2::Handler
 			response.request && response.request.verb == :HEAD
 		self.log.debug "  after fixup: %p" % [ response ]
 
-		return super
+		return response
 	end
 
 
@@ -293,31 +404,29 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
-	### Abort the current execution and return a response with the specified
-	### http_status code immediately. The specified +message+ will be logged,
-	### and will be included in any message that is returned as part of the
-	### response. The +otherstuff+ hash can be used to pass headers, etc.
-	def finish_with( http_status, message, otherstuff={} )
-		status_info = otherstuff.merge( :status => http_status, :message => message )
-		throw :finish, status_info
-	end
-
-
-	### Create a response to specified +request+ based on the specified +status_code+ 
+	### Create a response to specified +request+ based on the specified +status_code+
 	### and +message+.
 	def prepare_status_response( request, status_info )
 		status_code, message = status_info.values_at( :status, :message )
 		self.log.info "Non-OK response: %d (%s)" % [ status_code, message ]
 
+		request.notes[:status_info] = status_info
 		response = request.response
 		response.reset
 		response.status = status_code
 
 		# Some status codes allow explanatory text to be returned; some forbid it. Append the
 		# message for those that allow one.
-		unless request.verb == :HEAD || HTTP::BODILESS_HTTP_RESPONSE_CODES.include?( status_code )
-			response.content_type = status_info[ :content_type ] || 'text/plain'
+		unless request.verb == :HEAD || response.bodiless?
+			response.content_type = 'text/plain'
 			response.puts( message )
+		end
+
+		# Now assign any headers to the response that are part of the status
+		if status_info.key?( :headers )
+			status_info[:headers].each do |hdr, value|
+				response.headers[ hdr ] = value
+			end
 		end
 
 		return response

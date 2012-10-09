@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,7 +13,7 @@ require 'rspec'
 require 'spec/lib/helpers'
 
 require 'strelka'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 require 'strelka/app/parameters'
 require 'strelka/behavior/plugin'
 
@@ -50,8 +52,16 @@ describe Strelka::App::Parameters do
 			@app = nil
 		end
 
-		it "has a parameters Hash" do
-			@app.parameters.should be_a( Hash )
+		it "has its config inherited by subclasses" do
+			@app.param :string
+			subclass = Class.new( @app )
+
+			subclass.paramvalidator.param_names.should == @app.paramvalidator.param_names
+			subclass.paramvalidator.should_not equal( @app.paramvalidator )
+		end
+
+		it "has a ParamValidator" do
+			@app.paramvalidator.should be_a( Strelka::ParamValidator )
 		end
 
 		it "can declare a parameter with a validation pattern" do
@@ -59,95 +69,9 @@ describe Strelka::App::Parameters do
 				param :username, /\w+/i
 			end
 
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].
-				should include( :constraint => /(?<username>(?i-mx:\w+))/ )
+			@app.paramvalidator.param_names.should == [ 'username' ]
 		end
 
-		it "can declare a parameter with an Array validation" do
-			@app.class_eval do
-				param :username, [:printable, lambda {|str| str.length <= 16 }]
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[:username][:constraint][0].should == :printable
-			@app.parameters[:username][:constraint][1].should be_an_instance_of( Proc )
-		end
-
-		it "can declare a parameter with a Hash validation" do
-			@app.class_eval do
-				param :username, {'ambrel' => 'A. Hotchgah'}
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].
-				should include( :constraint => {'ambrel' => 'A. Hotchgah'} )
-		end
-
-		it "can declare a parameter with a matcher validation" do
-			@app.class_eval do
-				param :host, :hostname
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :host ].should include( :constraint => :hostname )
-		end
-
-		it "can declare a parameter with a validation pattern and a description" do
-			@app.class_eval do
-				param :username, /\w+/i, "The user's login"
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].should include( :required => false )
-			@app.parameters[ :username ].should include( :constraint => /(?<username>(?i-mx:\w+))/ )
-			@app.parameters[ :username ].should include( :description => "The user's login" )
-		end
-
-		it "can declare a parameter with an Array validation and a description" do
-			@app.class_eval do
-				param :username, ['johnny5', 'ariel', 'hotah'], "The user's login"
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].
-				should include( :constraint => ['johnny5', 'ariel', 'hotah'] )
-			@app.parameters[ :username ].should include( :description => "The user's login" )
-		end
-
-		it "can declare a parameter with just a description" do
-			@app.class_eval do
-				param :uuid, "UUID string"
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :uuid ].should include( :description => "UUID string" )
-			@app.parameters[ :uuid ].should include( :constraint => :uuid )
-		end
-
-		it "can declare a parameter with a validation pattern and a flag" do
-			@app.class_eval do
-				param :username, /\w+/i, :untaint
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].should include( :required => false )
-			@app.parameters[ :username ].should include( :untaint => true )
-			@app.parameters[ :username ].should include( :constraint => /(?<username>(?i-mx:\w+))/ )
-			@app.parameters[ :username ].should include( :description => nil )
-		end
-
-		it "can declare a parameter with a validation Array and a flag" do
-			@app.class_eval do
-				param :username, ['amhel', 'hotah', 'aurelii'], :required
-			end
-
-			@app.parameters.should have( 1 ).member
-			@app.parameters[ :username ].should include( :required => true )
-			@app.parameters[ :username ].
-				should include( :constraint => ['amhel', 'hotah', 'aurelii'] )
-			@app.parameters[ :username ].should include( :description => nil )
-		end
 
 		it "inherits parameters from its superclass" do
 			@app.class_eval do
@@ -155,9 +79,7 @@ describe Strelka::App::Parameters do
 			end
 			subapp = Class.new( @app )
 
-			subapp.parameters.should have( 1 ).member
-			subapp.parameters[ :username ].
-				should include( :constraint => /(?<username>(?i-mx:\w+))/ )
+			subapp.paramvalidator.param_names.should == [ 'username' ]
 		end
 
 		describe "instance" do
@@ -173,7 +95,7 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search' )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::App::ParamValidator )
+				req.params.should be_a( Strelka::ParamValidator )
 				req.params.should have_errors()
 				req.params.error_messages.should == ["Missing value for 'Username'"]
 			end
@@ -182,7 +104,7 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search?username=anheptoh'.taint )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::App::ParamValidator )
+				req.params.should be_a( Strelka::ParamValidator )
 				req.params.should be_okay()
 				req.params.should_not have_errors()
 				req.params[:username].should == 'anheptoh'

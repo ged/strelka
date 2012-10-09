@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 require 'strelka/constants'
 require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )
@@ -19,7 +21,7 @@ require 'strelka/httprequest/acceptparams'
 module Strelka::HTTPRequest::Negotiation
 	include Strelka::Constants
 
-	### Extension callback -- add instance variables to extended objects. 
+	### Extension callback -- add instance variables to extended objects.
 	def initialize( * )
 		super
 		@accepted_mediatypes = nil

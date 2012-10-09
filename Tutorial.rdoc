@@ -1,0 +1,759 @@
+= Strelka Tutorial
+
+== Configuration
+
+Strelka uses a library called
+Configurability[http://bitbucket.org/ged/configurability]
+for configuration. It lets you put settings for everything into one
+file, and then distribute the config sections where they belong when
+the file is loaded.
+
+It's used by several Strelka plugins, by the Inversion templating system,
+and by the Mongrel2 library. The gem comes with an example config with
+comments; see <tt>{gemdir}/examples/strelka.conf.example</tt>.
+
+You can also dump out a config file populated with defaults to get you
+started with the 'strelka' command:
+
+    $ strelka config > config.yml
+
+If you start your apps via the command line tool, the config is loaded
+for you (via the -c option), but you can also do it yourself if you
+prefer launching your apps manually:
+
+    Strelka.load_config( "myconfig.yml" )
+
+It's then available from the <tt>Strelka.config</tt> reader, allowing you
+to reload it if it's changed (or whatever):
+
+    Strelka.config.reload if Strelka.config.changed?
+
+See the {Configurability docs}[http://deveiate.org/code/configurabilty] for
+more details.
+
+
+== Creating Applications with Plugins
+
+As mentioned in the {README page}[rdoc-ref:README.rdoc], our default
+application doesn't afford us many conveniences over using a raw
+<tt>Mongrel2::Handler</tt>. Strelka breaks most of its niceties into a plugin
+system, so you can add only what you require, keeping your apps nice and
+streamlined.
+
+The plugins system is contained in the Strelka::PluginLoader mixin, which
+is included in Strelka::App already. This adds the <tt>plugins</tt>
+declarative, which you use from your app to load the plugins you want to use.
+
+If you're interested in hooking into the HTTP conversation yourself, or just
+want to factor your common application code up to a reusable plugin, you can
+{Write Your Own Strelka Plugin}[rdoc-ref:Plugins.rdoc], too.
+
+
+== Routing
+
+Rather than checking the <tt>request.path</tt> and supplying elaborate
+conditional dispatching yourself, you can use the +routing+ plugin. This
+provides block style route declarations to your application, that execute their
+blocks when a matching HTTP method and path URI is requested. This is similar
+to {Sinatra's}[http://www.sinatrarb.com/] routing -- if you've used that
+before, this should be familiar territory. It matches routes a bit differently,
+though. Instead of top down, first match wins, Strelka's routing is more
+similar to the routing algorithm that Mongrel2 uses. The longest, most-specific
+route wins, regardless of where it was defined.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing
+
+        # match any GET request
+        get do |request|
+            request.response.content_type = 'text/plain'
+            request.response << 'Hello, World!'
+            return request.response
+        end
+
+        # match a GET request starting with '/goodbye'
+        get '/goodbye' do |request|
+            request.response.content_type = 'text/plain'
+            request.response << "Goodbye, cruel World!"
+            return request.response
+        end
+    end
+
+The example app above responds only to 'GET' requests. Anything under the
+<tt>/goodbye</tt> URI responds with a departure message, while any other
+request (anywhere in the URI space!) responds with a friendly greeting. You can
+think of this almost as wildcard routing, effectively dividing up the URI space
+into individual handler blocks. A lack of a URI argument is the same thing as
+declaring one with <tt>/</tt>.
+
+This introduces some important concepts, as well. All blocks are passed the
+Strelka::HTTPRequest object and should return a Strelka::HTTPResponse object.
+Both the request and response are wrappers around _streams_ (input and output,
+respectively), similar to STDIN and STDOUT in a command-line utility. These
+streams contain the *body* of the request and response, and can be any
+<tt>IO</tt>-like object.
+
+
+== More Explicit Routing
+
+Sometimes you might have an explicit URI mapping already in mind, or just don't
+want the same HTTP resource potentially accessible under different URLs. The
++routing+ plugin has an option to alter its default matching behavior, and make
+it only match routes that are requested specifically:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing
+
+        # Require exact matching for route paths
+        router :exclusive
+
+        # only match a GET request to '/'
+        get do |request|
+            request.response.content_type = 'text/plain'
+            request.response << 'Hello, World!'
+            return request.response
+        end
+
+        # only match a GET request for '/goodbye'
+        get '/goodbye' do |request|
+            request.response.content_type = 'text/plain'
+            request.response << "Goodbye, cruel World!"
+            return request.response
+        end
+    end
+
+This application now serves requests to only <tt>/</tt> and
+<tt>/goodbye</tt>.  Anything else is met with a <tt>404 NOT FOUND</tt>
+response.
+
+
+== Setting Content-Types
+
+You can, of course, explicitly set the content type for each route as
+we've been doing above.  If you'd like to have a fallback if one isn't
+set, Strelka provides an easy way to do so:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing
+
+        # Unless explicitly stated, use a text/plain content-type.
+        default_type 'text/plain'
+
+        get do |request|
+            request.response << 'Hello, World!'
+            return request.response
+        end
+
+        get '/goodbye' do |request|
+            request.response << "Goodbye, cruel World!"
+            return request.response
+        end
+    end
+
+Now all content sent will have a <tt>text/plain</tt> content-type, unless
+specifically set to something else in the response.
+
+
+== Dealing with URI and Query Parameters
+
+If you just want to retrieve passed query parameters directly, they are
+accessible as a Hash via the <tt>Request</tt> object.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing
+
+        default_type 'text/plain'
+
+        get '/' do |request|
+            name = request.params['name'] || 'Handsome'
+            request.response << "Hello, #{name}!"
+            return request.response
+        end
+    end
+
+Try passing <tt>/?name=there</tt> to the handler. By default, no
+validity-checking is done; it'll just return the query arguments as
+Strelka saw them.
+
+Strelka offers a +parameters+ plugin that provides a framework for
+describing parameters globally. It manages validation and untainting,
+and you can override the global descriptions on a per-route basis.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :parameters
+
+        default_type 'text/plain'
+
+        param :name, /[[:alpha:]]+/
+
+        get '/' do |request|
+            name = request.params['name'] || 'Handsome'
+            request.response << "Hello, #{name}!"
+            return request.response
+        end
+    end
+
+Loading the plugin gives you the +param+ method, which you use to
+declare all of the global parameters your application might use. It
+already has a bunch of built in matchers for common things like email
+and hostnames. You can continue using the <tt>params</tt> attribute as a
+Hash, but it now is much smarter than it was before:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :parameters
+
+        default_type 'text/plain'
+
+        param :name, :alpha, :required
+        param :email, 'An RFC822 email address'
+
+        get '/' do |request|
+            response = request.response
+
+            response.puts( request.params.inspect )
+
+            if request.params.okay?
+                response << "Hello, %s!\n" % [ request.params['name'] ]
+            else
+                response << "Aaahhhh noooaaahhhh!!\n"
+                request.params.error_messages.each do |err|
+                    response.body << " - %s\n" % [ err ]
+                end
+            end
+
+            return response
+        end
+    end
+
+Passing the URL <tt>/?name=Bob</tt> should output the following:
+
+	1 parameters (1 valid, 0 invalid, 0 missing)
+	Hello, Bob!
+
+While passing <tt>/?email=what</tt> should display:
+
+	1 parameters (0 valid, 1 invalid, 1 missing)
+	Aaahhhh noooaaahhhh!!
+	 - Missing value for 'Name'
+	 - Invalid value for 'An RFC822 email address'
+
+Neat.
+
+All this time, we've only been dealing with query parameters. Using the
++parameters+ plugin also allows params to be part of the route path
+itself. If you have both query AND route parameters in a request, the
+route values win.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :parameters
+
+        default_type 'text/plain'
+
+        param :name, :alpha
+        param :email, 'An RFC822 email address'
+
+        get '/' do |request|
+            request.params.override( :email, /\w+@\w+/ )
+            name = request.params['name'] || 'Handsome'
+            request.response << "Hello, %s!" % [ name ]
+            return request.response
+        end
+
+        get '/:name' do |request|
+            response = request.response
+
+            if request.params.okay?
+                response.puts "Name: %s" % [ request.params['name'] ]
+            else
+                response.status = HTTP::BAD_REQUEST
+                response.puts( *request.params.error_messages )
+            end
+
+            return response
+        end
+    end
+
+The above example shows how to selectively override the <tt>email</tt>
+parameter for the <tt>/</tt> route, and how to incorporate a parameter
+into a route. There are many, many more options for the param object.
+Please see the {Strelka API documentation}[rdoc-
+ref:Strelka::ParamValidator] for more information.
+
+To document:
+
+* Named match groups
+* Validating uploaded files (mediatype, size, etc.)
+* Validating non-form entity bodies (YAML, JSON, etc.)
+
+
+== Accessing Headers
+
+The request and response objects both have a headers object that
+provides methods for getting and setting header values. You can use it
+like a Hash:
+
+	remote_host = request.header['X-Forwarded-For']
+	response.header['Content-Type'] = 'image/jpeg'
+
+or with a Symbol key (hyphens become underscores):
+
+	remote_host = request.header[:x_forwarded_for]
+	response.header[:content_type] = 'application/pdf'
+
+You can also access it using struct-like methods, with the same pattern
+as with Symbol keys:
+
+	remote_host = request.header.x_forwarded_for
+	response.header.content_type = 'text/html'
+
+Keep in mind that some headers can appear multiple times, so what you
+get back could be an Array, too.
+
+
+== Setting Response Status
+
+Responses start out with a <tt>204 No Content</tt> status, and will
+automatically switch to <tt>200 OK</tt> if you add a body to it.
+
+You can, of course, set the status yourself:
+
+	response.status = HTTP::NOT_FOUND
+
+If you set it directly, however, the response will still go back through
+all of your loaded plugins, which is probably not what you want. In that
+case you can finish a request early using the {finish_with helper}[rdoc-
+ref:Strelka::App#finish_with]:
+
+	finish_with HTTP::NOT_FOUND, "That user doesn't exist."
+
+Using <tt>finish_with</tt> stops additional processing immediately and returns
+a response with the specified status and message. You can also include
+additional headers:
+
+    new_location = "http://example.com/somewhere/else"
+    finish_with HTTP::REDIRECT,
+        "That resource has moved here: #{new_location}.",
+        headers: { location: new_location }
+
+
+== Using Templates
+
+Most web frameworks come with some kind of templating built in, but
+Strelka doesn't have any preconceived assumptions about what you might
+want to use for your applications. As long as your templates implement
+<tt>#to_s</tt>, you can set them as the response body and your app will
+work fine:
+
+    require 'erubis'
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing
+
+        default_type 'text/html'
+
+        get '/' do |request|
+            response = request.response
+            template = Erubis::Eruby.load_file( 'template1.rhtml' )
+            response.body = template.evaluate( :greeting => "Why hello!" )
+            return response
+        end
+
+    end
+
+Strelka comes with a <tt>:templating</tt> plugin that provides your application
+with the ability to use the
+{Inversion templating system}[http://deveiate.org/code/Inversion-manual/] to
+build a response with minimal fuss.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :templating
+
+        templates :index => 'index.tmpl'
+
+        default_type 'text/html'
+
+        get '/' do |request|
+            tmpl = template( :index )
+            tmpl.greeting = "Why hello!"
+            return tmpl
+        end
+    end
+
+Using Inversion, you can optionally wrap content in a global look and
+feel via a layout template. This is accomplished by simply declaring a
+layout template, which should contain a <tt>body</tt> attribute.  That
+attribute expands to the current response template.
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :templating
+
+        layout 'layout.tmpl'
+        templates :index => 'index.tmpl'
+
+        default_type 'text/html'
+
+        get '/' do |request|
+            tmpl = template( :index )
+            tmpl.greeting = "Why hello!"
+            return tmpl
+        end
+    end
+
+In the above example, the Inversion index template would look as such:
+
+    <!-- index.tmpl -->
+    <?attr greeting ?>
+
+and then the layout might look like:
+
+    <!-- layout.tmpl -->
+    <html>
+        <body>
+            <?attr body ?>
+        </body>
+    </html>
+
+If you need to set some stuff on the response object, you can also set
+the template as the response body with the same effect:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :templating
+
+        layout 'layout.tmpl'
+        templates :index => 'index.tmpl'
+
+        default_type 'text/html'
+
+        get '/' do |request|
+            tmpl = template( :index )
+            tmpl.greeting = "Why hello!"
+
+            response = request.response
+            response.status = HTTP::CREATED
+            response.body = tmpl
+
+            return response
+        end
+    end
+
+On the other hand, if your application doesn't need to set attributes on
+the template *or* the response, you can automate the template loading
+and response by returning the name of the template (as a Symbol)
+instead:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :templating
+
+        layout 'layout.tmpl'
+        templates :index => 'index.tmpl'
+
+        default_type 'text/html'
+
+        get '/' do |request|
+            return :index
+        end
+    end
+
+Sometimes you want to have a layout, but there's one or two responses
+that you don't want to be wrapped. You can accomplish this just by
+rendering the template immediately so the response body is just a
+String:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :templating
+
+        layout 'layout.tmpl'
+        templates :robots => 'robots.txt.tmpl'
+
+        default_type 'text/html'
+
+        get '/robots.txt' do |request|
+            response = request.response
+            response.content_type = 'text/plain'
+            response.body = template( :robots ).render
+            return response
+        end
+    end
+
+Response templates also have some attributes automatically set on them
+by the <tt>:templating</tt> plugin:
+
+[request]          The current Strelka::HTTPRequest object.
+[app]              The application object.
+[strelka_version]  The current Strelka version string.
+[mongrel2_version] The current Ruby-Mongrel2 version string.
+[route]            If you're using the <tt>:routing</tt> plugin, this will be
+                   set to the routing information for the matched route.
+
+Note that if you're using a layout template, you'll need to use the
+<tt>import</tt> tag to use them in the body template:
+
+    <?import request, app, route ?>
+
+
+== Filtering Every Request and/or Response
+
+Sometimes there are actions you want to take before requests are
+handled, or after the response is built. To do that, you can use the
+{:filters}[rdoc-ref:Strelka::App::Filters] plugin.
+
+You enable that the same way as with other plugins:
+
+    plugin :filters
+
+That gives you the <tt>filter</tt> directive. You can declare
+<tt>:request</tt> filters, <tt>:response</tt> filters, or filters that
+apply to <tt>:both</tt> requests and responses.
+
+For example:
+
+    ### Make various configuration settings available to templates.
+    ###
+    filter :request do |request|
+        # Provide the ability to hook/display other stuff if running in
+        # development.
+        request.notes[ :devmode ] = MyLibrary.dev?
+
+        # The default contact email address.
+        request.notes[ :contact ] = MyLibrary.contact_email
+
+        # Yo, what time is it?
+        request.notes[ :now ] = Time.now
+    end
+
+    ### Modify outgoing headers on all responses to include library 
+    ### version info.
+    ###
+    filter :response do |response|
+        response.headers.x_libraryversion = MyLibrary.version_string
+        response.headers.x_elapsed = Time.now - response.request.notes[ :now ]
+    end
+
+See the docs for Strelka::App::Filters for more details.
+
+
+== Altering Error Display
+
+Strelka provides basic error-handling, turning any exception that is
+raised from your application into a 500 response, etc., but you'll
+probably want to provide something prettier and/or override some
+response types.
+
+The {:errors}[rdoc-ref:Strelka::App::Errors] plugin can help you with
+this; enable it the usual way:
+
+    plugin :errors
+
+It provides your application with an {on_status}[rdoc-
+ref:Strelka::App::Errors.on_status] declarative that you can use to
+provide handlers for particular status codes, or ranges of status codes:
+
+    # Handle only status 400 errors
+    on_status HTTP::BAD_REQUEST do |response, status_info|
+        # Do something on 400 errors
+    end
+
+    # Handle any other error in the 4xx range
+    on_status 400..499 do |response, status_info|
+        # Do something on 4xx errors
+    end
+
+See the {API docs}[rdoc-ref:Strelka::App::Errors] for more details.
+
+
+== Sessions
+
+When you need some place to store a bit of state between requests,
+there's the {:sessions plugin}[rdoc-ref:Strelka::Apps::Sessions]. Since
+sessions have all kinds of strategies for server-side and client-side
+storage, the Strelka sessions plugin is really a mini-framework for
+storing serialized data. Strelka comes with a few basic examples to get
+you started, but in all likelihood, you'll want to create your own
+session type, or use a third-party one that fits into your environment.
+
+The session plugin to use is set via the config file:
+
+    # Use built in (in-process) session storage.
+    sessions:
+      type: default
+
+And then the plugin itself is configured via its own section:
+
+    # Configuration for the built in session provider.
+    defaultsession:
+      cookie_name: "session-demo"
+      cookie_options:
+        expires: +5m
+
+The 'default' session type uses an in-memory Hash to store session data,
+and cookies to track the session ID.
+
+Strelka also comes with a simple database storage session plugin, that
+supports any database backend that Sequel[http://sequel.rubyforge.org/]
+does. Its configuration looks similar.  Here's an example that writes
+session information to a SQLite[http://www.sqlite.org/] database:
+
+    # Use the database session storage.
+    sessions:
+      type: db
+
+    # Configuration for the database session provider.
+    dbsession:
+      connect: sqlite://sessions.db
+      cookie_name: "session-demo"
+      cookie_options:
+        expires: +5m
+
+See the API docs for Strelka::App::Sessions for more.
+
+
+== Authentication and Authorization
+
+When you want to guard all or part of your application behind an
+authentication layer, the {:auth plugin}[rdoc-ref:Strelka::App::Auth]
+can help.
+
+As with the :sessions plugin, Strelka only comes with a basic plugin
+just to get you started, as you're likely to want to use one that is
+particular to your environment.
+
+It, too, is configured via a section of the config file:
+
+    # Use the Basic authentication provider for
+    # any routes that require user validation.
+    auth:
+      provider: basic
+
+and then the plugin has its own section:
+    
+    # Configuration for the Basic auth provider.
+    basicauth:
+      realm: Examples
+      users:
+        ged: "dn44fsIrKF6KmBw0im4GIJktSpM="
+        jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
+        kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
+
+
+Protecting all routes in a handler is the default behavior when the
+plugin is loaded:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :auth
+
+        default_type 'text/html'
+
+        get do |request|
+            request.response.content_type = 'text/plain'
+            request.response << "Hello, %s!" % [ request.authenticated_user ]
+            return request.response
+        end
+    end
+
+You can be specific about what routes are protected also:
+
+    class HelloWorldApp < Strelka::App
+
+        plugins :routing, :auth
+
+        # Only require authentication for /private
+        require_auth_for '/private'
+
+        default_type 'text/html'
+
+        get '/public' do |request|
+            request.response.content_type = 'text/plain'
+            request.response << "Hello, Anonymous!"
+            return request.response
+        end
+
+        get '/private' do |request|
+            request.response.content_type = 'text/plain'
+            request.response << "Hello, %s!" % [ request.authenticated_user ]
+            return request.response
+        end
+    end
+
+See the API docs for Strelka::App::Auth for further details on usage,
+how to integrate it with your application, applying authorization
+permissions, and how to create your own plugin for your environment.
+
+
+== HTTP Content Negotiation
+
+Nowadays, when you write a web application, you're more than likely writing
+one or more REST (or at least HTTP-based) services as part of it. Even if
+you're not, you might want to support
+{HTTP Content Negotation}[http://tools.ietf.org/html/rfc2616#section-12]
+for your regular content, too.
+
+The {:negotiation plugin}[rdoc-ref:Strelka::App::Negotiation] allows you
+to negotiate with the client via <tt>Allow*</tt> headers to determine
+the best mediatype, character encoding, natural language, and transport
+encoding.
+
+Here's an example of how you might support several different formats for
+an extremely simple 'User' service:
+
+    require 'user'
+
+    class UserService < Strelka::App
+    
+        plugins :routing, :negotiation, :parameters
+    
+        # Declare the ID parameter
+        param :id, :integer, "User ID"
+    
+        # GET /users -- collection method
+        get do |request|
+            collection = User.all
+            response = request.response
+            response.for( :json, :yaml ) { collection }
+            response.for( :text ) do
+                str = "Users:"
+                collection.each do |user|
+                    str << user.to_s << "\n"
+                end
+                str
+            end
+
+            return response
+        end
+
+        # GET /users/{id} -- fetch a single record
+        get '/:id' do |request|
+            id = request.params[:id]
+            user = User[ id ] or finish_with( HTTP::NOT_FOUND, "no such user #{id}" )
+
+            response = request.response
+            response.for( :json, :yaml ) { user }
+            response.for( :text ) { user.to_s }
+
+            return response
+        end
+
+        # ...and so on...
+    
+    end # class UserService
+
+The above example only demonstrates content negotiation, but there's a bunch of
+additional stuff you can do with this plugin. See the API docs for
+Strelka::App::Negotiation for all the goods.
+
+
+== REST Services
+

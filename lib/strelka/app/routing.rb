@@ -1,16 +1,20 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
+
+require 'loggability'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 
-require 'strelka/app/router'
+require 'strelka/router'
 require 'strelka/exceptions'
-require 'strelka/app/plugins'
+require 'strelka/plugins'
 
 # Sinatra-ish routing logic for Strelka::Apps
 #
 # This plugin adds the ability to declare hooks for requests based on their
-# attributes. The default router (Strelka::App::DefaultRouter) uses only the
+# attributes. The default router (Strelka::Router::Default) uses only the
 # HTTP verb and the path, but you can also define your own router class if
 # you want to include other attributes.
 #
@@ -33,12 +37,23 @@ require 'strelka/app/plugins'
 #
 #       # match any GET request
 #       get do |req|
-#           return req.response << 'Hello, World!'
+#           res = req.response
+#           res.puts 'Hello, World!'
+#           return res
 #       end
 #
 #       # match any GET request whose path starts with '/goodbye'
 #       get '/goodbye' do |req|
-#           return req.response << "Goodbye, cruel World!"
+#           res = req.response
+#           res.puts "Goodbye, cruel World!"
+#           return res
+#       end
+#
+#       # match any GET request whose path ends with '.pdf'
+#       get /\.pdf$/ do |req|
+#           res = req.response
+#           res.body = generate_pdf()
+#           return res
 #       end
 #
 #
@@ -60,12 +75,16 @@ require 'strelka/app/plugins'
 #
 #       # match a GET request for the exact route only
 #       get do |req|
-#           return req.response << 'Hello, World!'
+#           res = req.response
+#           res.puts 'Hello, World!'
+#           return res
 #       end
 #
 #       # only match a GET request for '/goodbye'
 #       get '/goodbye' do |req|
-#           return req.response << "Goodbye, cruel World!"
+#           res = req.response
+#           res.puts "Goodbye, cruel World!"
+#           return res
 #       end
 #
 #      # Every other request responds with a 404
@@ -74,14 +93,19 @@ require 'strelka/app/plugins'
 #
 # == Custom Routers
 #
-# See the Strelka::App::Router for information on how to define your own
+# See the Strelka::Router for information on how to define your own
 # routing strategies.
 #
 module Strelka::App::Routing
-	extend Strelka::App::Plugin
-	include Strelka::Loggable,
-	        Strelka::Constants
+	extend Loggability,
+	       Strelka::Plugin
+	include Strelka::Constants
 
+
+	# Loggability API -- set up logging under the 'strelka' log host
+	log_to :strelka
+
+	# Plugins API -- set up load order
 	run_after :templating, :filters, :parameters
 
 
@@ -157,7 +181,7 @@ module Strelka::App::Routing
 		### Get/set the router class to use for mapping requests to handlers to +newclass.
 		def router( newclass=nil )
 			if newclass
-				Strelka.log.info "%p router class set to: %p" % [ self, newclass ]
+				self.log.info "%p router class set to: %p" % [ self, newclass ]
 				self.routerclass = newclass
 			end
 
@@ -173,22 +197,22 @@ module Strelka::App::Routing
 			# route pattern into its components
 			methodparts = [ verb.upcase ]
 			patternparts = self.split_route_pattern( pattern )
-			Strelka.log.debug "Split pattern %p into parts: %p" % [ pattern, patternparts ]
+			self.log.debug "Split pattern %p into parts: %p" % [ pattern, patternparts ]
 
-			# Make a method name from the directories and the named captures of the patterns 
+			# Make a method name from the directories and the named captures of the patterns
 			# in the route
 			patternparts.each do |part|
-				if part.is_a?( Regexp )
-					methodparts << '_' + part.names.join( '_' )
+				if part.respond_to?( :names )
+					methodparts << make_route_name( part )
 				else
 					methodparts << part
 				end
 			end
-			Strelka.log.debug "  route methodname parts are: %p" % [ methodparts ]
+			self.log.debug "  route methodname parts are: %p" % [ methodparts ]
 			methodname = methodparts.join( '_' )
 
 			# Define the method using the block from the route as its body
-			Strelka.log.debug "  adding route method %p for %p route: %p" % [ methodname, verb, block ]
+			self.log.debug "  adding route method %p for %p route: %p" % [ methodname, verb, block ]
 			define_method( methodname, &block )
 
 			# Remove any existing route for the same verb, patternparts, and options
@@ -207,17 +231,21 @@ module Strelka::App::Routing
 		end
 
 
-		### Split the given +pattern+ into its path components and 
+		### Split the given +pattern+ into its path components and
 		def split_route_pattern( pattern )
+			return [pattern] if pattern.is_a?( Regexp )
+
 			pattern.slice!( 0, 1 ) if pattern.start_with?( '/' )
 
 			return pattern.split( '/' ).collect do |component|
 
 				if component.start_with?( ':' )
+					self.log.debug "translating parameter component %p to a regexp" % [component]
 					raise ScriptError,
 						"parameter-based routing not supported without a 'parameters' plugin" unless
-						self.respond_to?( :extract_route_from_constraint )
-					self.extract_route_from_constraint( component )
+						self.respond_to?( :paramvalidator )
+					component = component.slice( 1..-1 )
+					self.paramvalidator.constraint_regexp_for( component )
 				else
 					component
 				end
@@ -225,9 +253,23 @@ module Strelka::App::Routing
 		end
 
 
+		### Generate a name based on the parts of the given +pattern+.
+		def make_route_name( pattern )
+			name = '_re_'
+			if pattern.names.empty?
+				name << ("%s%#x" % [ pattern.class.name, pattern.object_id * 2 ])
+			else
+				name << pattern.names.join( '_' )
+			end
+
+			return name
+		end
+
+
 		### Inheritance hook -- inheriting classes inherit their parents' routes table.
 		def inherited( subclass )
 			super
+			subclass.instance_variable_set( :@routerclass, self.routerclass )
 			subclass.instance_variable_set( :@routes, self.routes.dup )
 		end
 
@@ -237,7 +279,7 @@ module Strelka::App::Routing
 	### Create a new router object for each class with Routing.
 	def initialize( * )
 		super
-		@router ||= Strelka::App::Router.create( self.class.routerclass, self.class.routes )
+		@router ||= Strelka::Router.create( self.class.routerclass, self.class.routes )
 	end
 
 
@@ -247,6 +289,8 @@ module Strelka::App::Routing
 
 	### Dispatch the request using the Router.
 	def handle_request( request, &block )
+		self.log.debug "[:routing] Routing request using %p" % [ self.router.class ]
+
 		if route = self.router.route_request( request )
 			# Track which route was chosen for later plugins
 			request.notes[:routing][:route] = route
@@ -255,7 +299,10 @@ module Strelka::App::Routing
 		else
 			finish_with HTTP::NOT_FOUND, "The requested resource was not found on this server."
 		end
+
+		self.log.debug "[:routing] Done with routing."
 	end
+
 
 end # module Strelka::App::Routing
 

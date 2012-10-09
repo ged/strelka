@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
 BEGIN {
 	require 'pathname'
@@ -11,6 +13,7 @@ require 'uri'
 require 'rspec'
 require 'spec/lib/helpers'
 require 'strelka/httprequest'
+require 'strelka/cookie'
 
 
 #####################################################################
@@ -20,7 +23,7 @@ require 'strelka/httprequest'
 describe Strelka::HTTPRequest do
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging()
 		@request_factory = Mongrel2::RequestFactory.new( route: '/directory' )
 	end
 
@@ -60,6 +63,43 @@ describe Strelka::HTTPRequest do
 			@req.notes.should be_a( Hash )
 			@req.notes[:routing].should be_a( Hash )
 			@req.notes[:routing][:route].should be_a( Hash )
+		end
+
+		it "can redirect the request to a different URI" do
+			uri = 'http://www.google.com/'
+			expect {
+				@req.redirect( uri )
+			}.to finish_with( HTTP::MOVED_TEMPORARILY, nil, :location => uri )
+
+			expect {
+				@req.redirect( uri, true )
+			}.to finish_with( HTTP::MOVED_PERMANENTLY, nil, :location => uri )
+		end
+	end
+
+
+	context "instance with URI-escaped characters in its path" do
+
+		before( :each ) do
+			@req = @request_factory.get( '/directory/user%20info/ged%00' )
+		end
+
+		it "knows what the request's parsed URI is" do
+			@req.uri.should be_a( URI )
+			@req.uri.to_s.should == 'http://localhost:8080/directory/user%20info/ged%00'
+		end
+
+		it "knows what Mongrel2 route it followed" do
+			@req.pattern.should == "/directory"
+		end
+
+		it "knows what the URI of the route handling the request is" do
+			@req.base_uri.should be_a( URI )
+			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+		end
+
+		it "knows what the path of the request past its route is" do
+			@req.app_path.should == "/user info/ged\0"
 		end
 
 	end
@@ -147,6 +187,27 @@ describe Strelka::HTTPRequest do
 			end
 		end
 
+
+		context "a POST request without a content type" do
+			before( :each ) do
+				@req = @request_factory.post( '/directory/path', '' )
+			end
+
+
+			it "responds with a 400 (BAD_REQUEST)" do
+				expected_info = {
+					status: 400,
+					message: "Malformed request (no content type?)",
+					headers: {}
+				}
+
+				expect {
+					@req.params
+				}.to finish_with( HTTP::BAD_REQUEST, /no content type/i )
+			end
+		end
+
+
 		context "a POST request with a 'application/x-www-form-urlencoded' body" do
 
 			before( :each ) do
@@ -203,14 +264,17 @@ describe Strelka::HTTPRequest do
 
 			before( :each ) do
 				@req = @request_factory.post( '/directory/path', '',
-					'Content-type' => 'multipart/form-data' )
+					'Content-type' => 'multipart/form-data; boundary=--a_boundary' )
 			end
 
-			it "returns nil for an empty body" do
-				pending "multipart/form-data support" do
-					@req.body = ''
-					@req.params.should be_nil()
-				end
+			it "returns a hash for form parameters" do
+				@req.body = "----a_boundary\r\n" +
+					%{Content-Disposition: form-data; name="title"\r\n} +
+					%{\r\n} +
+					%{An Impossible Task\r\n} +
+					%{----a_boundary--\r\n}
+
+				@req.params.should == {'title' => 'An Impossible Task'}
 			end
 
 		end
@@ -236,6 +300,30 @@ describe Strelka::HTTPRequest do
 				@req.params.should == data
 			end
 
+		end
+
+	end
+
+
+	describe "cookie support" do
+
+		before( :each ) do
+			@req = @request_factory.get( '/directory/userinfo/ged' )
+		end
+
+
+		it "parses a single cookie into a cookieset with the cookie in it" do
+			@req.header.cookie = 'foom=chuckUfarly'
+			@req.cookies.should have( 1 ).member
+			@req.cookies['foom'].value.should == 'chuckUfarly'
+		end
+
+		it "parses multiple cookies into a cookieset with multiple cookies in it" do
+			@req.header.cookie = 'foom=chuckUfarly; glarn=hotchinfalcheck'
+
+			@req.cookies.should have( 2 ).members
+			@req.cookies['foom'].value.should == 'chuckUfarly'
+			@req.cookies['glarn'].value.should == 'hotchinfalcheck'
 		end
 
 	end

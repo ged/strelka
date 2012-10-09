@@ -1,0 +1,33 @@
+mongrel2:
+  configdb: amalgalite://mongrel2.sqlite
+
+auth:
+  provider: basic
+
+basicauth:
+  realm: Examples
+  users:
+    ged: "dn44fsIrKF6KmBw0im4GIJktSpM="
+    jblack: "1pAnQNSVtpL1z88QwXV4sG8NMP8="
+    kmurgen: "MZj9+VhZ8C9+aJhmwp+kWBL76Vs="
+
+sessions:
+  type: default
+
+defaultsession:
+  cookie_name: "session-demo"
+  cookie_options:
+    expires: +5m
+
+templates:
+  template_paths:
+    - templates
+
+logging:
+  strelka: debug (color)
+  inversion: info (color)
+  configurability: debug (color)
+  mongrel2: debug (color)
+
+
+
