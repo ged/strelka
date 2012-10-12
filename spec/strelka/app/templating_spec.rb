@@ -27,16 +27,90 @@ require 'strelka/behavior/plugin'
 describe Strelka::App::Templating do
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging()
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )
+		@original_template_paths = Inversion::Template.template_paths.dup
 	end
 
 	after( :all ) do
+		Inversion::Template.template_paths.replace( @original_template_paths )
 		reset_logging()
 	end
 
 
 	it_should_behave_like( "A Strelka::App Plugin" )
+
+
+	describe "template discovery" do
+
+		before( :each ) do
+			Inversion::Template.template_paths.replace( @original_template_paths )
+		end
+
+		it "can discover template directories for loaded gems that depend on Strelka" do
+			specs = {}
+			specs[:gymnastics]  = make_gemspec( 'gymnastics',  '1.0.0' )
+			specs[:cycling_old] = make_gemspec( 'cycling',  '1.0.0' )
+			specs[:cycling_new] = make_gemspec( 'cycling',  '1.0.8' )
+			specs[:karate]      = make_gemspec( 'karate',    '1.0.0', false )
+			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
+
+			expectation = Gem::Specification.should_receive( :each )
+			specs.values.each {|spec| expectation.and_yield(spec) }
+
+			gymnastics_path  = specs[:gymnastics].full_gem_path
+			cycling_path  = specs[:cycling_new].full_gem_path
+			javelin_path = specs[:javelin].full_gem_path
+
+			Dir.should_receive( :glob ).with( 'data/*/templates' ).
+				and_return([ "data/foom/templates" ])
+			Dir.should_receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
+				and_return([ "#{javelin_path}/data/javelin/templates" ])
+			Dir.should_receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
+				and_return([ "#{gymnastics_path}/data/gymnastics/templates" ])
+
+			Dir.should_receive( :glob ).with( "#{cycling_path}/data/cycling/templates" ).
+				and_return([])
+
+			template_dirs = described_class.discover_template_dirs
+
+			# template_dirs.should have( 4 ).members
+			template_dirs.should include(
+				Pathname("data/foom/templates"),
+				Pathname("#{javelin_path}/data/javelin/templates"),
+				Pathname("#{gymnastics_path}/data/gymnastics/templates")
+			)
+		end
+
+
+		it "injects template directories from loaded gems into Inversion's template path" do
+			specs = {}
+			specs[:gymnastics]  = make_gemspec( 'gymnastics',  '1.0.0' )
+			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
+
+			expectation = Gem::Specification.should_receive( :each )
+			specs.values.each {|spec| expectation.and_yield(spec) }
+
+			gymnastics_path = specs[:gymnastics].full_gem_path
+			javelin_path    = specs[:javelin].full_gem_path
+
+			Dir.should_receive( :glob ).with( 'data/*/templates' ).
+				and_return([ "data/foom/templates" ])
+			Dir.should_receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
+				and_return([ "#{javelin_path}/data/javelin/templates" ])
+			Dir.should_receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
+				and_return([ "#{gymnastics_path}/data/gymnastics/templates" ])
+
+			Module.new { include Strelka::App::Templating }
+
+			Inversion::Template.template_paths.should include(
+				Pathname("data/foom/templates"),
+				Pathname("#{javelin_path}/data/javelin/templates"),
+				Pathname("#{gymnastics_path}/data/gymnastics/templates")
+			)
+		end
+
+	end
 
 
 	describe "an including App" do

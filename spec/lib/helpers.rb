@@ -90,6 +90,16 @@ module Strelka::SpecHelpers
 		return tempdir
 	end
 
+
+	### Make and return a dummy gemspec with the given +name+ and +version+, and inject a
+	### dependency on 'strelka' if +strelka_dep+ is true.
+	def make_gemspec( name, version, strelka_dep=true )
+		spec = Gem::Specification.new( name, version )
+		spec.add_runtime_dependency( 'strelka', '~> 0.0' ) if strelka_dep
+		return spec
+	end
+
+
 end
 
 

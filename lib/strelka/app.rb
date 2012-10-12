@@ -138,11 +138,12 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
-	### Return a Hash of Strelka app files as Pathname objects from installed gems,
-	### keyed by gemspec name .
-	def self::discover_paths
-		appfiles = {
-			'' => Pathname.glob( File.join(self.local_data_dirs, self.app_glob_pattern) )
+	### Return a Hash of glob patterns for matching data directories for the latest
+	### versions of all installed gems which have a dependency on Strelka, keyed
+	### by gem name.
+	def self::discover_data_dirs
+		datadirs = {
+			'' => self.local_data_dirs
 		}
 
 		# Find all the gems that depend on Strelka
@@ -156,15 +157,23 @@ class Strelka::App < Mongrel2::Handler
 		# pattern
 		gems.sort.reverse.each do |gemspec|
 			# Only look at the latest version of the gem
-			next if appfiles.key?( gemspec.name )
-			appfiles[ gemspec.name ] = []
+			next if datadirs.key?( gemspec.name )
+			datadirs[ gemspec.name ] = File.join( gemspec.full_gem_path, "data", gemspec.name )
+		end
 
-			self.log.debug "  checking %s for apps in its datadir" % [ gemspec.name ]
-			pattern = File.join( gemspec.full_gem_path, "data", gemspec.name, APP_GLOB_PATTERN )
-			self.log.debug "    glob pattern is: %p" % [ pattern ]
-			gemapps = Pathname.glob( pattern )
-			self.log.debug "    found %d app files" % [ gemapps.length ]
-			appfiles[ gemspec.name ] += gemapps
+		self.log.debug "  returning data directories: %p" % [ datadirs ]
+		return datadirs
+	end
+
+
+	### Return a Hash of Strelka app files as Pathname objects from installed gems,
+	### keyed by gemspec name .
+	def self::discover_paths
+		appfiles = {}
+
+		self.discover_data_dirs.each do |gemname, dir|
+			pattern = File.join( dir, self.app_glob_pattern )
+			appfiles[ gemname ] = Pathname.glob( pattern )
 		end
 
 		return appfiles

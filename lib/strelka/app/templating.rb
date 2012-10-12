@@ -19,6 +19,7 @@ require 'strelka/plugins'
 # * a mechanism for fetching templates from the table
 # * a global layout template which is automatically wrapped around responses
 #
+#
 # == Usage
 #
 # To use it, just load the <tt>:templating</tt> plugin in your app:
@@ -88,12 +89,61 @@ require 'strelka/plugins'
 #
 #   <?import request, strelka_version, route ?>
 #
+#
+# == Template Locations
+#
+# Inversion looks for templates in a load path much like Ruby does for libraries that
+# you 'require'. It contains just the current working directory by default. You can add
+# your own template directories via the config file (under +template_paths+ in
+# the +templates+ section), or programmatically from your application, but very often you'll
+# want to distribute templates with the application gem.
+#
+# The plugin supports this by looking for a +templates/+ directory under your gem's
+# data directory. If it finds such a directory for any loaded gem that has a Strelka dependency,
+# it appends it to Inversion's +template_paths+. This also works for plugins, should you
+# write your own, and want to provide some default templates. See the 'laika-fancyerrors'
+# gem for an example of this.
+#
 module Strelka::App::Templating
 	include Strelka::Constants
-	extend Strelka::Plugin
+	extend Strelka::Plugin,
+	       Loggability
 
+
+	# Loggability API -- log to strelka's logger
+	log_to :strelka
+
+	# Run order
 	run_before :routing, :negotiation, :errors
 	run_after :filters
+
+
+	### Return an Array of Pathnames to all directories named 'templates' under the
+	### data dirctories of loaded gems which have a dependency on Strelka.
+	def self::discover_template_dirs
+		directories = Strelka::App.discover_data_dirs.values.flatten
+
+		self.log.debug "Discovered data directories: %p" % [ directories ]
+
+		return directories.inject( [] ) do |array, dir|
+			pattern = File.join( dir, 'templates' )
+			self.log.debug "  adding: %s" % [ pattern ]
+			array += Pathname.glob( pattern )
+		end
+	end
+
+
+	### Inclusion callback -- add the plugin's templates directory right before activation
+	### so loading the config doesn't clobber it.
+	def self::included( mod )
+
+		# Add the plugin's template directory to Inversion's template path
+		dirs = self.discover_template_dirs
+		self.log.info "Discovered template directories: %p" % [ dirs ]
+		Inversion::Template.template_paths.concat( dirs )
+
+		super
+	end
 
 
 	# Class methods to add to classes with templating.

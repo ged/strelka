@@ -63,17 +63,6 @@ describe Strelka::App do
 
 
 	#
-	# Helpers
-	#
-
-	def make_gemspec( name, version, strelka_dep=true )
-		spec = Gem::Specification.new( name, version )
-		spec.add_runtime_dependency( 'strelka', '~> 0.0' ) if strelka_dep
-		return spec
-	end
-
-
-	#
 	# Examples
 	#
 
