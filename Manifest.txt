@@ -19,6 +19,8 @@ contrib/hoetemplate/data/project/templates/layout.tmpl.erb
 contrib/hoetemplate/data/project/templates/top.tmpl.erb
 contrib/hoetemplate/lib/file_name.rb.erb
 contrib/hoetemplate/spec/file_name_spec.rb.erb
+contrib/strelka-dogs/doggie6.svg
+contrib/strelka-dogs/doggie7.svg
 examples/Procfile
 examples/apps/auth-demo
 examples/apps/auth-demo2

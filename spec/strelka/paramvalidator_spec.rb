@@ -116,6 +116,32 @@ describe Strelka::ParamValidator do
 			@validator["foo"].should == "bar"
 		end
 
+		it "handles multiple values for the same parameter" do
+			pending "issue #1"
+			@validator.add( :foo, /^\d+$/, :multiple )
+
+			@validator.validate( {'foo' => %w[1 2]} )
+			@validator[:foo].should == ['1', '2']
+		end
+
+		it "always returns an Array for parameters marked as :multiple" do
+			pending "issue #1"
+			@validator.add( :foo, /^\d+$/, :multiple )
+
+			@validator.validate( {'foo' => '1'} )
+			@validator[:foo].should == ['1']
+		end
+
+		it "fails to validate if one of a multiple-value parameter doesn't validate" do
+			pending "issue #1"
+			@validator.add( :foo, /^\d+$/, :multiple )
+
+			@validator.validate( {'foo' => %[1 victor 8]} )
+			@validator.should_not be_okay()
+			@validator.should have_errors()
+			@validator.error_messages.first.should =~ /foo/i
+		end
+
 		it "untaints valid args if told to do so" do
 			tainted_one = "1"
 			tainted_one.taint
@@ -193,7 +219,6 @@ describe Strelka::ParamValidator do
 			@validator.should_not be_okay()
 			@validator.error_messages.should include( "Missing value for 'A Field'" )
 		end
-
 
 	end # describe "validation"
 
