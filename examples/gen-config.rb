@@ -27,7 +27,7 @@ server 'examples' do
 
 	host 'localhost' do
 
-		route '/', directory( 'static/', 'examples.html', 'text/html' )
+		route '/', directory( 'examples/static/', 'examples.html', 'text/html' )
 
 		# Handlers
 		route '/hello', handler( 'tcp://127.0.0.1:9900', 'hello-world' )

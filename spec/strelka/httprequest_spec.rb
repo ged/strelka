@@ -42,6 +42,12 @@ describe Strelka::HTTPRequest do
 			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged'
 		end
 
+		it "knows what the request's parsed URI is when it's an HTTPS request" do
+			@req.headers.url_scheme = 'https'
+			@req.uri.should be_a( URI )
+			@req.uri.to_s.should == 'https://localhost:8080/directory/userinfo/ged'
+		end
+
 		it "knows what Mongrel2 route it followed" do
 			@req.pattern.should == '/directory'
 		end

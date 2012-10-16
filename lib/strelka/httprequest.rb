@@ -74,7 +74,8 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		unless @uri
 			# :TODO: Make this detect https scheme once I figure out how to
 			# detect it.
-			uri = "http://%s%s" % [
+			uri = "%s://%s%s" % [
+				self.headers.url_scheme.downcase,
 				self.headers.host,
 				self.headers.uri
 			]
