@@ -1,3 +1,9 @@
+== v0.0.2 [2012-10-17] Michael Granger <ged@FaerieMUD.org>
+
+- Fix a bug in HTTPRequest#uri when running under versions of Mongrel2
+  equal or earlier than 1.8.0.
+
+
 == v0.0.1 [2012-10-17] Michael Granger <ged@FaerieMUD.org>
 
 Initial release.
