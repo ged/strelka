@@ -48,6 +48,13 @@ describe Strelka::HTTPRequest do
 			@req.uri.to_s.should == 'https://localhost:8080/directory/userinfo/ged'
 		end
 
+		it "doesn't error when run under earlier versions of Mongrel that didn't set the " +
+		   "url-scheme header" do
+			@req.headers.url_scheme = nil
+			@req.uri.should be_a( URI )
+			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged'
+		end
+
 		it "knows what Mongrel2 route it followed" do
 			@req.pattern.should == '/directory'
 		end

@@ -72,10 +72,8 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   # => #<URI::HTTP:0x007fe34d16b2e0 URL:http://localhost:8080/user/1/profile>
 	def uri
 		unless @uri
-			# :TODO: Make this detect https scheme once I figure out how to
-			# detect it.
 			uri = "%s://%s%s" % [
-				self.headers.url_scheme.downcase,
+				self.scheme,
 				self.headers.host,
 				self.headers.uri
 			]
