@@ -86,15 +86,11 @@ class Strelka::App < Mongrel2::Handler
 	### to the 'app' section of the config that will be passed to you when the config
 	### is loaded.
 	def self::configure( config=nil )
-		if config
-			self.devmode          = true if config[:devmode]
-			self.app_glob_pattern = config[:app_glob_pattern]
-			self.local_data_dirs  = config[:local_data_dirs]
-		else
-			self.devmode          = $DEBUG ? true : false
-			self.app_glob_pattern = APP_GLOB_PATTERN
-			self.local_data_dirs  = LOCAL_DATA_DIRS
-		end
+		config = self.defaults.merge( config || {} )
+
+		self.devmode = config[:devmode] || $DEBUG
+		self.app_glob_pattern = config[:app_glob_pattern]
+		self.local_data_dirs  = config[:local_data_dirs]
 
 		self.log.info "Enabled developer mode." if self.devmode?
 	end

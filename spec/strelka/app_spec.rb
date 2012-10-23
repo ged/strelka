@@ -366,6 +366,12 @@ describe Strelka::App do
 		end
 	end
 
+	it "uses the default local data directory if the config is present without that key" do
+		config = Configurability::Config.new( 'devmode: true' )
+		@app.configure( config )
+		@app.local_data_dirs.should == Strelka::App::CONFIG_DEFAULTS[:local_data_dirs]
+	end
+
 	it "closes async uploads with a 413 Request Entity Too Large by default" do
 		@req.headers.x_mongrel2_upload_start = 'an/uploaded/file/path'
 
