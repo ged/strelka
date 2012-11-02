@@ -2,8 +2,6 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-require 'pry'
-
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/plugins'
