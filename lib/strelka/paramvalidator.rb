@@ -19,9 +19,9 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 # == Usage
 #
-#   require 'strelka/app/formvalidator'
+#	require 'strelka/app/formvalidator'
 #
-#   validator = Strelka::ParamValidator.new
+#	validator = Strelka::ParamValidator.new
 #
 #	# Add validation criteria for input parameters
 #	validator.add( :name, /^(?<lastname>\S+), (?<firstname>\S+)$/, "Customer Name" )
@@ -29,102 +29,42 @@ require 'strelka/app' unless defined?( Strelka::App )
 #	validator.add( :feedback, :printable, "Customer Feedback" )
 #	validator.override( :email, :printable, "Your Email Address" )
 #
-#   # Untaint all parameter values which match their constraints
-#   validate.untaint_all_constraints = true
+#	# Untaint all parameter values which match their constraints
+#	validate.untaint_all_constraints = true
 #
 #	# Now pass in tainted values in a hash (e.g., from an HTML form)
 #	validator.validate( req.params )
 #
 #	# Now if there weren't any errors, use some form values to fill out the
-#   # success page template
+#	# success page template
 #	if validator.okay?
 #		tmpl = template :success
-#       tmpl.firstname = validator[:name][:firstname]
-#       tmpl.lastname  = validator[:name][:lastname]
-#       tmpl.email     = validator[:email]
-#       tmpl.feedback  = validator[:feedback]
-#       return tmpl
+#		tmpl.firstname = validator[:name][:firstname]
+#		tmpl.lastname  = validator[:name][:lastname]
+#		tmpl.email	   = validator[:email]
+#		tmpl.feedback  = validator[:feedback]
+#		return tmpl
 #
 #	# Otherwise fill in the error template with auto-generated error messages
 #	# and return that instead.
 #	else
-#       tmpl = template :feedback_form
+#		tmpl = template :feedback_form
 #		tmpl.errors = validator.error_messages
 #		return tmpl
 #	end
 #
 class Strelka::ParamValidator < ::FormValidator
 	extend Forwardable,
-	       Loggability
+		   Loggability,
+		   Strelka::MethodUtilities
+	include Strelka::DataUtilities
 
-	# Loggability API -- set up logging under the 'strelka' log host
+	# Loggability API -- log to the 'strelka' logger
 	log_to :strelka
 
 
-	# Options that are passed as Symbols to .param
-	FLAGS = [ :required, :untaint ]
-
-	#
-	# RFC822 Email Address Regex
-	# --------------------------
-	#
-	# Originally written by Cal Henderson
-	# c.f. http://iamcal.com/publish/articles/php/parsing_email/
-	#
-	# Translated to Ruby by Tim Fletcher, with changes suggested by Dan Kubb.
-	#
-	# Licensed under a Creative Commons Attribution-ShareAlike 2.5 License
-	# http://creativecommons.org/licenses/by-sa/2.5/
-	#
-	RFC822_EMAIL_ADDRESS = begin
-		qtext = '[^\\x0d\\x22\\x5c\\x80-\\xff]'
-		dtext = '[^\\x0d\\x5b-\\x5d\\x80-\\xff]'
-		atom = '[^\\x00-\\x20\\x22\\x28\\x29\\x2c\\x2e\\x3a-' +
-			'\\x3c\\x3e\\x40\\x5b-\\x5d\\x7f-\\xff]+'
-		quoted_pair = '\\x5c[\\x00-\\x7f]'
-		domain_literal = "\\x5b(?:#{dtext}|#{quoted_pair})*\\x5d"
-		quoted_string = "\\x22(?:#{qtext}|#{quoted_pair})*\\x22"
-		domain_ref = atom
-		sub_domain = "(?:#{domain_ref}|#{domain_literal})"
-		word = "(?:#{atom}|#{quoted_string})"
-		domain = "#{sub_domain}(?:\\x2e#{sub_domain})*"
-		local_part = "#{word}(?:\\x2e#{word})*"
-		addr_spec = "#{local_part}\\x40#{domain}"
-		/\A#{addr_spec}\z/n
-	end
-
-	# Pattern for (loosely) matching a valid hostname. This isn't strictly RFC-compliant
-	# because, in practice, many hostnames used on the Internet aren't.
-	RFC1738_HOSTNAME = begin
-		alphadigit = /[a-z0-9]/i
-		# toplabel		 = alpha | alpha *[ alphadigit | "-" ] alphadigit
-		toplabel = /[a-z]((#{alphadigit}|-)*#{alphadigit})?/i
-		# domainlabel	 = alphadigit | alphadigit *[ alphadigit | "-" ] alphadigit
-		domainlabel = /#{alphadigit}((#{alphadigit}|-)*#{alphadigit})?/i
-		# hostname		 = *[ domainlabel "." ] toplabel
-		hostname = /\A(#{domainlabel}\.)*#{toplabel}\z/
-	end
-
 	# Pattern for countint the number of hash levels in a parameter key
 	PARAMS_HASH_RE = /^([^\[]+)(\[.*\])?(.)?.*$/
-
-	# The Hash of builtin constraints that are validated against a regular
-	# expression.
-	# :TODO: Document that these are the built-in constraints that can be used in a route
-	BUILTIN_CONSTRAINT_PATTERNS = {
-		:boolean      => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
-		:integer      => /^(?<integer>[\-\+]?\d+)$/,
-		:float        => /^(?<float>[\-\+]?(?:\d*\.\d+|\d+)(?:e[\-\+]?\d+)?)$/i,
-		:alpha        => /^(?<alpha>[[:alpha:]]+)$/,
-		:alphanumeric => /^(?<alphanumeric>[[:alnum:]]+)$/,
-		:printable    => /\A(?<printable>[[:print:][:blank:]\r\n]+)\z/,
-		:string       => /\A(?<string>[[:print:][:blank:]\r\n]+)\z/,
-		:word         => /^(?<word>[[:word:]]+)$/,
-		:email        => /^(?<email>#{RFC822_EMAIL_ADDRESS})$/,
-		:hostname     => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
-		:uri          => /^(?<uri>#{URI::URI_REF})$/,
-		:uuid         => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i
-	}
 
 	# Pattern to use to strip binding operators from parameter patterns so they
 	# can be used in the middle of routing Regexps.
@@ -132,230 +72,553 @@ class Strelka::ParamValidator < ::FormValidator
 
 
 
-	### Return a Regex for the built-in constraint associated with the given +name+. If
-	### the builtin constraint is not pattern-based, or there is no such constraint,
-	### returns +nil+.
-	def self::pattern_for_constraint( name )
-		return BUILTIN_CONSTRAINT_PATTERNS[ name.to_sym ]
-	end
+	# The base constraint type.
+	class Constraint
+		extend Loggability,
+		       Strelka::MethodUtilities
+
+		# Loggability API -- log to the 'strelka' logger
+		log_to :strelka
+
+
+		# Flags that are passed as Symbols when declaring a parameter
+		FLAGS = [ :required, :untaint, :multiple ]
+
+		# Map of constraint specification types to their equivalent Constraint class.
+		TYPES = { Proc => self }
+
+
+		### Register the given +subclass+ as the Constraint class to be used when
+		### the specified +syntax_class+ is given as the constraint in a parameter
+		### declaration.
+		def self::register_type( syntax_class )
+			self.log.debug "Registering %p as the constraint class for %p objects" %
+				[ self, syntax_class ]
+			TYPES[ syntax_class ] = self
+		end
+
+
+		### Return a Constraint object appropriate for the given +field+ and +spec+.
+		def self::for( field, spec=nil, *options, &block )
+			self.log.debug "Building Constraint for %p (%p)" % [ field, spec ]
+
+			# Handle omitted constraint
+			if spec.is_a?( String ) || FLAGS.include?( spec )
+				options.unshift( spec )
+				spec = nil
+			end
+
+			spec ||= block
+
+			subtype = TYPES[ spec.class ] or
+				raise "No constraint type for a %p validation spec" % [ spec.class ]
+
+			return subtype.new( field, spec, *options, &block )
+		end
+
+
+		### Create a new Constraint for the field with the given +name+, configuring it with the
+		### specified +args+. The +block+ is what does the actual validation, at least in the
+		### base class.
+		def initialize( name, *args, &block )
+			@name		 = name
+			@block		 = block
+
+			@description = args.shift if args.first.is_a?( String )
+
+			@required	 = args.include?( :required )
+			@untaint	 = args.include?( :untaint )
+			@multiple	 = args.include?( :multiple )
+		end
+
+
+		######
+		public
+		######
+
+		# The name of the field the constraint governs
+		attr_reader :name
+
+		# The constraint's check block
+		attr_reader :block
+
+		# The field's description
+		attr_writer :description
+
+		##
+		# Returns true if the field can have multiple values.
+		attr_predicate :multiple?
+
+		##
+		# Returns true if the field associated with the constraint is required in
+		# order for the parameters to be valid.
+		attr_predicate :required?
+
+		##
+		# Returns true if the constraint will also untaint its result before returning it.
+		attr_predicate :untaint?
+
+
+		### Check the given value against the constraint and return the result if it passes.
+		def apply( value, force_untaint=false )
+			untaint = self.untaint? || force_untaint
+
+			if self.multiple?
+				return self.check_multiple( value, untaint )
+			else
+				return self.check( value, untaint )
+			end
+		end
+
+
+		### Comparison operator – Constraints are equal if they’re for the same field,
+		### they’re of the same type, and their blocks are the same.
+		def ==( other )
+			return self.name == other.name &&
+				other.instance_of?( self.class ) &&
+				self.block == other.block
+		end
+
+
+		### Get the description of the field.
+		def description
+			return @description || self.generate_description
+		end
+
+
+		### Return the constraint expressed as a String.
+		def to_s
+			desc = self.validator_description
+
+			flags = []
+			flags << 'required' if self.required?
+			flags << 'multiple' if self.multiple?
+			flags << 'untaint' if self.untaint?
+
+			desc << " (%s)" % [ flags.join(',') ] unless flags.empty?
+
+			return desc
+		end
+
+
+		#########
+		protected
+		#########
+
+		### Return a description of the validation provided by the constraint object.
+		def validator_description
+			desc = 'a custom validator'
+
+			if self.block
+				location = self.block.source_location
+				desc << " on line %d of %s" % [ location[1], location[0] ]
+			end
+
+			return desc
+		end
+
+
+		### Check the specified value against the constraint and return the results. By
+		### default, this just calls to_proc and the block and calls the result with the
+		### value as its argument.
+		def check( value, untaint )
+			return self.block.to_proc.call( value ) if self.block
+			value.untaint if untaint && value.respond_to?( :untaint )
+			return value
+		end
+
+
+		### Check the given +values+ against the constraint and return the results if
+		### all of them succeed.
+		def check_multiple( values, untaint )
+			values = [ values ] unless values.is_a?( Array )
+			results = []
+
+			values.each do |value|
+				result = self.check( value, untaint ) or return nil
+				results << result
+			end
+
+			return results
+		end
+
+
+		### Generate a description from the name of the field.
+		def generate_description
+			self.log.debug "Auto-generating description for %p" % [ self ]
+			desc = self.name.to_s.
+				gsub( /.*\[(\w+)\]/, "\\1" ).
+				gsub( /_(.)/ ) {|m| " " + m[1,1].upcase }.
+				gsub( /^(.)/ ) {|m| m.upcase }
+			self.log.debug "  generated: %p" % [ desc ]
+			return desc
+		end
+
+	end # class Constraint
+
+
+	# A constraint expressed as a regular expression.
+	class RegexpConstraint < Constraint
+
+		# Use this for constraints expressed as Regular Expressions
+		register_type Regexp
+
+
+		### Create a new RegexpConstraint that will validate the field of the given
+		### +name+ with the specified +pattern+.
+		def initialize( name, pattern, *args, &block )
+			@pattern = pattern
+
+			super( name, *args, &block )
+		end
+
+
+		######
+		public
+		######
+
+		# The constraint's pattern
+		attr_reader :pattern
+
+
+		### Check the +value+ against the regular expression and return its
+		### match groups if successful.
+		def check( value, untaint )
+			self.log.debug "Validating %p via regexp %p" % [ value, self.pattern ]
+			match = self.pattern.match( value.to_s ) or return nil
+
+			if match.captures.empty?
+				self.log.debug "  no captures, using whole match: %p" % [match[0]]
+				return super( match[0], untaint )
+
+			elsif match.names.length > 1
+				self.log.debug "  extracting hash of named captures: %p" % [ match.names ]
+				rhash = self.matched_hash( match, untaint )
+				return super( rhash, untaint )
+
+			elsif match.captures.length == 1
+				self.log.debug "  extracting one capture: %p" % [match.captures.first]
+				return super( match.captures.first, untaint )
+
+			else
+				self.log.debug "  extracting multiple captures: %p" % [match.captures]
+				values = match.captures
+				values.map {|val| val.untaint if val } if untaint
+				return super( values, untaint )
+			end
+		end
+
+
+		### Return a Hash of the given +match+ object's named captures, untainting the values
+		### if +untaint+ is true.
+		def matched_hash( match, untaint )
+			return match.names.inject( {} ) do |accum,name|
+				value = match[ name ]
+				value.untaint if untaint && value
+				accum[ name.to_sym ] = value
+				accum
+			end
+		end
+
+
+		### Return the constraint expressed as a String.
+		def validator_description
+			return "a value matching the pattern %p" % [ self.pattern ]
+		end
+
+
+	end # class RegexpConstraint
+
+
+	# A constraint class that uses a collection of predefined patterns.
+	class BuiltinConstraint < RegexpConstraint
+
+		# Use this for constraints expressed as Symbols or who are missing a constraint spec (nil)
+		register_type Symbol
+		register_type NilClass
+
+
+		#
+		# RFC822 Email Address Regex
+		# --------------------------
+		#
+		# Originally written by Cal Henderson
+		# c.f. http://iamcal.com/publish/articles/php/parsing_email/
+		#
+		# Translated to Ruby by Tim Fletcher, with changes suggested by Dan Kubb.
+		#
+		# Licensed under a Creative Commons Attribution-ShareAlike 2.5 License
+		# http://creativecommons.org/licenses/by-sa/2.5/
+		#
+		RFC822_EMAIL_ADDRESS = begin
+			qtext = '[^\\x0d\\x22\\x5c\\x80-\\xff]'
+			dtext = '[^\\x0d\\x5b-\\x5d\\x80-\\xff]'
+			atom = '[^\\x00-\\x20\\x22\\x28\\x29\\x2c\\x2e\\x3a-' +
+				'\\x3c\\x3e\\x40\\x5b-\\x5d\\x7f-\\xff]+'
+			quoted_pair = '\\x5c[\\x00-\\x7f]'
+			domain_literal = "\\x5b(?:#{dtext}|#{quoted_pair})*\\x5d"
+			quoted_string = "\\x22(?:#{qtext}|#{quoted_pair})*\\x22"
+			domain_ref = atom
+			sub_domain = "(?:#{domain_ref}|#{domain_literal})"
+			word = "(?:#{atom}|#{quoted_string})"
+			domain = "#{sub_domain}(?:\\x2e#{sub_domain})*"
+			local_part = "#{word}(?:\\x2e#{word})*"
+			addr_spec = "#{local_part}\\x40#{domain}"
+			/\A#{addr_spec}\z/n
+		end
+
+		# Pattern for (loosely) matching a valid hostname. This isn't strictly RFC-compliant
+		# because, in practice, many hostnames used on the Internet aren't.
+		RFC1738_HOSTNAME = begin
+			alphadigit = /[a-z0-9]/i
+			# toplabel		 = alpha | alpha *[ alphadigit | "-" ] alphadigit
+			toplabel = /[a-z]((#{alphadigit}|-)*#{alphadigit})?/i
+			# domainlabel	 = alphadigit | alphadigit *[ alphadigit | "-" ] alphadigit
+			domainlabel = /#{alphadigit}((#{alphadigit}|-)*#{alphadigit})?/i
+			# hostname		 = *[ domainlabel "." ] toplabel
+			hostname = /\A(#{domainlabel}\.)*#{toplabel}\z/
+		end
+
+		# The Hash of builtin constraints that are validated against a regular
+		# expression.
+		# :TODO: Document that these are the built-in constraints that can be used in a route
+		BUILTIN_CONSTRAINT_PATTERNS = {
+			:boolean	  => /^(?<boolean>t(?:rue)?|y(?:es)?|[10]|no?|f(?:alse)?)$/i,
+			:integer	  => /^(?<integer>[\-\+]?\d+)$/,
+			:float		  => /^(?<float>[\-\+]?(?:\d*\.\d+|\d+)(?:e[\-\+]?\d+)?)$/i,
+			:alpha		  => /^(?<alpha>[[:alpha:]]+)$/,
+			:alphanumeric => /^(?<alphanumeric>[[:alnum:]]+)$/,
+			:printable	  => /\A(?<printable>[[:print:][:blank:]\r\n]+)\z/,
+			:string		  => /\A(?<string>[[:print:][:blank:]\r\n]+)\z/,
+			:word		  => /^(?<word>[[:word:]]+)$/,
+			:email		  => /^(?<email>#{RFC822_EMAIL_ADDRESS})$/,
+			:hostname	  => /^(?<hostname>#{RFC1738_HOSTNAME})$/,
+			:uri		  => /^(?<uri>#{URI::URI_REF})$/,
+			:uuid		  => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i,
+			:date         => /.*\d.*/,
+		}
+
+		# Field values which result in a valid ‘true’ value for :boolean constraints
+		TRUE_VALUES = %w[t true y yes 1]
+
+
+		### Return true if name is the name of a built-in constraint.
+		def self::valid?( name )
+			return BUILTIN_CONSTRAINT_PATTERNS.key?( name.to_sym )
+		end
+
+
+		### Create a new BuiltinConstraint using the pattern named name for the specified field.
+		def initialize( field, name, *options, &block )
+			name ||= field
+			@pattern_name = name
+			pattern = BUILTIN_CONSTRAINT_PATTERNS[ name.to_sym ] or
+				raise ScriptError, "no such builtin constraint %p" % [ name ]
+
+			super( field, pattern, *options, &block )
+		end
+
+
+		######
+		public
+		######
+
+		# The name of the builtin pattern the field should be constrained by
+		attr_reader :pattern_name
+
+
+		### Check for an additional post-processor method, and if it exists, return it as
+		### a Method object.
+		def block
+			if custom_block = super
+				return custom_block
+			else
+				post_processor = "post_process_%s" % [ @pattern_name ]
+				return nil unless self.respond_to?( post_processor )
+				return self.method( post_processor )
+			end
+		end
+
+
+		### Return the constraint expressed as a String.
+		def validator_description
+			return "a '%s'" % [ self.pattern_name ]
+		end
+
+
+		#########
+		protected
+		#########
+
+		### Post-process a :boolean value.
+		def post_process_boolean( val )
+			return TRUE_VALUES.include?( val.to_s.downcase )
+		end
+
+
+		### Constrain a value to a parseable Date
+		def post_process_date( val )
+			return Date.parse( val )
+		rescue ArgumentError
+			return nil
+		end
+
+
+		### Constrain a value to a Float
+		def post_process_float( val )
+			return Float( val.to_s )
+		end
+
+
+		### Post-process a valid :integer field.
+		def post_process_integer( val )
+			return Integer( val.to_s )
+		end
+
+
+		### Post-process a valid :uri field.
+		def post_process_uri( val )
+			return URI.parse( val.to_s )
+		rescue URI::InvalidURIError => err
+			self.log.error "Error trying to parse URI %p: %s" % [ val, err.message ]
+			return nil
+		rescue NoMethodError
+			self.log.debug "Ignoring bug in URI#parse"
+			return nil
+		end
+
+	end # class BuiltinConstraint
+
 
 
 	#################################################################
-	###	I N S T A N C E   M E T H O D S
+	### I N S T A N C E	  M E T H O D S
 	#################################################################
 
 	### Create a new Strelka::ParamValidator object.
-	def initialize( profile={} )
-		@profile = {
-			descriptions:              {},
-			required:                  [],
-			optional:                  [],
-			descriptions:              {},
-			constraints:               {},
-			untaint_constraint_fields: [],
-		}.merge( profile )
+	def initialize
+		@constraints = {}
+		@fields      = {}
+		@untaint_all = false
 
-		@form                = {}
-		@raw_form            = {}
-		@invalid_fields      = {}
-		@missing_fields      = []
-		@unknown_fields      = []
-		@required_fields     = []
-		@require_some_fields = []
-		@optional_fields     = []
-		@filters_array       = []
-		@untaint_fields      = []
-		@untaint_all         = false
-		@validated           = false
-
-		@parsed_params       = nil
+		self.reset
 	end
 
 
 	### Copy constructor.
 	def initialize_copy( original )
-		super
-
-		@profile = original.profile.dup
-		@profile.each_key {|k| @profile[k] = @profile[k].clone }
-		self.log.debug "Copied validator profile: %p" % [ @profile ]
-
-		@form                = @form.clone
-		@raw_form            = @form.clone
-		@invalid_fields      = @invalid_fields.clone
-		@missing_fields      = @missing_fields.clone
-		@unknown_fields      = @unknown_fields.clone
-		@required_fields     = @required_fields.clone
-		@require_some_fields = @require_some_fields.clone
-		@optional_fields     = @optional_fields.clone
-		@filters_array       = @filters_array.clone
-		@untaint_fields      = @untaint_fields.clone
-		@untaint_all         = original.untaint_all?
-		@validated           = original.validated?
-
-		@parsed_params       = @parsed_params.clone if @parsed_params
+		fields       = deep_copy( original.fields )
+		self.reset
+		@fields      = fields
+		@constraints = deep_copy( original.constraints )
 	end
-
 
 
 	######
 	public
 	######
 
-	# The profile hash
-	attr_reader :profile
+	# The constraints hash
+	attr_reader :constraints
 
-	# The raw form data Hash
-	attr_reader :raw_form
+	# The Hash of raw field data (if validation has occurred)
+	attr_reader :fields
 
-	# The validated form data Hash
-	attr_reader :form
-
+	##
 	# Global untainting flag
-	attr_accessor :untaint_all
+	attr_predicate_accessor :untaint_all?
 	alias_method :untaint_all_constraints=, :untaint_all=
-	alias_method :untaint_all?, :untaint_all
-	alias_method :untaint_all_constraints, :untaint_all
-	alias_method :untaint_all_constraints?, :untaint_all
+	alias_method :untaint_all_constraints?, :untaint_all?
+
+	##
+	# Returns +true+ if the paramvalidator has been given parameters to validate. Adding or
+	# overriding constraints resets this.
+	attr_predicate_accessor :validated?
 
 
-
-	### Return the Array of declared parameter validations.
-	def param_names
-		return self.profile[:required] | self.profile[:optional]
-	end
-
-
-	### Fetch the constraint/s that apply to the parameter with the given
-	### +name+.
-	def constraint_for( name )
-		constraint = self.profile[:constraints][ name.to_s ] or
-			raise ScriptError, "no parameter %p defined" % [ name ]
-		return constraint
-	end
-
-
-	### Fetch the constraint/s that apply to the parameter named +name+ as a
-	### Regexp, if possible.
-	def constraint_regexp_for( name )
-		self.log.debug "  searching for a constraint for %p" % [ name ]
-
-		# Munge the constraint into a Regexp
-		constraint = self.constraint_for( name )
-		re = case constraint
-			when Regexp
-				self.log.debug "  regex constraint is: %p" % [ constraint ]
-				constraint
-			when Array
-				sub_res = constraint.map( &self.method(:extract_route_from_constraint) )
-				Regexp.union( sub_res )
-			when Symbol
-				self.class.pattern_for_constraint( constraint ) or
-					raise ScriptError, "no pattern for built-in %p constraint" % [ constraint ]
-			else
-				raise ScriptError,
-					"can't route on a parameter with a %p constraint %p" % [ constraint.class ]
-			end
-
-		self.log.debug "  bounded constraint is: %p" % [ re ]
-
-		# Unbind the pattern from beginning or end of line.
-		# :TODO: This is pretty ugly. Find a better way of modifying the regex.
-		re_str = re.to_s.
-			sub( %r{\(\?[\-mix]+:(.*)\)}, '\\1' ).
-			gsub( PARAMETER_PATTERN_STRIP_RE, '' )
-		self.log.debug "  stripped constraint pattern down to: %p" % [ re_str ]
-
-		return Regexp.new( "(?<#{name}>#{re_str})", re.options )
+	### Reset the validation state.
+	def reset
+		self.log.debug "Resetting validation state."
+		@validated     = false
+		@valid         = {}
+		@parsed_params = nil
+		@missing       = []
+		@unknown       = []
+		@invalid       = {}
 	end
 
 
 	### :call-seq:
-	###    param( name, *flags )
-	###    param( name, constraint, *flags )
-	###    param( name, description, *flags )
-	###    param( name, constraint, description, *flags )
+	###	   add( name, *flags )
+	###	   add( name, constraint, *flags )
+	###	   add( name, description, *flags )
+	###	   add( name, constraint, description, *flags )
 	###
 	### Add a validation for a parameter with the specified +name+. The +args+ can include
 	### a constraint, a description, and one or more flags.
 	def add( name, *args, &block )
-		name = name.to_s
-		constraint = self.make_param_validator( name, args, &block )
+		name = name.to_sym
+		constraint = Constraint.for( name, *args, &block )
 
 		# No-op if there's already a parameter with the same name and constraint
-		if self.param_names.include?( name )
-			return if self.profile[:constraints][ name ] == constraint
+		if self.constraints.key?( name )
+			return if self.constraints[ name ] == constraint
 			raise ArgumentError,
-				"parameter %p is already defined as a '%s'; perhaps you meant to use #override?" %
-					[ name, self.profile[:constraints][name] ]
+				"parameter %p is already defined as %s; perhaps you meant to use #override?" %
+					[ name.to_s, self.constraints[name] ]
 		end
 
-		self.log.debug "Adding parameter '%s' to profile" % [ name ]
-		self.set_param( name, constraint, *args, &block )
+		self.log.debug "Adding parameter %p: %p" % [ name, constraint ]
+		self.constraints[ name ] = constraint
+
+		self.validated = false
 	end
 
 
-	### Replace the existing parameter with the specified +name+. The +args+ replace
-	### the existing description, constraints, and flags. See #add for details.
+	### Replace the existing parameter with the specified name. The args replace the
+	### existing description, constraints, and flags. See #add for details.
 	def override( name, *args, &block )
-		name = name.to_s
+		name = name.to_sym
 		raise ArgumentError,
-			"no parameter %p defined; perhaps you meant to use #add?" % [name] unless
-			self.param_names.include?( name )
+			"no parameter %p defined; perhaps you meant to use #add?" % [ name.to_s ] unless
+			self.constraints.key?( name )
 
-		constraint = self.make_param_validator( name, args, &block )
-		self.log.debug "Overriding parameter '%s' in profile" % [ name ]
-		self.set_param( name, constraint, *args, &block )
+		self.log.debug "Overriding parameter %p" % [ name ]
+		self.constraints[ name ] = Constraint.for( name, *args, &block )
+
+		self.validated = false
 	end
 
 
-	### Extract a validator from the given +args+ and return it.
-	def make_param_validator( name, args, &block )
-		self.log.debug "Finding param validator out of: %s, %p, %p" % [ name, args, block ]
-		args.unshift( block ) if block
-
-		# Custom validator -- either a callback or a regex
-		if args.first.is_a?( Regexp ) || args.first.respond_to?( :call )
-			return args.shift
-
-		# Builtin match validator, either explicit or implied by the name
-		else
-			return args.shift if args.first.is_a?( Symbol ) && !FLAGS.include?( args.first )
-
-			raise ArgumentError, "no builtin %p validator" % [ name ] unless
-				self.respond_to?( "match_#{name}" )
-			return name
-		end
-
+	### Return the Array of parameter names the validator knows how to validate (as Strings).
+	def param_names
+		return self.constraints.keys.map( &:to_s ).sort
 	end
 
 
 	### Stringified description of the validator
 	def to_s
-		"%d parameters (%d valid, %d invalid, %d missing)" % [
-			self.raw_form.size,
-			self.form.size,
-			self.invalid.size,
-			self.missing.size,
-		]
+	    "%d parameters (%d valid, %d invalid, %d missing)" % [
+	        self.fields.size,
+	        self.valid.size,
+	        self.invalid.size,
+	        self.missing.size,
+	    ]
 	end
 
 
 	### Return a human-readable representation of the validator, suitable for debugging.
 	def inspect
-		required = self.profile[:required].collect do |field|
-			"%s (%p)" % [ field, self.profile[:constraints][field] ]
-		end.join( ',' )
-		optional = self.profile[:optional].collect do |field|
-			"%s (%p)" % [ field, self.profile[:constraints][field] ]
-		end.join( ',' )
+		required, optional = self.constraints.partition do |_, constraint|
+			constraint.required?
+		end
 
 		return "#<%p:0x%016x %s, profile: [required: %s, optional: %s] global untaint: %s>" % [
 			self.class,
 			self.object_id / 2,
 			self.to_s,
-			required.empty? ? "(none)" : required,
-			optional.empty? ? "(none)" : optional,
+			required.empty? ? "(none)" : required.map( &:last ).map( &:name ).join(','),
+			optional.empty? ? "(none)" : optional.map( &:last ).map( &:name ).join(','),
 			self.untaint_all? ? "enabled" : "disabled",
 		]
 	end
@@ -363,105 +626,182 @@ class Strelka::ParamValidator < ::FormValidator
 
 	### Hash of field descriptions
 	def descriptions
-		return @profile[:descriptions]
+		return self.constraints.each_with_object({}) do |(field,constraint), hash|
+			hash[ field ] = constraint.description
+		end
 	end
 
 
-	### Set hash of field descriptions
+	### Set field descriptions en masse to new_descs.
 	def descriptions=( new_descs )
-		return @profile[:descriptions] = new_descs
+		new_descs.each do |name, description|
+			raise NameError, "no parameter named #{name}" unless
+				self.constraints.key?( name.to_sym )
+			self.constraints[ name.to_sym ].description = description
+		end
 	end
 
 
-	### Validate the input in +params+. If the optional +additional_profile+ is
-	### given, merge it with the validator's default profile before validating.
-	def validate( params=nil, additional_profile=nil )
-		params ||= {}
+	### Get the description for the specified +field+.
+	def get_description( field )
+		constraint = self.constraints[ field.to_sym ] or return nil
+		return constraint.description
+	end
 
-		self.log.info "Validating request params: %p with profile: %p" %
-			[ params, @profile ]
-		@raw_form = strify_hash( params )
-		profile = @profile
 
-		if additional_profile
-			self.log.debug "  merging additional profile %p" % [ additional_profile ]
-			profile = @profile.merge( additional_profile )
+	### Validate the input in +params+. If the optional +additional_constraints+ is
+	### given, merge it with the validator's existing constraints before validating.
+	def validate( params=nil, additional_constraints=nil )
+		self.log.debug "Validating."
+		self.reset
+
+		# :TODO: Handle the additional_constraints
+
+		params ||= @fields
+		params = stringify_keys( params )
+		@fields = deep_copy( params )
+
+		# Use the constraints list to extract all the parameters that have corresponding
+		# constraints
+		self.constraints.each do |field, constraint|
+			self.log.debug "  applying %s to any %p parameter/s" % [ constraint, field ]
+			value = params.delete( field.to_s )
+			self.log.debug "  value is: %p" % [ value ]
+			self.apply_constraint( constraint, value )
 		end
 
-		self.log.debug "Calling superclass's validate: %p" % [ self ]
-		super( params, profile )
+		# Any left over are unknown
+		params.keys.each do |field|
+			self.log.debug "  unknown field %p" % [ field ]
+			@unknown << field
+		end
+
 		@validated = true
 	end
 
 
-	protected :convert_profile
+	### Apply the specified +constraint+ (a Strelka::ParamValidator::Constraint object) to
+	### the given +value+, and add the field to the appropriate field list based on the
+	### result.
+	def apply_constraint( constraint, value )
+		if value
+			result = constraint.apply( value, self.untaint_all? )
 
-    # Load profile with a hash describing valid input.
-	def setup(form_data, profile)
-		@form    = form_data
-		@profile = self.convert_profile( @profile )
+			if !result.nil?
+				self.log.debug "  constraint for %p passed: %p" % [ constraint.name, result ]
+				self[ constraint.name ] = result
+			else
+				self.log.debug "  constraint for %p failed" % [ constraint.name ]
+				@invalid[ constraint.name.to_s ] = value
+			end
+		elsif constraint.required?
+			self.log.debug "  missing parameter for %p" % [ constraint.name ]
+			@missing << constraint.name.to_s
+		end
 	end
 
 
-	### Set the parameter +name+ in the profile to validate using the given +args+,
-	### which are the same as the ones passed to #add and #override.
-	def set_param( name, validator, *args, &block )
-		self.profile[:constraints][ name ] = validator
+	### Clear existing validation information, merge the specified +params+ with any existing
+	### raw fields, and re-run the validation.
+	def revalidate( params={} )
+		merged_fields = self.fields.merge( params )
+		self.reset
+		self.validate( merged_fields )
+	end
 
-		self.profile[:descriptions][ name ] = args.shift if args.first.is_a?( String )
 
-		if args.include?( :required )
-			self.profile[:required] |= [ name ]
-			self.profile[:optional].delete( name )
-		else
-			self.profile[:required].delete( name )
-			self.profile[:optional] |= [ name ]
+	## Fetch the constraint/s that apply to the parameter named name as a Regexp, if possible.
+	def constraint_regexp_for( name )
+		self.log.debug "  searching for a constraint for %p" % [ name ]
+
+		# Fetch the constraint's regexp
+		constraint = self.constraints[ name.to_sym ]
+		raise ScriptError,
+			"can't route on a parameter with a %p" % [ constraint.class ] unless
+			constraint.respond_to?( :pattern )
+
+		re = constraint.pattern
+		self.log.debug "  bounded constraint is: %p" % [ re ]
+
+		# Unbind the pattern from beginning or end of line.
+		# :TODO: This is pretty ugly. Find a better way of modifying the regex.
+		re_str = re.to_s.
+			sub( %r{\(\?[\-mix]+:(.*)\)}, '\1' ).
+			gsub( PARAMETER_PATTERN_STRIP_RE, '' )
+		self.log.debug "  stripped constraint pattern down to: %p" % [ re_str ]
+
+		return Regexp.new( "(?<#{name}>#{re_str})", re.options )
+	end
+
+
+	### Returns the valid fields after expanding Rails-style
+	### 'customer[address][street]' variables into multi-level hashes.
+	def valid
+		self.validate unless self.validated?
+
+		unless @parsed_params
+			@parsed_params = {}
+			for key, value in @valid
+				value = [ value ] if key.to_s.end_with?( '[]' )
+				if key.to_s.include?( '[' )
+					build_deep_hash( value, @parsed_params, get_levels(key.to_s) )
+				else
+					@parsed_params[ key ] = value
+				end
+			end
 		end
 
-		if args.include?( :untaint )
-			self.profile[:untaint_constraint_fields] |= [ name ]
-		else
-			self.profile[:untaint_constraint_fields].delete( name )
-		end
-
-		self.revalidate if self.validated?
+		return @parsed_params
 	end
 
 
-	### Overridden to remove the check for extra keys.
-	def check_profile_syntax( profile )
-	end
-
-
-	### Index operator; fetch the validated value for form field +key+.
+	### Index fetch operator; fetch the validated (and possible parsed) value for
+	### form field +key+.
 	def []( key )
-		return @form[ key.to_s ]
+		return @valid[ key.to_sym ]
 	end
 
 
 	### Index assignment operator; set the validated value for form field +key+
 	### to the specified +val+.
 	def []=( key, val )
-		return @form[ key.to_s ] = val
+		@parsed_params = nil
+		return @valid[ key.to_sym ] = val
 	end
 
 
 	### Returns +true+ if there were no arguments given.
 	def empty?
-		return @form.empty?
+		return self.fields.empty?
 	end
 
 
 	### Returns +true+ if there were arguments given.
 	def args?
-		return !@form.empty?
+		return !self.fields.empty?
 	end
 	alias_method :has_args?, :args?
 
 
-	### Returns +true+ if the parameters have been validated.
-	def validated?
-		return @validated
+	### The names of fields that were required, but missing from the parameter list.
+	def missing
+		self.validate unless self.validated?
+		return @missing
+	end
+
+
+	### The Hash of fields that were present, but invalid (didn't match the field's constraint)
+	def invalid
+		self.validate unless self.validated?
+		return @invalid
+	end
+
+
+	### The names of fields that were present in the parameters, but didn't have a corresponding
+	### constraint.
+	def unknown
+		self.validate unless self.validated?
+		return @unknown
 	end
 
 
@@ -472,28 +812,10 @@ class Strelka::ParamValidator < ::FormValidator
 	alias_method :has_errors?, :errors?
 
 
-	### Return +true+ if all required fields were present and validated
+	### Return +true+ if all required fields were present and all present fields validated
 	### correctly.
 	def okay?
 		return (self.missing.empty? && self.invalid.empty?)
-	end
-
-
-	### Returns +true+ if the given +field+ is one that should be untainted.
-	def untaint?( field )
-		self.log.debug "Checking to see if %p should be untainted." % [field]
-		rval = ( self.untaint_all? ||
-			@untaint_fields.include?(field) ||
-			@untaint_fields.include?(field.to_sym) )
-
-		if rval
-			self.log.debug "  ...yep it should."
-		else
-			self.log.debug "  ...nope; untaint_all is: %p, untaint fields is: %p" %
-				[ @untaint_all, @untaint_fields ]
-		end
-
-		return rval
 	end
 
 
@@ -504,73 +826,46 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
-	### Get the description for the specified field.
-	def get_description( field )
-		return @profile[:descriptions][ field.to_s ] if
-			@profile[:descriptions].key?( field.to_s )
-
-		desc = field.to_s.
-			gsub( /.*\[(\w+)\]/, "\\1" ).
-			gsub( /_(.)/ ) {|m| " " + m[1,1].upcase }.
-			gsub( /^(.)/ ) {|m| m.upcase }
-		return desc
-	end
-
-
 	### Return an error message for each missing or invalid field; if
 	### +includeUnknown+ is +true+, also include messages for unknown fields.
 	def error_messages( include_unknown=false )
-		self.log.debug "Building error messages from descriptions: %p" %
-			[ @profile[:descriptions] ]
 		msgs = []
-		self.missing.each do |field|
-			msgs << "Missing value for '%s'" % self.get_description( field )
-		end
 
-		self.invalid.each do |field, constraint|
-			msgs << "Invalid value for '%s'" % self.get_description( field )
-		end
-
-		if include_unknown
-			self.unknown.each do |field|
-				msgs << "Unknown parameter '%s'" % self.get_description( field )
-			end
-		end
+		msgs += self.missing_param_errors + self.invalid_param_errors
+		msgs += self.unknown_param_errors if include_unknown
 
 		return msgs
 	end
 
 
-	### Returns a distinct list of missing fields. Overridden to eliminate the
-	### "undefined method `<=>' for :foo:Symbol" error.
-	def missing
-		@missing_fields.uniq.sort_by {|f| f.to_s}
-	end
-
-	### Returns a distinct list of unknown fields.
-	def unknown
-		(@unknown_fields - @invalid_fields.keys).uniq.sort_by {|f| f.to_s}
-	end
-
-
-	### Returns the valid fields after expanding Rails-style
-	### 'customer[address][street]' variables into multi-level hashes.
-	def valid
-		if @parsed_params.nil?
-			@parsed_params = {}
-			valid = super()
-
-			for key, value in valid
-				value = [ value ] if key.end_with?( '[]' )
-				if key.include?( '[' )
-					build_deep_hash( value, @parsed_params, get_levels(key) )
-				else
-					@parsed_params[ key ] = value
-				end
-			end
+	### Return an Array of error messages, one for each field missing from the last validation.
+	def missing_param_errors
+		return self.missing.collect do |field|
+			constraint = self.constraints[ field.to_sym ] or
+				raise NameError, "no such field %p!" % [ field ]
+			"Missing value for '%s'" % [ constraint.description ]
 		end
+	end
 
-		return @parsed_params
+
+	### Return an Array of error messages, one for each field that was invalid from the last
+	### validation.
+	def invalid_param_errors
+		return self.invalid.collect do |field, _|
+			constraint = self.constraints[ field.to_sym ] or
+				raise NameError, "no such field %p!" % [ field ]
+			"Invalid value for '%s'" % [ constraint.description ]
+		end
+	end
+
+
+	### Return an Array of error messages, one for each field present in the parameters in the last 
+	### validation that didn't have a constraint associated with it.
+	def unknown_param_errors
+		self.log.debug "Fetching unknown param errors for %p." % [ self.unknown ]
+		return self.unknown.collect do |field|
+			"Unknown parameter '%s'" % [ field.capitalize ]
+		end
 	end
 
 
@@ -592,357 +887,18 @@ class Strelka::ParamValidator < ::FormValidator
 	end
 
 
-	### Clear existing validation information and re-check against the
-	### current state of the profile.
-	def revalidate( params={} )
-		@missing_fields.clear
-		@unknown_fields.clear
-		@required_fields.clear
-		@invalid_fields.clear
-		@untaint_fields.clear
-		@require_some_fields.clear
-		@optional_fields.clear
-		@form.clear
-
-		newparams = @raw_form.merge( params )
-		@raw_form.clear
-
-		self.log.debug "  merged raw form is: %p" % [ newparams ]
-		self.validate( newparams )
-	end
-
-
 	### Returns an array containing valid parameters in the validator corresponding to the
 	### given +selector+(s).
 	def values_at( *selector )
-		selector.map!( &:to_s )
-		return @form.values_at( *selector )
+		selector.map!( &:to_sym )
+		return self.valid.values_at( *selector )
 	end
 
-
-	#########
-	protected
-	#########
-
-	#
-	# :section: Builtin Match Constraints
-	#
-
-	### Try to match the specified +val+ using the built-in constraint pattern
-	### associated with +name+, returning the matched value upon success, and +nil+
-	### if the +val+ didn't match. If a +block+ is given, it's called with the
-	### associated MatchData on success, and its return value is returned instead of
-	### the matching String.
-	def match_builtin_constraint( val, name )
-		self.log.debug "Validating %p using built-in constraint %p" % [ val, name ]
-		re = self.class.pattern_for_constraint( name.to_sym )
-		match = re.match( val ) or return nil
-		self.log.debug "  matched: %p" % [ match ]
-
-		if block_given?
-			begin
-				return yield( match )
-			rescue ArgumentError
-				return nil
-			end
-		else
-			return match.to_s
-		end
-	end
-
-
-	### Constrain a value to +true+ (or +yes+) and +false+ (or +no+).
-	def match_boolean( val )
-		return self.match_builtin_constraint( val, :boolean ) do |m|
-			m.to_s.start_with?( 'y', 't', '1' )
-		end
-	end
-
-
-	### Constrain a value to an integer
-	def match_integer( val )
-		return self.match_builtin_constraint( val, :integer ) do |m|
-			Integer( m.to_s )
-		end
-	end
-
-
-	### Contrain a value to a Float
-	def match_float( val )
-		return self.match_builtin_constraint( val, :float ) do |m|
-			Float( m.to_s )
-		end
-	end
-
-
-	### Constrain a value to a parseable Date
-	def match_date( val )
-		return Date.parse( val ) rescue nil
-	end
-
-
-	### Constrain a value to alpha characters (a-z, case-insensitive)
-	def match_alpha( val )
-		return self.match_builtin_constraint( val, :alpha )
-	end
-
-
-	### Constrain a value to alpha characters (a-z, case-insensitive and 0-9)
-	def match_alphanumeric( val )
-		return self.match_builtin_constraint( val, :alphanumeric )
-	end
-
-
-	### Constrain a value to any printable characters + whitespace, newline, and CR.
-	def match_printable( val )
-		return self.match_builtin_constraint( val, :printable )
-	end
-	alias_method :match_string, :match_printable
-
-
-	### Constrain a value to any UTF-8 word characters.
-	def match_word( val )
-		return self.match_builtin_constraint( val, :word )
-	end
-
-
-	### Override the parent class's definition to (not-sloppily) match email
-	### addresses.
-	def match_email( val )
-		return self.match_builtin_constraint( val, :email )
-	end
-
-
-	### Match valid hostnames according to the rules of the URL RFC.
-	def match_hostname( val )
-		return self.match_builtin_constraint( val, :hostname )
-	end
-
-
-	### Match valid UUIDs.
-	def match_uuid( val )
-		return self.match_builtin_constraint( val, :uuid )
-	end
-
-
-	### Match valid URIs
-	def match_uri( val )
-		return self.match_builtin_constraint( val, :uri ) do |m|
-			URI.parse( m.to_s )
-		end
-	rescue URI::InvalidURIError => err
-		self.log.error "Error trying to parse URI %p: %s" % [ val, err.message ]
-		return nil
-	rescue NoMethodError
-		self.log.debug "Ignoring bug in URI#parse"
-		return nil
-	end
-
-
-	#
-	# :section: Constraint method
-	#
-
-	### Apply one or more +constraints+ to the field value/s corresponding to
-	### +key+.
-	def do_constraint( key, constraints )
-		self.log.debug "Applying constraints %p to field %p" % [ constraints, key ]
-		constraints.each do |constraint|
-			case constraint
-			when String
-				apply_string_constraint( key, constraint )
-			when Hash
-				apply_hash_constraint( key, constraint )
-			when Proc, Method
-				apply_proc_constraint( key, constraint )
-			when Regexp
-				apply_regexp_constraint( key, constraint )
-			else
-				raise "unknown constraint type %p" % [constraint]
-			end
-		end
-	end
-
-
-	### Applies a builtin constraint to form[key].
-	def apply_string_constraint( key, constraint )
-		# FIXME: multiple elements
-		rval = self.__send__( "match_#{constraint}", @form[key].to_s )
-		self.log.debug "Tried a string constraint: %p: %p" %
-			[ @form[key].to_s, rval ]
-		self.set_form_value( key, rval, constraint )
-	end
-
-
-	### Apply a constraint given as a Hash to the value/s corresponding to the
-	### specified +key+:
-	###
-	### constraint::
-	###   A builtin constraint (as a Symbol; e.g., :email), a Regexp, or a Proc.
-	### name::
-	###   A description of the constraint should it fail and be listed in #invalid.
-	### params::
-	###   If +constraint+ is a Proc, this field should contain a list of other
-	###   fields to send to the Proc.
-	def apply_hash_constraint( key, constraint )
-		action = constraint["constraint"]
-
-		rval = case action
-			when String
-				self.apply_string_constraint( key, action )
-			when Regexp
-				self.apply_regexp_constraint( key, action )
-			when Proc
-				if args = constraint["params"]
-					args.collect! {|field| @form[field] }
-					self.apply_proc_constraint( key, action, *args )
-				else
-					self.apply_proc_constraint( key, action )
-				end
-			end
-
-		# If the validation failed, and there's a name for this constraint, replace
-		# the name in @invalid_fields with the name
-		if !rval && constraint["name"]
-			@invalid_fields[ key ] = constraint["name"]
-		end
-
-		return rval
-	end
-
-
-	### Apply a constraint that was specified as a Proc to the value for the given
-	### +key+
-	def apply_proc_constraint( key, constraint, *params )
-		value = nil
-
-		unless params.empty?
-			value = constraint.to_proc.call( *params )
-		else
-			value = constraint.to_proc.call( @form[key] )
-		end
-
-		self.set_form_value( key, value, constraint )
-	rescue => err
-		self.log.error "%p while validating %p using %p: %s (from %s)" %
-			[ err.class, key, constraint, err.message, err.backtrace.first ]
-		self.set_form_value( key, nil, constraint )
-	end
-
-
-	### Applies regexp constraint to form[key]
-	def apply_regexp_constraint( key, constraint )
-		self.log.debug "Validating %p via regexp %p" % [ @form[key], constraint ]
-
-		if match = constraint.match( @form[key].to_s )
-			self.log.debug "  matched %p" % [match[0]]
-
-			if match.captures.empty?
-				self.log.debug "  no captures, using whole match: %p" % [match[0]]
-				self.set_form_value( key, match[0], constraint )
-			elsif match.names.length > 1
-				self.log.debug "  extracting hash of named captures: %p" % [ match.names ]
-				hash = match.names.inject( {} ) do |accum,name|
-					accum[ name.to_sym ] = match[ name ]
-					accum
-				end
-
-				self.set_form_value( key, hash, constraint )
-			elsif match.captures.length == 1
-				self.log.debug "  extracting one capture: %p" % [match.captures.first]
-				self.set_form_value( key, match.captures.first, constraint )
-			else
-				self.log.debug "  extracting multiple captures: %p" % [match.captures]
-				self.set_form_value( key, match.captures, constraint )
-			end
-		else
-			self.set_form_value( key, nil, constraint )
-		end
-	end
-
-
-	### Set the form value for the given +key+. If +value+ is false, add it to
-	### the list of invalid fields with a description derived from the specified
-	### +constraint+. Called by constraint methods when they succeed.
-	def set_form_value( key, value, constraint )
-		key.untaint
-
-		# Have to test for nil because valid values might be false.
-		if !value.nil?
-			self.log.debug "Setting form value for %p to %p (constraint was %p)" %
-				[ key, value, constraint ]
-			if self.untaint?( key )
-				if value.respond_to?( :each_value )
-					value.each_value( &:untaint )
-				elsif value.is_a?( Array )
-					value.each( &:untaint )
-				else
-					value.untaint
-				end
-			end
-
-			@form[key] = value
-			return true
-
-		else
-			self.log.debug "Clearing form value for %p (constraint was %p)" %
-				[ key, constraint ]
-			@form.delete( key )
-			@invalid_fields ||= {}
-			@invalid_fields[ key ] ||= []
-
-			unless @invalid_fields[ key ].include?( constraint )
-				@invalid_fields[ key ].push( constraint )
-			end
-			return false
-		end
-	end
-
-
-	### Formvalidator hack:
-	### The formvalidator filters method has a bug where he assumes an array
-	###	 when it is in fact a string for multiple values (ie anytime you have a
-	###	 text-area with newlines in it).
-	# def filters
-	# 	@filters_array = Array(@profile[:filters]) unless(@filters_array)
-	# 	@filters_array.each do |filter|
-	# 
-	# 		if respond_to?( "filter_#{filter}" )
-	# 			@form.keys.each do |field|
-	# 				# If a key has multiple elements, apply filter to each element
-	# 				@field_array = Array( @form[field] )
-	# 
-	# 				if @field_array.length > 1
-	# 					@field_array.each_index do |i|
-	# 						elem = @field_array[i]
-	# 						@field_array[i] = self.send("filter_#{filter}", elem)
-	# 					end
-	# 				else
-	# 					if not @form[field].to_s.empty?
-	# 						@form[field] = self.send("filter_#{filter}", @form[field].to_s)
-	# 					end
-	# 				end
-	# 			end
-	# 		end
-	# 	end
-	# 	@form
-	# end
 
 
 	#######
 	private
 	#######
-
-	### Overridden to eliminate use of default #to_a (deprecated)
-	def strify_array( array )
-		array = [ array ] if !array.is_a?( Array )
-		array.map do |m|
-			m = (Array === m) ? strify_array(m) : m
-			m = (Hash === m) ? strify_hash(m) : m
-			Symbol === m ? m.to_s : m
-		end
-	end
-
 
 	### Build a deep hash out of the given parameter +value+
 	def build_deep_hash( value, hash, levels )

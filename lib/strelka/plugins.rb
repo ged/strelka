@@ -220,11 +220,16 @@ module Strelka
 				extend( cm_mod )
 				cm_mod.instance_variables.each do |ivar|
 					next if instance_variable_defined?( ivar )
-					self.log.debug "  copying class instance variable %s" % [ ivar ]
+
 					ival = cm_mod.instance_variable_get( ivar )
+					copy = Strelka::DataUtilities.deep_copy( ival )
+
+					self.log.debug "  copying class instance variable %s (%p)" % [ ivar, copy ]
 
 					# Don't duplicate modules/classes or immediates
-					instance_variable_set( ivar, Strelka::DataUtilities.deep_copy(ival) )
+					instance_variable_set( ivar, copy )
+					self.log.debug "  instance variable %p set to %p in %p" %
+						[ ivar, self.instance_variable_get(ivar), self ]
 				end
 			end
 		end

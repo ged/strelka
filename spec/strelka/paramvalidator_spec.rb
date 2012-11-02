@@ -90,7 +90,7 @@ describe Strelka::ParamValidator do
 		it "raises an exception on an unknown constraint type" do
 			expect {
 				@validator.add( :foo, $stderr )
-			}.to raise_error( /no builtin "foo" validator/ )
+			}.to raise_error( /no constraint type for a #{$stderr.class.name} validation spec/i )
 		end
 
 		it "retains its profile through a copy" do
@@ -272,18 +272,22 @@ describe Strelka::ParamValidator do
 		end
 
 		it "capitalizes the names of simple fields for descriptions" do
+			@validator.add( :required, :string )
 			@validator.get_description( "required" ).should == 'Required'
 		end
 
 		it "splits apart underbarred field names into capitalized words for descriptions" do
+			@validator.add( :rodent_size, :string )
 			@validator.get_description( "rodent_size" ).should == 'Rodent Size'
 		end
 
 		it "uses the key for descriptions of hash fields" do
+			@validator.add( 'rodent[size]', :string )
 			@validator.get_description( "rodent[size]" ).should == 'Size'
 		end
 
 		it "uses separate capitalized words for descriptions of hash fields with underbarred keys " do
+			@validator.add( 'castle[baron_id]', :string )
 			@validator.get_description( "castle[baron_id]" ).should == 'Baron Id'
 		end
 
@@ -323,7 +327,7 @@ describe Strelka::ParamValidator do
 			@validator.add( 'recipe[ingredient][name]', :string )
 			@validator.add( 'recipe[ingredient][cost]', :string )
 			@validator.add( 'recipe[yield]', :string )
-			@validator.untaint_all_constraints
+			@validator.untaint_all_constraints = true
 
 			args = {
 				'recipe[ingredient][rarity]'.taint => 'super-rare'.taint,
@@ -1049,7 +1053,7 @@ describe Strelka::ParamValidator do
 
 			it "rejects parameters for fields with Proc constraints if the Proc returns a false value" do
 				@validator.add( :creation_date ) do |input|
-					Date.parse( input )
+					Date.parse( input ) rescue nil
 				end
 				@validator.validate( 'creation_date' => '::::' )
 

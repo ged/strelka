@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'pry'
+
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
 require 'strelka/plugins'
@@ -95,6 +97,7 @@ module Strelka::App::Parameters
 		### Strelka::ParamValidator.
 		def param( name, *args )
 			self.log.debug "New param %p" % [ name ]
+			self.log.debug "  adding parameter %p to %p" % [ name, self.paramvalidator ]
 			self.paramvalidator.add( name, *args )
 		end
 
@@ -112,6 +115,7 @@ module Strelka::App::Parameters
 		def inherited( subclass )
 			super
 			subclass.instance_variable_set( :@paramvalidator, self.paramvalidator.dup )
+			self.log.debug "Adding param validator: %p" % [ self.paramvalidator ]
 		end
 
 	end # module ClassMethods

@@ -324,7 +324,7 @@ module Strelka::App::RestResources
 					finish_with( HTTP::NOT_FOUND, "no such %s [%p]" % [ rsrcobj.name, id ] )
 
 				newvals = req.params.valid
-				newvals.delete( pkey.to_s )
+				newvals.delete( pkey.to_sym )
 				self.log.debug "Updating %p with new values: %p" % [ resource, newvals ]
 
 				begin
