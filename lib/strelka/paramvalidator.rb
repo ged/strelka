@@ -19,7 +19,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 # == Usage
 #
-#	require 'strelka/app/formvalidator'
+#	require 'strelka/paramvalidator'
 #
 #	validator = Strelka::ParamValidator.new
 #
