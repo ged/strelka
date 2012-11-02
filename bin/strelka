@@ -103,6 +103,7 @@ class Strelka::CLICommand
 
 			@option_parser = Trollop::Parser.new do
 				banner "Manage Strelka apps"
+				version( Strelka.version_string(true) )
 
 				text ''
 				command_table.each {|line| text(line) }
