@@ -126,7 +126,8 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 
 	### Parse the request parameters and return them as a Hash. For GET requests, these are
-	### take from the query arguments, and for POST requests, from the
+	### taken from the query arguments.  For requests that commonly
+	### contain an entity-body, try and parse that.
 	###
 	###   # For a handler with a route of '/user', for the request:
 	###   # "GET /user/1/profile?checkbox=1&checkbox=2&text=foo HTTP/1.1"
@@ -139,8 +140,10 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 				@params = self.parse_query_args
 			when :POST, :PUT
 				@params = self.parse_form_data
+			when :TRACE
+				self.log.debug "No parameters for a TRACE request."
 			else
-				self.log.debug "No parameters for a %s request." % [ self.verb ]
+				@params = self.parse_form_data if self.content_type
 			end
 		end
 

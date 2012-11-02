@@ -201,6 +201,39 @@ describe Strelka::HTTPRequest do
 		end
 
 
+		context "a DELETE request without a content type" do
+			before( :each ) do
+				@req = @request_factory.delete( '/directory/path' )
+			end
+
+
+			it "Doesn't respond with a 400 (BAD_REQUEST)" do
+				@req.params.should be_nil
+			end
+		end
+
+
+		context "a DELETE request with a 'multipart/form-data' body" do
+
+			before( :each ) do
+				@req = @request_factory.delete( '/directory/path',
+					'Content-type' => 'multipart/form-data; boundary=--a_boundary' )
+			end
+
+			it "returns a hash for form parameters" do
+				@req.body = "----a_boundary\r\n" +
+					%{Content-Disposition: form-data; name="reason"\r\n} +
+					%{\r\n} +
+					%{I really don't like this path.\r\n} +
+					%{----a_boundary--\r\n}
+
+				@req.params.should == {'reason' => "I really don't like this path."}
+			end
+
+		end
+
+
+
 		context "a POST request without a content type" do
 			before( :each ) do
 				@req = @request_factory.post( '/directory/path', '' )
