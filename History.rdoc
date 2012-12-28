@@ -1,3 +1,12 @@
+== v0.1.0 [2012-11-02] Michael Granger <ged@FaerieMUD.org>
+
+- Add --version to the command line tool
+- Fix some documentation
+- Rewrite ParamValidator to simplify, remove dependency on FormValidator.
+- Allow entity-bodies for HTTP verbs that don't explicitly forbid them
+  in RFC.
+
+
 == v0.0.3 [2012-10-23] Michael Granger <ged@FaerieMUD.org>
 
 - Fix the template-path auto-discovery for some configurations.
