@@ -57,6 +57,13 @@ describe Strelka::ParamValidator do
 			@validator.param_names.should include( 'a_field' )
 		end
 
+		it "revalidates parameters when new constraints are added" do
+			@validator.validate( 'blorp' => 'true' )
+			@validator[ :blorp ].should be_nil
+			@validator.add( :blorp, :boolean )
+			@validator[ :blorp ].should be_true
+		end
+
 		it "ignores identical duplicate constraints to be added twice" do
 			@validator.add( :a_field, :string )
 			@validator.add( :a_field, :string )

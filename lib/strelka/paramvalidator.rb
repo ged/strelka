@@ -758,6 +758,7 @@ class Strelka::ParamValidator < ::FormValidator
 	### Index fetch operator; fetch the validated (and possible parsed) value for
 	### form field +key+.
 	def []( key )
+		self.validate unless self.validated?
 		return @valid[ key.to_sym ]
 	end
 
