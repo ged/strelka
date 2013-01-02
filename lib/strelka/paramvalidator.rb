@@ -767,7 +767,7 @@ class Strelka::ParamValidator < ::FormValidator
 	### to the specified +val+.
 	def []=( key, val )
 		@parsed_params = nil
-		return @valid[ key.to_sym ] = val
+		@valid[ key.to_sym ] = val
 	end
 
 
