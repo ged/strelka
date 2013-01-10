@@ -1,12 +1,13 @@
 # .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
 configurability -v1.2.0
-foreman -v0.47.0
+foreman -v0.60.2
 formvalidator -v0.1.5
 highline -v1.6.13
 hoe-deveiate -v0.1.1
 hoe-manualgen -v0.3.0
 inversion -v0.11.2
 loggability -v0.4.0
+sequel -v '<3.42'
 mongrel2 -v0.34.0
 pluginfactory -v1.0.8
 simplecov -v0.6.4
