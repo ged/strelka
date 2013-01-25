@@ -93,10 +93,10 @@ module Strelka::App::Parameters
 		### Declare a parameter with the specified +name+ that will be validated using the given
 		### +constraint+. The +constraint+ can be any of the types supported by
 		### Strelka::ParamValidator.
-		def param( name, *args )
+		def param( name, *args, &block )
 			self.log.debug "New param %p" % [ name ]
 			self.log.debug "  adding parameter %p to %p" % [ name, self.paramvalidator ]
-			self.paramvalidator.add( name, *args )
+			self.paramvalidator.add( name, *args, &block )
 		end
 
 

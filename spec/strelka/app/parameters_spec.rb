@@ -73,6 +73,16 @@ describe Strelka::App::Parameters do
 		end
 
 
+		it "can declare a parameter with a block constraint" do
+			@app.class_eval do
+				param :created_at do |val|
+					Time.parse(val) rescue nil
+				end
+			end
+
+			@app.paramvalidator.param_names.should == [ 'created_at' ]
+		end
+
 		it "inherits parameters from its superclass" do
 			@app.class_eval do
 				param :username, /\w+/i

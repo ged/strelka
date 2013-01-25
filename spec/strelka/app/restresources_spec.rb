@@ -75,9 +75,6 @@ describe Strelka::App::RestResources do
 
 			before( :each ) do
 				@app.class_eval do
-					param( :uuid ) do |val|
-						UUIDTools::UUID.parse( val ) rescue nil
-					end
 					resource Mongrel2::Config::Server
 				end
 			end
@@ -151,6 +148,8 @@ describe Strelka::App::RestResources do
 		describe "auto-generates routes:" do
 
 			before( :each ) do
+				Mongrel2::Config.subclasses.each {|klass| klass.truncate }
+
 				# Create two servers in the config db to test with
 				server 'test-server' do
 					name "Test"
@@ -158,6 +157,7 @@ describe Strelka::App::RestResources do
 					host 'monitor'
 					host 'adminpanel'
 					host 'api'
+					port 80
 				end
 				server 'step-server' do
 					name 'Step'
@@ -302,7 +302,7 @@ describe Strelka::App::RestResources do
 					body.should be_an( Array )
 					body.should have( 1 ).member
 					body.first.should be_a( Hash )
-					body.first['port'].should == 3128
+					body.first['port'].should > 1024
 				end
 								
 				it "has a GET route for methods declared in a named dataset module" do
