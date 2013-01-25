@@ -100,10 +100,13 @@ class Strelka::CLICommand
 				collect {|name,lvl| name.to_s }.
 				join( ', ' )
 			command_table = self.make_command_table
+			commands = self.available_commands
 
 			@option_parser = Trollop::Parser.new do
 				banner "Manage Strelka apps"
 				version( Strelka.version_string(true) )
+
+				stop_on( commands )
 
 				text ''
 				command_table.each {|line| text(line) }
@@ -113,6 +116,8 @@ class Strelka::CLICommand
 				opt :config, "Specify the config file to load.", :type => :string
 				opt :datadir, "Override the Strelka data directory.", :type => :string,
 					:short => :D
+				opt :requires, "Specify additional libraries to require.", :type => :strings,
+					:short => :r
 				text ''
 
 				text 'Other Options:'
@@ -259,6 +264,8 @@ class Strelka::CLICommand
 	def discover_command( *args )
 		header "Searching for Strelka applications..."
 
+		self.load_additional_requires
+
 		paths = Strelka::App.discover_paths
 		if paths.empty?
 			message "None found."
@@ -298,6 +305,9 @@ class Strelka::CLICommand
 		apps = Strelka::App.load( path )
 		Strelka.load_config( self.options.config ) if self.options.config
 		self.log.debug "  loaded: %p" % [ apps ]
+
+		self.load_additional_requires
+
 		apps.first.run
 	end
 	help :start, "Start a Strelka app"
@@ -324,6 +334,8 @@ class Strelka::CLICommand
 			message "  loading %s (%s)" % [ apppath, apppath.basename('.rb') ]
 			Strelka::App.load( apppath )
 		end
+
+		self.load_additional_requires
 
 		message "  dumping config:"
 		$stdout.puts Configurability.default_config.dump
@@ -382,6 +394,17 @@ class Strelka::CLICommand
 		self.log.debug "  found: %s" % [ path ]
 
 		return path, appname, gemname
+	end
+
+
+	### Load any requires added to the command via the '-r' option.
+	def load_additional_requires
+		return unless self.options.requires
+
+		self.log.debug "  loading additional requires: %p" % [ self.options.requires ]
+		self.options.requires.each do |lib|
+			require( lib )
+		end
 	end
 
 
