@@ -295,7 +295,7 @@ module Strelka::App::Routing
 			# Track which route was chosen for later plugins
 			request.notes[:routing][:route] = route
 			# Bind the action of the route and call it
-			return route[:action].bind( self ).call( request, &block )
+			return super { route[:action].bind( self ).call( request, &block ) }
 		else
 			finish_with HTTP::NOT_FOUND, "The requested resource was not found on this server."
 		end

@@ -303,16 +303,9 @@ describe Strelka::App::Routing do
 			   "been set up" do
 				# RSpec's "expect {}.to" construct only rescues RuntimeErrors, so we have to do
 				# this ourselves.
-				begin
+				expect {
 					@app.get( '/userinfo/:username' ) {}
-				rescue ScriptError => err
-					Strelka.log.error "%p: %s" % [ err.class, err.message ]
-					:pass
-				rescue ::Exception => err
-					fail "Expected to raise a ScriptError, but raised a %p instead" % [ err ]
-				else
-					fail "Expected to raise a ScriptError, but nothing was raised."
-				end
+				}.to raise_error( NameError, /no such parameter "username"/i )
 
 			end
 		end
