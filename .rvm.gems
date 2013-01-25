@@ -7,8 +7,8 @@ hoe-deveiate -v0.1.1
 hoe-manualgen -v0.3.0
 inversion -v0.11.2
 loggability -v0.4.0
-sequel -v '<3.42'
-mongrel2 -v0.34.0
+sequel -v3.43.0
+mongrel2 -v0.35.0
 pluginfactory -v1.0.8
 simplecov -v0.6.4
 sysexits -v1.0.2

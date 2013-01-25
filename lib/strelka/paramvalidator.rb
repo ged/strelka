@@ -715,7 +715,8 @@ class Strelka::ParamValidator < ::FormValidator
 		self.log.debug "  searching for a constraint for %p" % [ name ]
 
 		# Fetch the constraint's regexp
-		constraint = self.constraints[ name.to_sym ]
+		constraint = self.constraints[ name.to_sym ] or
+			raise NameError, "no such parameter %p" % [ name ]
 		raise ScriptError,
 			"can't route on a parameter with a %p" % [ constraint.class ] unless
 			constraint.respond_to?( :pattern )

@@ -32,6 +32,15 @@ describe Strelka::App::RestResources do
 		setup_config_db()
 
 		@request_factory = Mongrel2::RequestFactory.new( route: '/api/v1' )
+
+		# Add some dataset methods via various alternative methods to ensure they show up too
+		name_selection = Module.new do
+			def by_name( name )
+				return self.filter( name: name )
+			end
+		end
+		Mongrel2::Config::Server.subset( :with_ephemeral_ports ) { port > 1024 }
+		Mongrel2::Config::Server.dataset_module( name_selection )
 	end
 
 	after( :all ) do
@@ -66,6 +75,9 @@ describe Strelka::App::RestResources do
 
 			before( :each ) do
 				@app.class_eval do
+					param( :uuid ) do |val|
+						UUIDTools::UUID.parse( val ) rescue nil
+					end
 					resource Mongrel2::Config::Server
 				end
 			end
@@ -279,6 +291,33 @@ describe Strelka::App::RestResources do
 					body.first.should be_a( Hash )
 					body.first['uuid'].should == 'test-server'
 				end
+
+				it "has a GET route for fetching the resource via a subset" do
+					req = @request_factory.get( '/api/v1/servers/with_ephemeral_ports', :accept => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					body = Yajl.load( res.body )
+
+					body.should be_an( Array )
+					body.should have( 1 ).member
+					body.first.should be_a( Hash )
+					body.first['port'].should == 3128
+				end
+								
+				it "has a GET route for methods declared in a named dataset module" do
+					req = @request_factory.get( '/api/v1/servers/by_name/Step', :accept => 'application/json' )
+					res = @app.new.handle( req )
+
+					res.status.should == HTTP::OK
+					body = Yajl.load( res.body )
+
+					body.should be_an( Array )
+					body.should have( 1 ).member
+					body.first.should be_a( Hash )
+					body.first['name'].should == 'Step'
+				end
+
 
 				it "has a GET route for fetching the resource's associated objects" do
 					req = @request_factory.get( '/api/v1/servers/1/hosts' )

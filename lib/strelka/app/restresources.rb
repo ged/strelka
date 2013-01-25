@@ -444,23 +444,14 @@ module Strelka::App::RestResources
 		### Add routes for any associations +rsrcobj+ has as composite resources.
 		def add_composite_resource_handlers( route_prefix, rsrcobj, options )
 
-			# Add a method for each dataset method that only has a single argument
-			# :TODO: Support multiple args? (customers/by_city_state/{city}/{state})
-			rsrcobj.dataset_methods.each do |name, proc|
-				if proc.parameters.length > 1
-					self.log.debug "  skipping dataset method %p: more than 1 argument" % [ name ]
-					next
-				end
+			# Add methods declared by (user-declared) dataset modules.
+			ds_mods = rsrcobj.dataset_method_modules.select do |mod|
+				mod.is_a?( Sequel::Model::DatasetModule ) || mod.name.nil?
+			end.each
 
-				# Use the name of the dataset block's parameter
-				# :TODO: Handle the case where the parameter name doesn't match a column
-				#        or a parameter-type more gracefully.
-				unless proc.parameters.empty?
-					param = proc.parameters.first[1]
-					route = "%s/%s/:%s" % [ route_prefix, name, param ]
-					self.log.debug "  route for dataset method %s: %s" % [ name, route ]
-					self.add_dataset_read_handler( route, rsrcobj, name, param, options )
-				end
+			ds_mods.each do |mod|
+				self.log.debug "  adding dataset methods declared by %p" % [ mod ]
+				self.add_dataset_module_routes( route_prefix, rsrcobj, mod, options )
 			end
 
 			# Add composite service routes for each association
@@ -476,14 +467,40 @@ module Strelka::App::RestResources
 		end
 
 
+		### Add routes for the methods declared in the dataset module +mod+.
+		def add_dataset_module_routes( route_prefix, rsrcobj, mod, options )
+			mod.instance_methods.each do |methname|
+				meth = mod.instance_method( methname )
+				self.log.debug "    instance_method: %p" % [ meth ]
+
+				route  = "%s/%s" % [ route_prefix, methname ]
+				params = []
+					
+				# Add a route placeholder for each parameter of the dataset method
+				meth.parameters.each do |type, param|
+					self.log.debug "    adding parameter placeholder to the route for %s parameter %p" %
+						[ type, param ]
+					route  << "/:%s" % [ param ]
+					params << param
+				end
+
+				self.log.debug "  route for dataset method %s: %s" % [ methname, route ]
+				self.add_dataset_read_handler( route, rsrcobj, methname, params, options )
+			end
+		end
+
+
 		### Add a GET route for the dataset method +dsname+ for the given +rsrcobj+ at the
 		### given +path+.
-		def add_dataset_read_handler( path, rsrcobj, dsname, param, options )
+		def add_dataset_read_handler( path, rsrcobj, dsname, params, options )
 			self.log.debug "Adding dataset method read handler: %s" % [ path ]
 
-			config = rsrcobj.db_schema[ param ] or
-				raise ArgumentError, "no such column %p for %p" % [ param, rsrcobj ]
-			param( param, config[:type] )
+			# Only need to declare a parameter if the dataset method has one
+			params.each do |paramname|
+				config = rsrcobj.db_schema[ paramname ] or
+					raise ArgumentError, "no such column %p for %p" % [ paramname, rsrcobj ]
+				param( paramname, config[:type] )
+			end
 
 			self.add_route( :GET, path, options ) do |req|
 				self.log.debug "Resource dataset GET request for dataset %s on %p" %
@@ -491,10 +508,9 @@ module Strelka::App::RestResources
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?
 
-				# Get the parameter and make the dataset
-				res = req.response
-				arg = req.params[ param ]
-				dataset = rsrcobj.send( dsname, arg )
+				# Get the dataset, either with a parameter or without one
+				args    = req.params.values_at( *params )
+				dataset = rsrcobj.send( dsname, *args )
 				self.log.debug "  dataset is: %p" % [ dataset ]
 
 				# Apply offset and limit if they're present
@@ -507,6 +523,7 @@ module Strelka::App::RestResources
 				# Fetch and return the records as JSON or YAML
 				# :TODO: Handle other mediatypes
 				self.log.debug "  returning collection: %s" % [ dataset.sql ]
+				res = req.response
 				res.for( :json, :yaml ) { dataset.all }
 				res.for( :text ) { Sequel::PrettyTable.string(dataset) }
 

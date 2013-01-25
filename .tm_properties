@@ -9,5 +9,14 @@ TM_RSPEC_OPTS            = '-rrspec/core/formatters/webkit -Ilib:../Mongrel2/lib
 TM_RSPEC_FORMATTER       = 'RSpec::Core::Formatters::WebKit'
 
 [ source.ruby ]
+tabSize                  = 4
+softTabs                 = false
+
+[ source.ruby.rspec ]
+tabSize                  = 4
+softTabs                 = false
+
+[ source, source.ruby, source.ruby.rspec ]
 disableIndentCorrections = true
+
 
