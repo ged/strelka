@@ -75,7 +75,6 @@ describe Strelka::HTTPRequest do
 		it "can get and set notes for communication between plugins" do
 			@req.notes.should be_a( Hash )
 			@req.notes[:routing].should be_a( Hash )
-			@req.notes[:routing][:route].should be_a( Hash )
 		end
 
 		it "can redirect the request to a different URI" do

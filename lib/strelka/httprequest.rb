@@ -44,7 +44,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		@uri     = nil
 		@verb    = self.headers[:method].to_sym
 		@params  = nil
-		@notes   = Hash.new( &method(:autovivify) )
+		@notes   = Hash.new {|h,k| h[k] = {} }
 		@cookies = nil
 	end
 

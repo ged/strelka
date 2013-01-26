@@ -28,7 +28,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		@charset   = nil
 		@languages = []
 		@encodings = []
-		@notes     = Hash.new( &method(:autovivify) )
+		@notes     = Hash.new {|h,k| h[k] = {} }
 		@cookies   = nil
 
 		super

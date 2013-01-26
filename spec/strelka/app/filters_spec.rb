@@ -155,7 +155,7 @@ describe Strelka::App::Filters do
 				res = @app.new.handle( req )
 
 				req.notes[:saw][:request].should be_true()
-				res.notes[:saw][:response].should be_empty()
+				res.notes[:saw][:response].should be_nil()
 			end
 
 		end
@@ -194,7 +194,7 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:saw][:request].should be_empty()
+				req.notes[:saw][:request].should be_nil()
 				res.notes[:saw][:response].should be_true()
 			end
 
