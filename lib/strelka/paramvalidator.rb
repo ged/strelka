@@ -2,12 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-#encoding: utf-8
-
 require 'uri'
 require 'forwardable'
 require 'date'
-require 'formvalidator'
 require 'loggability'
 
 require 'strelka/mixins'
@@ -53,7 +50,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #		return tmpl
 #	end
 #
-class Strelka::ParamValidator < ::FormValidator
+class Strelka::ParamValidator
 	extend Forwardable,
 		   Loggability,
 		   Strelka::MethodUtilities
@@ -379,6 +376,40 @@ class Strelka::ParamValidator < ::FormValidator
 			hostname = /\A(#{domainlabel}\.)*#{toplabel}\z/
 		end
 
+		# Validation regexp for JSON
+		# Converted to oniguruma syntax from the PCRE example at:
+		#   http://stackoverflow.com/questions/2583472/regex-to-validate-json
+		JSON_VALIDATOR_RE = begin
+			pair     = ''
+
+			json     = /^
+				(?<json> \s* (?:
+					# number
+					(?: 0 | -? [1-9]\d* (?:\.\d+)? (?:[eE][+-]?\d+)? )
+					 |
+					# boolean
+					(?: true | false | null )
+					 |
+					# string
+					"(?: [^"\\]* | \\["\\bfnrt\/] | \\u\p{XDigit}{4} )*"
+					 |
+					# array
+					\[ (?: \g<json> (?: , \g<json> )* )? \s* \]
+					 |
+					# object
+					\{
+						(?:
+							# first pair
+							\s* "(?: [^"\\]* | \\["\\bfnrt\/] | \\u\p{XDigit}{4} )*" \s* : \g<json>
+							# following pairs
+						    (?: , \s* "(?: [^"\\]* | \\["\\bfnrt\/] | \\u\p{XDigit}{4} )*" \s* : \g<json> )*
+						)?
+						\s*
+					\}
+				) \s* )
+			\z/ux
+		end
+
 		# The Hash of builtin constraints that are validated against a regular
 		# expression.
 		# :TODO: Document that these are the built-in constraints that can be used in a route
@@ -396,10 +427,21 @@ class Strelka::ParamValidator < ::FormValidator
 			:uri		  => /^(?<uri>#{URI::URI_REF})$/,
 			:uuid		  => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i,
 			:date         => /.*\d.*/,
+			:json         => JSON_VALIDATOR_RE,
 		}
 
 		# Field values which result in a valid ‘true’ value for :boolean constraints
 		TRUE_VALUES = %w[t true y yes 1]
+
+
+		#
+		# Class methods
+		#
+
+		##
+		# Hash of named constraint patterns
+		singleton_attr_reader :constraint_patterns
+		@constraint_patterns = BUILTIN_CONSTRAINT_PATTERNS.dup
 
 
 		### Return true if name is the name of a built-in constraint.
@@ -407,6 +449,22 @@ class Strelka::ParamValidator < ::FormValidator
 			return BUILTIN_CONSTRAINT_PATTERNS.key?( name.to_sym )
 		end
 
+
+		### Reset the named patterns to the defaults. Mostly used for testing.
+		def self::reset_constraint_patterns
+			@constraint_patterns.replace( BUILTIN_CONSTRAINT_PATTERNS )
+		end
+
+
+		### 
+		def self::add_type(  )
+			
+		end
+
+
+		#
+		# Instance methods
+		#
 
 		### Create a new BuiltinConstraint using the pattern named name for the specified field.
 		def initialize( field, name, *options, &block )

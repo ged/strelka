@@ -100,6 +100,12 @@ module Strelka::App::Parameters
 		end
 
 
+		### Add a 'builtin' constraint type with the specified +name+.
+		def add_param_type( name, &block )
+			
+		end
+
+
 		### Get/set the untainting flag. If set, all parameters which match their constraints
 		### will also be untainted.
 		def untaint_all_constraints( newval=nil )

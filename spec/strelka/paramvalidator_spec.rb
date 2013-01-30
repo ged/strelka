@@ -363,9 +363,9 @@ describe Strelka::ParamValidator do
 
 	end # describe "hash parameters"
 
-	describe "constraints" do
+	describe "builtin constraint type" do
 
-		it "treats ArgumentErrors in builtin constraints as validation failures" do
+		it "treats ArgumentErrors as validation failures" do
 			@validator.add( :integer )
 			@validator.validate( 'integer' => 'jalopy' )
 			@validator.should_not be_okay()
@@ -373,21 +373,21 @@ describe Strelka::ParamValidator do
 			@validator[:integer].should be_nil()
 		end
 
-		describe "Regexp constraints" do
+		describe "Regexp" do
 
-			it "returns the capture from a regexp constraint if it has only one" do
+			it "returns the capture if it has only one" do
 				@validator.add( :treename, /(\w+)/ )
 				@validator.validate( 'treename' => "   ygdrassil   " )
 				@validator[:treename].should == 'ygdrassil'
 			end
 
-			it "returns the captures from a regexp constraint as an array if it has more than one" do
+			it "returns the captures as an array if it has more than one" do
 				@validator.add( :stuff, /(\w+)(\S+)?/ )
 				@validator.validate( 'stuff' => "   the1tree(!)   " )
 				@validator[:stuff].should == ['the1tree', '(!)']
 			end
 
-			it "returns the captures from a regexp constraint with named captures as a Hash" do
+			it "returns the captures with named captures as a Hash" do
 				@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/, :untaint )
 				@validator.validate( 'order_number' => "   JVV-886451300133   ".taint )
 
@@ -396,7 +396,7 @@ describe Strelka::ParamValidator do
 				@validator[:order_number][:sku].should_not be_tainted()
 			end
 
-			it "returns the captures from a regexp constraint as an array " +
+			it "returns the captures as an array " +
 				"even if an optional capture doesn't match anything" do
 				@validator.add( :amount, /^([\-+])?(\d+(?:\.\d+)?)/ )
 				@validator.validate( 'amount' => '2.28' )
@@ -412,7 +412,7 @@ describe Strelka::ParamValidator do
 				@validator.add( :enabled, :boolean )
 			end
 
-			it "accepts the value 'true' for fields with boolean constraints" do
+			it "accepts the value 'true'" do
 				@validator.validate( 'enabled' => 'true' )
 
 				@validator.should be_okay()
@@ -421,7 +421,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value 't' for fields with boolean constraints" do
+			it "accepts the value 't'" do
 				@validator.validate( 'enabled' => 't' )
 
 				@validator.should be_okay()
@@ -430,7 +430,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value 'yes' for fields with boolean constraints" do
+			it "accepts the value 'yes'" do
 				@validator.validate( 'enabled' => 'yes' )
 
 				@validator.should be_okay()
@@ -439,7 +439,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value 'y' for fields with boolean constraints" do
+			it "accepts the value 'y'" do
 				@validator.validate( 'enabled' => 'y' )
 
 				@validator.should be_okay()
@@ -448,7 +448,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value '1' for fields with boolean constraints" do
+			it "accepts the value '1'" do
 				@validator.validate( 'enabled' => '1' )
 
 				@validator.should be_okay()
@@ -457,7 +457,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value 'false' for fields with boolean constraints" do
+			it "accepts the value 'false'" do
 				@validator.validate( 'enabled' => 'false' )
 
 				@validator.should be_okay()
@@ -466,7 +466,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_false()
 			end
 
-			it "accepts the value 'f' for fields with boolean constraints" do
+			it "accepts the value 'f'" do
 				@validator.validate( 'enabled' => 'f' )
 
 				@validator.should be_okay()
@@ -475,7 +475,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_false()
 			end
 
-			it "accepts the value 'no' for fields with boolean constraints" do
+			it "accepts the value 'no'" do
 				@validator.validate( 'enabled' => 'no' )
 
 				@validator.should be_okay()
@@ -484,7 +484,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_false()
 			end
 
-			it "accepts the value 'n' for fields with boolean constraints" do
+			it "accepts the value 'n'" do
 				@validator.validate( 'enabled' => 'n' )
 
 				@validator.should be_okay()
@@ -493,7 +493,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_false()
 			end
 
-			it "accepts the value '0' for fields with boolean constraints" do
+			it "accepts the value '0'" do
 				@validator.validate( 'enabled' => '0' )
 
 				@validator.should be_okay()
@@ -502,7 +502,7 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_false()
 			end
 
-			it "rejects non-boolean parameters for fields with boolean constraints" do
+			it "rejects non-boolean parameters" do
 				@validator.validate( 'enabled' => 'peanut' )
 
 				@validator.should_not be_okay()
@@ -515,7 +515,7 @@ describe Strelka::ParamValidator do
 
 		describe ":integer constraints" do
 
-			it "accepts simple integers for fields with integer constraints" do
+			it "accepts simple integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '11' )
 
@@ -525,7 +525,7 @@ describe Strelka::ParamValidator do
 				@validator[:count].should == 11
 			end
 
-			it "accepts '0' for fields with integer constraints" do
+			it "accepts '0'" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '0' )
 
@@ -535,7 +535,7 @@ describe Strelka::ParamValidator do
 				@validator[:count].should == 0
 			end
 
-			it "accepts negative integers for fields with integer constraints" do
+			it "accepts negative integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '-407' )
 
@@ -545,7 +545,7 @@ describe Strelka::ParamValidator do
 				@validator[:count].should == -407
 			end
 
-			it "rejects non-integers for fields with integer constraints" do
+			it "rejects non-integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '11.1' )
 
@@ -555,7 +555,7 @@ describe Strelka::ParamValidator do
 				@validator[:count].should be_nil()
 			end
 
-			it "rejects integer values with other cruft in them for fields with integer constraints" do
+			it "rejects integer values with other cruft in them" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '88licks' )
 
@@ -573,7 +573,7 @@ describe Strelka::ParamValidator do
 				@validator.add( :amount, :float )
 			end
 
-			it "accepts simple floats for fields with float constraints" do
+			it "accepts simple floats" do
 				@validator.validate( 'amount' => '3.14' )
 
 				@validator.should be_okay()
@@ -582,7 +582,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 3.14
 			end
 
-			it "accepts negative floats for fields with float constraints" do
+			it "accepts negative floats" do
 				@validator.validate( 'amount' => '-3.14' )
 
 				@validator.should be_okay()
@@ -591,7 +591,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == -3.14
 			end
 
-			it "accepts positive floats for fields with float constraints" do
+			it "accepts positive floats" do
 				@validator.validate( 'amount' => '+3.14' )
 
 				@validator.should be_okay()
@@ -600,7 +600,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 3.14
 			end
 
-			it "accepts floats that begin with '.' for fields with float constraints" do
+			it "accepts floats that begin with '.'" do
 				@validator.validate( 'amount' => '.1418' )
 
 				@validator.should be_okay()
@@ -609,7 +609,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 0.1418
 			end
 
-			it "accepts negative floats that begin with '.' for fields with float constraints" do
+			it "accepts negative floats that begin with '.'" do
 				@validator.validate( 'amount' => '-.171' )
 
 				@validator.should be_okay()
@@ -618,7 +618,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == -0.171
 			end
 
-			it "accepts positive floats that begin with '.' for fields with float constraints" do
+			it "accepts positive floats that begin with '.'" do
 				@validator.validate( 'amount' => '+.86668001' )
 
 				@validator.should be_okay()
@@ -627,7 +627,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 0.86668001
 			end
 
-			it "accepts floats in exponential notation for fields with float constraints" do
+			it "accepts floats in exponential notation" do
 				@validator.validate( 'amount' => '1756e-5' )
 
 				@validator.should be_okay()
@@ -636,7 +636,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 1756e-5
 			end
 
-			it "accepts negative floats in exponential notation for fields with float constraints" do
+			it "accepts negative floats in exponential notation" do
 				@validator.validate( 'amount' => '-28e8' )
 
 				@validator.should be_okay()
@@ -645,8 +645,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == -28e8
 			end
 
-			it "accepts floats that start with '.' in exponential notation for fields with float " +
-			   "constraints" do
+			it "accepts floats that start with '.' in exponential notation" do
 				@validator.validate( 'amount' => '.5552e-10' )
 
 				@validator.should be_okay()
@@ -655,8 +654,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 0.5552e-10
 			end
 
-			it "accepts negative floats that start with '.' in exponential notation for fields with " +
-			   "float constraints" do
+			it "accepts negative floats that start with '.' in exponential notation" do
 			   @validator.validate( 'amount' => '-.288088e18' )
 
 			   @validator.should be_okay()
@@ -665,7 +663,7 @@ describe Strelka::ParamValidator do
 			   @validator[:amount].should == -0.288088e18
 			end
 
-			it "accepts integers for fields with float constraints" do
+			it "accepts integers" do
 				@validator.validate( 'amount' => '288' )
 
 				@validator.should be_okay()
@@ -674,7 +672,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == 288.0
 			end
 
-			it "accepts negative integers for fields with float constraints" do
+			it "accepts negative integers" do
 				@validator.validate( 'amount' => '-1606' )
 
 				@validator.should be_okay()
@@ -683,7 +681,7 @@ describe Strelka::ParamValidator do
 				@validator[:amount].should == -1606.0
 			end
 
-			it "accepts positive integers for fields with float constraints" do
+			it "accepts positive integers" do
 				@validator.validate( 'amount' => '2600' )
 
 				@validator.should be_okay()
@@ -700,7 +698,7 @@ describe Strelka::ParamValidator do
 				@validator.add( :expires, :date )
 			end
 
-			it "accepts dates for fields with date constraints" do
+			it "accepts dates" do
 				@validator.validate( 'expires' => '2008-11-18' )
 
 				@validator.should be_okay()
@@ -709,7 +707,7 @@ describe Strelka::ParamValidator do
 				@validator[:expires].should == Date.parse( '2008-11-18' )
 			end
 
-			it "rejects non-dates for fields with date constraints" do
+			it "rejects non-dates" do
 				@validator.validate( 'expires' => 'Mexico' )
 
 				@validator.should_not be_okay()
@@ -787,7 +785,7 @@ describe Strelka::ParamValidator do
 			end
 
 			VALID_URIS.each do |uri_string|
-				it "accepts #{uri_string} for fields with URI constraints" do
+				it "accepts #{uri_string}" do
 					@validator.validate( 'homepage' => uri_string )
 
 					@validator.should be_okay()
@@ -799,7 +797,7 @@ describe Strelka::ParamValidator do
 			end
 
 			INVALID_URIS.each do |uri_string|
-				it "rejects #{uri_string} for fields with URI constraints" do
+				it "rejects #{uri_string}" do
 					@validator.validate( 'homepage' => uri_string )
 
 					@validator.should_not be_okay()
@@ -827,7 +825,7 @@ describe Strelka::ParamValidator do
 				'j:random@rubyhacquer.com',
 			]
 
-			it "accepts simple RFC822 addresses for fields with email constraints" do
+			it "accepts simple RFC822 addresses" do
 				@validator.add( :email )
 				@validator.validate( 'email' => 'jrandom@hacker.ie' )
 
@@ -837,7 +835,7 @@ describe Strelka::ParamValidator do
 				@validator[:email].should == 'jrandom@hacker.ie'
 			end
 
-			it "accepts hyphenated domains in RFC822 addresses for fields with email constraints" do
+			it "accepts hyphenated domains in RFC822 addresses" do
 				@validator.add( :email )
 				@validator.validate( 'email' => 'jrandom@just-another-hacquer.fr' )
 
@@ -848,7 +846,7 @@ describe Strelka::ParamValidator do
 			end
 
 			COMPLEX_ADDRESSES.each do |addy|
-				it "accepts #{addy} for fields with email constraints" do
+				it "accepts #{addy}" do
 					@validator.add( :mail, :email )
 					@validator.validate( 'mail' => addy )
 
@@ -860,7 +858,7 @@ describe Strelka::ParamValidator do
 			end
 
 			BOGUS_ADDRESSES.each do |addy|
-				it "rejects #{addy} for fields with email constraints" do
+				it "rejects #{addy}" do
 					@validator.add( :mail, :email )
 					@validator.validate( 'mail' => addy )
 
@@ -883,7 +881,7 @@ describe Strelka::ParamValidator do
 				'indus«tree».com',
 			]
 
-			it "accepts simple hostnames for fields with hostname constraints" do
+			it "accepts simple hostnames" do
 				@validator.add( :host, :hostname )
 				@validator.validate( 'host' => 'deveiate.org' )
 
@@ -893,7 +891,7 @@ describe Strelka::ParamValidator do
 				@validator[:host].should == 'deveiate.org'
 			end
 
-			it "accepts hyphenated hostnames for fields with hostname constraints" do
+			it "accepts hyphenated hostnames" do
 				@validator.add( :hostname )
 				@validator.validate( 'hostname' => 'your-characters-can-fly.kr' )
 
@@ -917,9 +915,9 @@ describe Strelka::ParamValidator do
 
 		end
 
-		describe ":alpha constraints" do
+		describe ":alpha constraint" do
 
-			it "accepts alpha characters for fields with alpha constraints" do
+			it "accepts alpha characters" do
 				@validator.add( :alpha )
 				@validator.validate( 'alpha' => 'abelincoln' )
 
@@ -929,7 +927,7 @@ describe Strelka::ParamValidator do
 				@validator[:alpha].should == 'abelincoln'
 			end
 
-			it "rejects non-alpha characters for fields with alpha constraints" do
+			it "rejects non-alpha characters" do
 				@validator.add( :alpha )
 				@validator.validate( 'alpha' => 'duck45' )
 
@@ -941,7 +939,7 @@ describe Strelka::ParamValidator do
 
 		end
 
-		describe ":uuid constraints" do
+		describe ":uuid constraint" do
 
 			it "accepts valid UUIDs without regard to case" do
 				@validator.add( :uuid )
@@ -965,10 +963,9 @@ describe Strelka::ParamValidator do
 
 		end
 
+		describe ":alphanumeric constraint" do
 
-		describe ":alphanumeric constraints" do
-
-			it "accepts alphanumeric characters for fields with alphanumeric constraints" do
+			it "accepts alphanumeric characters" do
 				@validator.add( :username, :alphanumeric )
 				@validator.validate( 'username' => 'zombieabe11' )
 
@@ -978,7 +975,7 @@ describe Strelka::ParamValidator do
 				@validator[:username].should == 'zombieabe11'
 			end
 
-			it "rejects non-alphanumeric characters for fields with alphanumeric constraints" do
+			it "rejects non-alphanumeric characters" do
 				@validator.add( :username, :alphanumeric )
 				@validator.validate( 'username' => 'duck!ling' )
 
@@ -990,9 +987,9 @@ describe Strelka::ParamValidator do
 
 		end
 
-		describe ":printable constraints" do
+		describe ":printable constraint" do
 
-			it "accepts printable characters for fields with 'printable' constraints" do
+			it "accepts printable characters" do
 				test_content = <<-EOF
 				I saw you with some kind of medical apparatus strapped to your
 		        spine. It was all glass and metal, a great crystaline hypodermic
@@ -1006,7 +1003,7 @@ describe Strelka::ParamValidator do
 				@validator[:prologue].should == test_content
 			end
 
-			it "rejects non-printable characters for fields with 'printable' constraints" do
+			it "rejects non-printable characters" do
 				@validator.add( :prologue, :printable )
 				@validator.validate( 'prologue' => %{\0Something cold\0} )
 
@@ -1020,7 +1017,7 @@ describe Strelka::ParamValidator do
 
 		describe ":word constraints" do
 
-			it "accepts any word characters for fields with 'word' constraints" do
+			it "accepts any word characters" do
 				@validator.add( :vocab_word, :word )
 				@validator.validate( 'vocab_word' => "Собака" )
 
@@ -1030,7 +1027,7 @@ describe Strelka::ParamValidator do
 				@validator[:vocab_word].should == "Собака"
 			end
 
-			it "rejects non-word characters for fields with 'word' constraints" do
+			it "rejects non-word characters" do
 				@validator.add( :vocab_word, :word )
 				@validator.validate( 'vocab_word' => "Собака!" )
 
@@ -1044,7 +1041,7 @@ describe Strelka::ParamValidator do
 
 		describe "Proc constraints" do
 
-			it "accepts parameters for fields with Proc constraints if the Proc returns a true value" do
+			it "accepts parameters if the Proc returns a true value" do
 				test_date = '2007-07-17'
 
 				@validator.add( :creation_date ) do |input|
@@ -1058,7 +1055,7 @@ describe Strelka::ParamValidator do
 				@validator[:creation_date].should == Date.parse( test_date )
 			end
 
-			it "rejects parameters for fields with Proc constraints if the Proc returns a false value" do
+			it "rejects parameters if the Proc returns a false value" do
 				@validator.add( :creation_date ) do |input|
 					Date.parse( input ) rescue nil
 				end
@@ -1125,6 +1122,222 @@ describe Strelka::ParamValidator do
 		    end
 
 		end
+
+		describe ":json constraint" do
+
+			# Some tests derived from the json-smart feature test matrix by Uriel Chemouni:
+			#   http://code.google.com/p/json-smart/wiki/FeaturesTests
+			# Used under the terms of the Apache license
+
+			it "accepts an empty object" do
+				json = %Q<{}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a simple object string value" do
+				json = %Q<{ "v":"1"}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts whitespace in a value" do
+				json = %Q<{\t"v":"1"\r\n}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a simple object integer value" do
+				json = %Q<{ "v":1}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a single quote in a string value" do
+				json = %Q<{ "v":"ab'c"}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a exponented float value" do
+				json = %Q<{ "PI":3.141E-10}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a lowercase exponented value" do
+				json = %Q<{ "PI":3.141e-10}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a long number value" do
+				json = %Q<{ "v":12345123456789}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a Bigint value" do
+				json = %Q<{ "v":123456789123456789123456789}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a simple digit array value" do
+				json = %Q<[1,2,3,4]>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a simple string array value" do
+				json = %Q<[ "1","2","3","4"]>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts an array of empty values" do
+				json = %Q<[ { }, { },[]]>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts lowercase Unicode text values" do
+				json = %Q<{ "v":"\\u2000\\u20ff"}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a uppercase Unicode value" do
+				json = %Q<{ "v":"\\u2000\\u20FF"}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts an escaped backslash value" do
+				json = %Q<{ "a":"\\\\\\\\main\\\\accounts"}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts null values" do
+				json = %Q<{ "a":null}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a boolean true value" do
+				json = %Q<{ "a":true}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a boolean value with whitespace" do
+				json = %Q<{ "a" : true }>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+			it "accepts a double-precision floating value" do
+				json = %Q<{ "v":1.7976931348623157E308}>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should be_okay()
+				@validator[:object].should == json
+			end
+
+
+
+			it "rejects a single brace" do
+				json = '{'
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:object].should be_nil()
+			end
+
+			it "rejects a truncated Object value" do
+				json = %Q<{'X':'s>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:object].should be_nil()
+			end
+
+			it "rejects a truncated String value" do
+				json = %Q<{'X>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:object].should be_nil()
+			end
+
+		end
+
+
 
 	end # describe "constraints"
 

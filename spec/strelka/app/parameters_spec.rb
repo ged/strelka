@@ -64,12 +64,30 @@ describe Strelka::App::Parameters do
 			@app.paramvalidator.should be_a( Strelka::ParamValidator )
 		end
 
-		it "can declare a parameter with a validation pattern" do
+		it "can declare a parameter with a regular-expression constraint" do
 			@app.class_eval do
 				param :username, /\w+/i
 			end
 
 			@app.paramvalidator.param_names.should == [ 'username' ]
+		end
+
+		it "can declare a parameter with a builtin constraint" do
+			@app.class_eval do
+				param :comment_body, :printable
+			end
+
+			@app.paramvalidator.param_names.should == [ 'comment_body' ]
+		end
+
+		it "can declare a parameter with a Proc constraint" do
+			@app.class_eval do
+				param :start_time do |val|
+					Time.parse( val ) rescue nil
+				end
+			end
+
+			@app.paramvalidator.param_names.should == [ 'start_time' ]
 		end
 
 
@@ -82,6 +100,7 @@ describe Strelka::App::Parameters do
 
 			@app.paramvalidator.param_names.should == [ 'created_at' ]
 		end
+
 
 		it "inherits parameters from its superclass" do
 			@app.class_eval do
