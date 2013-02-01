@@ -238,7 +238,7 @@ module Strelka::App::RestResources
 				# Add validations for limit, offset, and order parameters
 				req.params.add :limit, :integer
 				req.params.add :offset, :integer
-				req.params.add :order, colre
+				req.params.add :order, colre, :multiple
 
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join("\n") ) unless
 					req.params.okay?

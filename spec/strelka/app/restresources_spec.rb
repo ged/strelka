@@ -202,7 +202,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "supports limiting the result set when fetching the resource collection" do
-					req = @request_factory.get( '/api/v1/servers?limit=1', 'Accept' => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers?limit=1',
+						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -214,7 +215,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "supports paging the result set when fetching the resource collection" do
-					req = @request_factory.get( '/api/v1/servers?limit=1;offset=1', 'Accept' => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers?limit=1;offset=1',
+						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -226,7 +228,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "supports ordering the result by a single column" do
-					req = @request_factory.get( '/api/v1/servers?order=name', 'Accept' => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers?order=name',
+						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -238,8 +241,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "supports ordering the result by multiple columns" do
-					pending "fixing the multi-value paramvalidator bug"
-					req = @request_factory.get( '/api/v1/servers?order=id;order=name', 'Accept' => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers?order=id;order=name',
+						 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -280,7 +283,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "has a GET route for fetching the resource via one of its dataset methods" do
-					req = @request_factory.get( '/api/v1/servers/by_uuid/test-server', :accept => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers/by_uuid/test-server',
+						 :accept => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -293,7 +297,8 @@ describe Strelka::App::RestResources do
 				end
 
 				it "has a GET route for fetching the resource via a subset" do
-					req = @request_factory.get( '/api/v1/servers/with_ephemeral_ports', :accept => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers/with_ephemeral_ports',
+						:accept => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK
@@ -306,7 +311,8 @@ describe Strelka::App::RestResources do
 				end
 								
 				it "has a GET route for methods declared in a named dataset module" do
-					req = @request_factory.get( '/api/v1/servers/by_name/Step', :accept => 'application/json' )
+					req = @request_factory.get( '/api/v1/servers/by_name/Step',
+						 :accept => 'application/json' )
 					res = @app.new.handle( req )
 
 					res.status.should == HTTP::OK

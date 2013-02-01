@@ -391,7 +391,7 @@ class Strelka::ParamValidator
 					(?: true | false | null )
 					 |
 					# string
-					"(?: [^"\\]* | \\["\\bfnrt\/] | \\u\p{XDigit}{4} )*"
+					"(?: [^"\\[:cntrl:]]* | \\["\\bfnrt\/] | \\u\p{XDigit}{4} )*"
 					 |
 					# array
 					\[ (?: \g<json> (?: , \g<json> )* )? \s* \]

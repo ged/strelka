@@ -124,7 +124,6 @@ describe Strelka::ParamValidator do
 		end
 
 		it "handles multiple values for the same parameter" do
-			pending "issue #1"
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => %w[1 2]} )
@@ -132,7 +131,6 @@ describe Strelka::ParamValidator do
 		end
 
 		it "always returns an Array for parameters marked as :multiple" do
-			pending "issue #1"
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => '1'} )
@@ -140,7 +138,6 @@ describe Strelka::ParamValidator do
 		end
 
 		it "fails to validate if one of a multiple-value parameter doesn't validate" do
-			pending "issue #1"
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => %[1 victor 8]} )
@@ -1335,6 +1332,16 @@ describe Strelka::ParamValidator do
 				@validator[:object].should be_nil()
 			end
 
+			it "rejects unescaped control characters in a String value" do
+				json = %Q<["this\nis\nbroken\0"]>
+				@validator.add( :object, :json )
+				@validator.validate( 'object' => json )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:object].should be_nil()
+			end
 		end
 
 

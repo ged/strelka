@@ -1,3 +1,14 @@
+== v0.2.0 [2013-02-01] Michael Granger <ged@FaerieMUD.org>
+
+- Add a paramvalidator constraint for JSON fields
+- Remove HTTP{Request,Response}#notes multi-level autovivification
+- Add support for --requires to bin/strelka
+- Allow declaration of parameters with block constraints
+- Modify the restresources app plugin for new versions of Sequel
+- Fix the routing plugin to super with a block like the other plugins
+- Revalidate parameters when using ParamValidator#[].
+
+
 == v0.1.0 [2012-11-02] Michael Granger <ged@FaerieMUD.org>
 
 - Add --version to the command line tool
