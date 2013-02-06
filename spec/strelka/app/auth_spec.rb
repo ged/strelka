@@ -234,7 +234,6 @@ describe Strelka::App::Auth do
 
 		end
 
-
 		it "allows negative auth criteria to be declared with a string" do
 			@app.no_auth_for( '/string' )
 			app = @app.new
@@ -268,10 +267,7 @@ describe Strelka::App::Auth do
 		end
 
 		it "allows negative auth criteria to be declared with a string and a block" do
-			@app.no_auth_for( 'string' ) do |req|
-				Strelka.log.debug "Checking request verb: %p" % [ req.verb ]
-				req.verb == :GET
-			end
+			@app.no_auth_for( 'string' ) {|req| req.verb == :GET }
 
 			app = @app.new
 
@@ -309,8 +305,8 @@ describe Strelka::App::Auth do
 		it "allows negative auth criteria to be declared with just a block" do
 			@app.no_auth_for do |req|
 				req.app_path == '/foom' &&
-				req.verb == :GET &&
-				req.headers.accept.include?( 'text/plain' )
+					req.verb == :GET &&
+					req.headers.accept.include?( 'text/plain' )
 			end
 
 			app = @app.new
@@ -351,10 +347,9 @@ describe Strelka::App::Auth do
 		end
 
 		it "allows perms criteria to be declared with a string and a block" do
-			@app.require_perms_for( '/string' ) do |req|
-				perms = [:stringperm, :otherperm]
-				perms << :rawdata if req.headers.accept && req.headers.accept =~ /json/i
-				perms
+			@app.require_perms_for( '/string', :stringperm, :otherperm )
+			@app.require_perms_for( '/string', :rawdata ) do |req|
+				req.headers.accept && req.headers.accept =~ /json/i
 			end
 			app = @app.new
 
@@ -364,34 +359,60 @@ describe Strelka::App::Auth do
 			app.required_perms_for( req ).should == []
 		end
 
-		it "allows perms criteria to be declared with a regexp and a block" do
-			@app.require_perms_for( %r{^/admin(/(?<username>\w+))?} ) do |req, match|
-				perms = [:admin]
-				perms << match[:username].to_sym if match[:username]
-				perms
-			end
+		it "allows multiple perms criteria for the same path" do
+			@app.no_auth_for( '' ) {|req| req.verb == :GET }
+			@app.require_perms_for %r{.*}, :it_assets_webapp
+			@app.require_perms_for( %r{.*}, :@sysadmin ) {|req, m| req.verb != :GET }
+			
 			app = @app.new
 
-			req = @request_factory.get( '/api/v1/admin' )
-			app.required_perms_for( req ).should == [ :admin ]
-			req = @request_factory.get( '/api/v1/admin/jzero' )
-			app.required_perms_for( req ).should == [ :admin, :jzero ]
+			req = @request_factory.get( '/api/v1' )
+			app.required_perms_for( req ).should == [ :it_assets_webapp ]
+			req = @request_factory.post( '/api/v1' )
+			app.required_perms_for( req ).should == [ :it_assets_webapp, :@sysadmin ]
 			req = @request_factory.get( '/api/v1/users' )
-			app.required_perms_for( req ).should == []
+			app.required_perms_for( req ).should == [ :it_assets_webapp ]
+			req = @request_factory.post( '/api/v1/users' )
+			app.required_perms_for( req ).should == [ :it_assets_webapp, :@sysadmin ]
 		end
 
-		it "allows perms criteria to be declared with just a block" do
-			@app.require_perms_for do |req|
-				req.app_path.scan( %r{/(\w+)} ).flatten.map( &:to_sym )
+		it "allows perms criteria to be declared with a regexp and a block" do
+			userclass = Class.new do
+				def self::[]( username )
+					self.new(username)
+				end
+				def initialize( username ); @username = username; end
+				def is_admin?
+					@username == 'madeline'
+				end
+			end
+			@app.require_perms_for( %r{^/user}, :admin )
+			@app.require_perms_for( %r{^/user(/(?<username>\w+))?}, :superuser ) do |req, match|
+				user = userclass[ match[:username] ]
+				user.is_admin?
 			end
 			app = @app.new
 
-			req = @request_factory.get( '/api/v1/admin' )
+			req = @request_factory.get( '/api/v1/user' )
 			app.required_perms_for( req ).should == [ :admin ]
-			req = @request_factory.get( '/api/v1/admin/jzero' )
-			app.required_perms_for( req ).should == [ :admin, :jzero ]
-			req = @request_factory.get( '/api/v1/users' )
-			app.required_perms_for( req ).should == [ :users ]
+			req = @request_factory.get( '/api/v1/user/jzero' )
+			app.required_perms_for( req ).should == [ :admin ]
+			req = @request_factory.get( '/api/v1/user/madeline' )
+			app.required_perms_for( req ).should == [ :admin, :superuser ]
+		end
+
+		it "allows perms the same as the appid to be declared with just a block" do
+			@app.require_perms_for do |req|
+				req.verb != :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+			app.required_perms_for( req ).should == []
+			req = @request_factory.post( '/api/v1/accounts', '' )
+			app.required_perms_for( req ).should == [ :auth_test ]
+			req = @request_factory.put( '/api/v1/accounts/1', '' )
+			app.required_perms_for( req ).should == [ :auth_test ]
 		end
 
 		it "allows negative perms criteria to be declared with a string" do
@@ -434,11 +455,7 @@ describe Strelka::App::Auth do
 			@app.no_perms_for( %r{^/collection/(?<collname>[^/]+)} ) do |req, match|
 				public_collections = %w[degasse ione champhion]
 				collname = match[:collname]
-				if public_collections.include?( collname )
-					true
-				else
-					false
-				end
+				public_collections.include?( collname )
 			end
 			app = @app.new
 

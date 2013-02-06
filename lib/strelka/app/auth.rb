@@ -286,8 +286,8 @@ module Strelka::App::Auth
 		@positive_auth_criteria  = {}
 		@negative_auth_criteria  = {}
 
-		@positive_perms_criteria = {}
-		@negative_perms_criteria = {}
+		@positive_perms_criteria = []
+		@negative_perms_criteria = []
 
 
 		##
@@ -409,17 +409,19 @@ module Strelka::App::Auth
 		### +pattern+. The +pattern+ is either a String or a Regexp which is tested against
 		### {the request's #app_path}[rdoc-ref:Strelka::HTTPRequest#app_path]. The +perms+ should
 		### be Symbols which indicate a set of permission types that must have been granted
-		### in order to carry out the request. The block should also return one or more
-		### permissions (as Symbols) if the request should undergo authorization, or nil
-		### if it should not.
+		### in order to carry out the request. The block, if given, should evaluate to +true+
+		### if the request should undergo authorization, or false if it should not.
 		### *NOTE:* using this declaration inverts the default security policy of
 		### restricting access to all requests.
 		def require_perms_for( pattern=nil, *perms, &block )
-			block ||= Proc.new { perms }
+			block ||= Proc.new {
+				self.log.debug "  using default perms: %p" % [ perms ]
+				true
+			}
 
 			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
 			self.log.debug "  adding require_perms (%p) for %p" % [ perms, pattern ]
-			self.positive_perms_criteria[ pattern ] = block
+			self.positive_perms_criteria << [ pattern, block, perms ]
 		end
 
 
@@ -435,7 +437,7 @@ module Strelka::App::Auth
 
 			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
 			self.log.debug "  adding no_auth for %p" % [ pattern ]
-			self.negative_perms_criteria[ pattern ] = block
+			self.negative_perms_criteria << [ pattern, block ]
 		end
 
 	end # module ClassMethods
@@ -502,7 +504,7 @@ module Strelka::App::Auth
 	### +nil+ if the request didn't require authentication.
 	def provide_authorization( credentials, request )
 		provider = self.auth_provider
-		perms = self.required_perms_for( request )
+		perms = self.perms_required_for( request )
 		self.log.debug "Perms required: %p" % [ perms ]
 		provider.authorize( credentials, request, perms ) unless perms.empty?
 	end
@@ -550,7 +552,7 @@ module Strelka::App::Auth
 
 	### Gather the set of permissions that apply to the specified +request+ and return
 	### them.
-	def required_perms_for( request )
+	def perms_required_for( request )
 		self.log.debug "Gathering required perms for: %s %s" % [ request.verb, request.app_path ]
 
 		# Return the empty set if any negative auth criteria match
@@ -565,6 +567,7 @@ module Strelka::App::Auth
 		# Apply positive auth criteria
 		return self.union_positive_perms_criteria( request )
 	end
+	alias_method :required_perms_for, :perms_required_for
 
 
 	#########
@@ -617,8 +620,8 @@ module Strelka::App::Auth
 		perms = []
 
 		self.log.debug "  positive perm criteria: %p" % [ self.class.positive_perms_criteria ]
-		self.class.positive_perms_criteria.each do |pattern, block|
-			newperms = self.request_matches_criteria( request, pattern, &block ) or next
+		self.class.positive_perms_criteria.each do |pattern, block, newperms|
+			next unless self.request_matches_criteria( request, pattern, &block )
 			newperms = Array( newperms )
 			newperms << self.default_permission if newperms.empty?
 
