@@ -174,7 +174,15 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
 	def parse_query_args
 		return {} if self.uri.query.nil?
-		return merge_query_args( URI.decode_www_form(self.uri.query) )
+		query_args = begin
+			URI.decode_www_form( self.uri.query )
+		rescue => err
+			self.log.error "%p while parsing query %p: %s" %
+				[ err.class, self.uri.query, err.message ]
+			{}
+		end
+
+		return merge_query_args( query_args )
 	end
 
 

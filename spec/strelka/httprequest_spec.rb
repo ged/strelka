@@ -197,6 +197,11 @@ describe Strelka::HTTPRequest do
 					'mirror' => 'sequel',
 				}
 			end
+
+			it "treats a malformed query string as the lack of a query" do
+				req = @request_factory.get( '/directory/path?foo' )
+				req.params.should == {}
+			end
 		end
 
 
