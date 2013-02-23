@@ -133,7 +133,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		return ( self.charset ||
 		         self.content_type_charset ||
 		         self.entity_body_charset  ||
-				 Encoding.default_internal ||
+			     Encoding.default_internal ||
 		         Encoding.default_external ||
 		         Encoding::ISO_8859_1 )
 	end
