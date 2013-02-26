@@ -456,11 +456,6 @@ class Strelka::ParamValidator
 		end
 
 
-		### 
-		def self::add_type(  )
-			
-		end
-
 
 		#
 		# Instance methods
