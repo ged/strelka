@@ -487,7 +487,7 @@ class Strelka::ParamValidator
 				return custom_block
 			else
 				post_processor = "post_process_%s" % [ @pattern_name ]
-				return nil unless self.respond_to?( post_processor )
+				return nil unless self.respond_to?( post_processor, true )
 				return self.method( post_processor )
 			end
 		end
