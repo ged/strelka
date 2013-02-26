@@ -763,7 +763,7 @@ class Strelka::ParamValidator
 	end
 
 
-	## Fetch the constraint/s that apply to the parameter named name as a Regexp, if possible.
+	## Fetch the constraint/s that apply to the parameter named +name+ as a Regexp, if possible.
 	def constraint_regexp_for( name )
 		self.log.debug "  searching for a constraint for %p" % [ name ]
 
