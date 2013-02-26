@@ -43,14 +43,28 @@ require 'strelka/app' unless defined?( Strelka::App )
 # parameters[Strelka::App::Parameters] plugins, and will load them
 # automatically if they haven't been already.
 #
-# Stuff left to do:
+# Goals:
 #
-# * Composite resources generated from associations
-# * Honor If-unmodified-since and If-match headers
-# * Caching support (ETag, If-modified-since)
-# * Means of tailoring responses for requests for which the response
-#   isn't clearly specified in the RFC (DELETE /resource)
-# * Sequel plugin for adding links to serialized representations
+# [√] Composite resources generated from associations
+# [ ] Honor If-unmodified-since and If-match headers
+# [ ] Caching support (ETag, If-modified-since)
+# [ ] Means of tailoring responses for requests for which the response
+#     isn't clearly specified in the RFC (DELETE /resource)
+# [ ] Sequel plugin for adding links to serialized representations
+# 
+# == Caveats / Known Problems
+#
+# * Dataset methods declared using the 'subset' declaration don't allow the
+#   introspection necessary for automatically building routes, so you have
+#   to declare them as normal methods in a dataset module:
+#
+#       dataset_module do
+#           def by_name( string )
+#               filter(:name => string)
+#           end
+#       end
+#
+#
 module Strelka::App::RestResources
 	extend Strelka::Plugin
 
@@ -469,6 +483,8 @@ module Strelka::App::RestResources
 
 		### Add routes for the methods declared in the dataset module +mod+.
 		def add_dataset_module_routes( route_prefix, rsrcobj, mod, options )
+			self.log.debug "Adding dataset module routes."
+
 			mod.instance_methods.each do |methname|
 				meth = mod.instance_method( methname )
 				self.log.debug "    instance_method: %p" % [ meth ]
@@ -487,6 +503,8 @@ module Strelka::App::RestResources
 				self.log.debug "  route for dataset method %s: %s" % [ methname, route ]
 				self.add_dataset_read_handler( route, rsrcobj, methname, params, options )
 			end
+
+			self.log.debug "  done with dataset module routes."
 		end
 
 
