@@ -21,7 +21,7 @@ hoespec = Hoe.spec 'strelka' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
-	self.dependency 'configurability', '~> 1.2'
+	self.dependency 'configurability', '~> 2.0'
 	self.dependency 'foreman',         '~> 0.47'
 	self.dependency 'formvalidator',   '~> 0.1'
 	self.dependency 'highline',        '~> 1.6'
