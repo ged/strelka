@@ -1,5 +1,9 @@
 == v0.2.0 [2013-02-01] Michael Granger <ged@FaerieMUD.org>
 
+- Fixes for Ruby 2.0.
+- Fix API documentation
+- Guard against malformed URI query
+- Fix multiple permission criteria in the auth plugin (fixes #2)
 - Add a paramvalidator constraint for JSON fields
 - Remove HTTP{Request,Response}#notes multi-level autovivification
 - Add support for --requires to bin/strelka
