@@ -33,11 +33,10 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'uuidtools',       '~> 2.1'
 
 	self.dependency 'hoe-deveiate',    '~> 0.1', :developer
-	self.dependency 'simplecov',       '~> 0.6', :developer
+	self.dependency 'simplecov',       '~> 0.7', :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:rdoc_options] = [
-		'-f', 'fivefish',
 		'-t', 'Strelka Web Application Toolkit',
 		'-w', '4',
 	]
