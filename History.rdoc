@@ -1,3 +1,9 @@
+== v0.2.1 [2013-03-01] Michael Granger <ged@FaerieMUD.org>
+
+- Update dependencies
+- Add Ruby version to the default template variables.
+
+
 == v0.2.0 [2013-02-01] Michael Granger <ged@FaerieMUD.org>
 
 - Fixes for Ruby 2.0.
