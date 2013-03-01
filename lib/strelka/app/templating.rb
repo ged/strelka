@@ -57,8 +57,10 @@ require 'strelka/plugins'
 # automatically set a few attributes for commonly-used objects:
 #
 # request ::          The current Strelka::HTTPRequest
+# app ::              The application object (Strelka::App instance).
 # strelka_version ::  Strelka.version_string( true )
 # mongrel2_version :: Mongrel2.version_string( true )
+# ruby_version ::     The RUBY_VERSION of the running interpreter.
 # route ::            If the :routing plugin is loaded, this will be set to the
 #                     'routing_info' of the chosen route. See
 #                     Strelka::Router#add_route for details.
@@ -305,6 +307,7 @@ module Strelka::App::Templating
 		template.app              = self
 		template.strelka_version  = Strelka.version_string( true )
 		template.mongrel2_version = Mongrel2.version_string( true )
+		template.ruby_version     = RUBY_VERSION
 		template.route            = request.notes[:routing][:route]
 	end
 

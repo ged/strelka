@@ -207,7 +207,7 @@ require 'strelka/authprovider'
 #        plugins :auth, :errors, :templating
 #
 #        layout 'examples/layout.tmpl'
-#        templates \
+#        templates \ 
 #            form: 'examples/auth-form.tmpl',
 #            success: 'examples/auth-success.tmpl'
 #
