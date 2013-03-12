@@ -363,7 +363,7 @@ describe Strelka::App::Auth do
 			@app.no_auth_for( '' ) {|req| req.verb == :GET }
 			@app.require_perms_for %r{.*}, :it_assets_webapp
 			@app.require_perms_for( %r{.*}, :@sysadmin ) {|req, m| req.verb != :GET }
-			
+
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1' )

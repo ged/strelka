@@ -111,7 +111,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 
 	### Add a charset to the content-type header in +headers+ if possible.
 	def add_content_type_charset( headers )
-		return unless headers.content_type && 
+		return unless headers.content_type &&
 			headers.content_type.start_with?( 'text' )
 
 		charset = self.find_header_charset

@@ -61,7 +61,7 @@ class Strelka::Router
 	# {RFC 2616}[http://tools.ietf.org/html/rfc2616#section-9] as a Symbol (e.g.,
 	# +:GET+, +:DELETE+). The +path_array+ will be the route path split up by
 	# path separator. The +routing_info+ is a Hash that contains the action
-   	# that will be run when the route matches, routing options, and any other
+	# that will be run when the route matches, routing options, and any other
 	# routing information associated with the route.
 	pure_virtual :add_route
 

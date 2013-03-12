@@ -914,7 +914,7 @@ class Strelka::ParamValidator
 	end
 
 
-	### Return an Array of error messages, one for each field present in the parameters in the last 
+	### Return an Array of error messages, one for each field present in the parameters in the last
 	### validation that didn't have a constraint associated with it.
 	def unknown_param_errors
 		self.log.debug "Fetching unknown param errors for %p." % [ self.unknown ]

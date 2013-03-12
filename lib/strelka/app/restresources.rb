@@ -51,7 +51,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 # [ ] Means of tailoring responses for requests for which the response
 #     isn't clearly specified in the RFC (DELETE /resource)
 # [ ] Sequel plugin for adding links to serialized representations
-# 
+#
 # == Caveats / Known Problems
 #
 # * Dataset methods declared using the 'subset' declaration don't allow the
@@ -491,7 +491,7 @@ module Strelka::App::RestResources
 
 				route  = "%s/%s" % [ route_prefix, methname ]
 				params = []
-					
+
 				# Add a route placeholder for each parameter of the dataset method
 				meth.parameters.each do |type, param|
 					self.log.debug "    adding parameter placeholder to the route for %s parameter %p" %
@@ -619,7 +619,7 @@ module Strelka::App::RestResources
 	#######
 
 	### Add parameter validations for the given +columns+ of the specified resource object +rsrcobj+
-	### to the specified +req+uest. 
+	### to the specified +req+uest.
 	def add_resource_params( req, rsrcobj, *columns )
 		columns = rsrcobj.allowed_columns || rsrcobj.columns if columns.empty?
 

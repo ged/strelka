@@ -309,7 +309,7 @@ describe Strelka::App::RestResources do
 					body.first.should be_a( Hash )
 					body.first['port'].should > 1024
 				end
-								
+
 				it "has a GET route for methods declared in a named dataset module" do
 					req = @request_factory.get( '/api/v1/servers/by_name/Step',
 						 :accept => 'application/json' )

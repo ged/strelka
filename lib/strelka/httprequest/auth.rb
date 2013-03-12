@@ -4,7 +4,7 @@ require 'strelka/constants'
 require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )
 
 
-# The mixin that adds methods to Strelka::HTTPRequest for 
+# The mixin that adds methods to Strelka::HTTPRequest for
 # authentication/authorization.
 module Strelka::HTTPRequest::Auth
 	include Strelka::Constants
