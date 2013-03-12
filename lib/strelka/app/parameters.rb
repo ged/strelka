@@ -26,6 +26,10 @@ require 'strelka/paramvalidator'
 #       param :id, /\d+/, "The user's numeric ID"
 #       param :mode, /^\s*(?<prefix>[A-Z]{2})-(?<sku>\p{Print}+)/
 #
+#       # ...
+#
+#   end # class UserManager
+#
 # The first item is the parameter _key_, which corresponds to the field 'name' attribute for
 # a form, or the key for JSON or YAML data.
 #
@@ -53,19 +57,17 @@ require 'strelka/paramvalidator'
 #
 # The inclusion of this plugin also allows you to use parameters in your routes:
 #
-#       # :username gets validated and merged into query args; URI parameters
-#       # clobber query params
-#       get '/info/:username' do |req|
-#           req.params.add( :id, /[XRT]\d{4}-\d{8}/ )
-#           req.params.okay?
-#           req.params[:username]
-#           req.params.values_at( :id, :username )
-#           req.params.username
+#   # :username gets validated and merged into query args; URI parameters
+#   # clobber query params
+#   get '/info/:username' do |req|
+#       req.params.add( :id, /[XRT]\d{4}-\d{8}/ )
+#       req.params.okay?
+#       req.params[:username]
+#       req.params.values_at( :id, :username )
+#       req.params.username
 #
-#           req.params.error_messages
-#       end
-#
-#   end # class UserManager
+#       req.params.error_messages
+#   end
 #
 # [:FIXME:] Add more docs.
 module Strelka::App::Parameters
@@ -97,12 +99,6 @@ module Strelka::App::Parameters
 			self.log.debug "New param %p" % [ name ]
 			self.log.debug "  adding parameter %p to %p" % [ name, self.paramvalidator ]
 			self.paramvalidator.add( name, *args, &block )
-		end
-
-
-		### Add a 'builtin' constraint type with the specified +name+.
-		def add_param_type( name, &block )
-			
 		end
 
 

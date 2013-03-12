@@ -3,7 +3,7 @@
 # encoding: utf-8
 
 require 'loggability'
-require 'pluginfactory'
+require 'pluggability'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/app' unless defined?( Strelka::App )
@@ -24,18 +24,15 @@ require 'strelka/mixins'
 # <tt>strelka/router/{something}.rb</tt>, and be sure to override the
 # #add_route and #route_request methods.
 class Strelka::Router
-	extend Loggability
-	include PluginFactory,
-	        Strelka::AbstractClass
+	extend Loggability,
+	       Pluggability
+	include Strelka::AbstractClass
 
 	# Loggability API -- set up logging under the 'strelka' log host
 	log_to :strelka
 
-
-	### PluginFactory API -- return the Array of directories to search for plugins.
-	def self::derivative_dirs
-		return ['strelka/router']
-	end
+	# Pluggability API -- Specify the list of prefixes to try when loading plugins
+	plugin_prefixes 'strelka/router'
 
 
 	### Create a new router that will route requests according to the specified

@@ -32,7 +32,7 @@ describe Strelka::Session do
 
 
 	it "looks for plugins under strelka/session" do
-		described_class.derivative_dirs.should include( 'strelka/session' )
+		described_class.plugin_prefixes.should include( 'strelka/session' )
 	end
 
 

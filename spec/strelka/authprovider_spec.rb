@@ -32,7 +32,7 @@ describe Strelka::AuthProvider do
 
 
 	it "looks for plugins under strelka/authprovider" do
-		described_class.derivative_dirs.should include( 'strelka/authprovider' )
+		described_class.plugin_prefixes.should include( 'strelka/authprovider' )
 	end
 
 

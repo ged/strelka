@@ -33,7 +33,7 @@ describe Strelka::Router do
 
 
 	it "looks for plugins under strelka/router" do
-		Strelka::Router.derivative_dirs.should include( 'strelka/router' )
+		Strelka::Router.plugin_prefixes.should include( 'strelka/router' )
 	end
 
 

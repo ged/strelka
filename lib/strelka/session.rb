@@ -2,7 +2,7 @@
 # vim: set nosta noet ts=4 sw=4:
 
 require 'digest/sha1'
-require 'pluginfactory'
+require 'pluggability'
 require 'loggability'
 
 require 'strelka' unless defined?( Strelka )
@@ -43,19 +43,16 @@ require 'strelka/mixins'
 #
 #
 class Strelka::Session
-	extend Loggability
-	include PluginFactory,
-	        Strelka::AbstractClass
+	extend Loggability,
+	       Pluggability
+	include Strelka::AbstractClass
+
 
 	# Loggability API -- set up logging under the 'strelka' log host
 	log_to :strelka
 
-
-	### PluginFactory API -- return the Array of directories to search for concrete
-	### Session classes.
-	def self::derivative_dirs
-		return ['strelka/session']
-	end
+	# Pluggability API -- Specify the list of prefixes to try when loading plugins
+	plugin_prefixes 'strelka/session'
 
 
 	### Configure the session class with the given +options+, which should be a

@@ -2,7 +2,7 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-require 'pluginfactory'
+require 'pluggability'
 
 require 'strelka' unless defined?( Strelka )
 require 'strelka/mixins'
@@ -29,9 +29,9 @@ require 'strelka/mixins'
 #
 class Strelka::AuthProvider
 	extend Loggability,
+	       Pluggability,
 	       Strelka::Delegation
-	include PluginFactory,
-	        Strelka::Constants,
+	include Strelka::Constants,
 	        Strelka::AbstractClass,
 	        Strelka::ResponseHelpers
 
@@ -39,11 +39,8 @@ class Strelka::AuthProvider
 	log_to :strelka
 
 
-	### PluginFactory API -- return the Array of directories to search for concrete
-	### AuthProvider classes.
-	def self::derivative_dirs
-		return ['strelka/authprovider']
-	end
+	# Pluggability API -- Specify the list of prefixes to try when loading plugins
+	plugin_prefixes 'strelka/authprovider'
 
 
 	#################################################################
