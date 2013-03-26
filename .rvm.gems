@@ -1,6 +1,6 @@
 # .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
 configurability -v2.0.0
-foreman -v0.61.0
+foreman -v0.62.0
 highline -v1.6.15
 hoe-deveiate -v0.2.0
 inversion -v0.12.0
