@@ -1,3 +1,12 @@
+== v0.4.0 [2013-03-26] Michael Granger <ged@FaerieMUD.org>
+
+- Handle Strelka::App subclass inheritance, add Strelka::App syntactic
+  sugar.
+- Pull app finder code from bin/strelka up into a Strelka::App class
+  method.
+- Update deps, add fivefish doc option only in development
+
+
 == v0.3.0 [2013-03-11] Michael Granger <ged@FaerieMUD.org>
 
 - Swap PluginFactory for Pluggability
