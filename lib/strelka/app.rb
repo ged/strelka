@@ -206,6 +206,46 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Find the first app with the given +appname+ and return the path to its file and the name of
+	### the gem it's from. If the optional +gemname+ is given, only consider apps from that gem. 
+	### Raises a RuntimeError if no app with the given +appname+ was found.
+	def self::find( appname, gemname=nil )
+		discovered_apps = self.discover_paths
+
+		path = nil
+		if gemname
+			discovered_apps[ gemname ].each do |apppath|
+				self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
+				if apppath.basename('.rb').to_s == appname
+					path = apppath
+					break
+				end
+			end
+		else
+			self.log.debug "No gem name; searching them all:"
+			discovered_apps.each do |disc_gemname, paths|
+				self.log.debug "  %s: %d paths" % [ disc_gemname, paths.length ]
+				path = paths.find do |apppath|
+					self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
+					self.log.debug "    %p vs. %p" % [ apppath.basename('.rb').to_s, appname ]
+					apppath.basename('.rb').to_s == appname
+				end or next
+				gemname = disc_gemname
+				break
+			end
+		end
+
+		unless path
+			msg = "Couldn't find an app named '#{appname}'"
+			msg << " in the #{gemname} gem" if gemname
+			raise( msg )
+		end
+		self.log.debug "  found: %s" % [ path ]
+
+		return path, gemname
+	end
+
+
 	### Load the specified +file+, and return any Strelka::App subclasses that are loaded
 	### as a result.
 	def self::load( file )

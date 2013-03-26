@@ -295,7 +295,9 @@ class Strelka::CLICommand
 
 	### The 'start' command
 	def start_command( *args )
-		path, appname, gemname = self.find_specified_app( *args )
+		appname = args.pop
+		gemname = args.pop
+		path, gemname = Strelka::App.find( appname, gemname )
 
 		header "Starting the %s app%s" % [
 			appname,
@@ -354,48 +356,6 @@ class Strelka::CLICommand
 	#
 	# Helper methods
 	#
-
-	### Find the app specified in the specified +args+ and return the Pathname to it and the
-	### name of the gem it belongs to. Raises a RuntimeError if the +args+ didn't contain a
-	### valid application specification.
-	def find_specified_app( *args )
-		appname = args.pop
-		gemname = args.pop
-		discovered_apps = Strelka::App.discover_paths
-
-		path = nil
-		if gemname
-			discovered_apps[ gemname ].each do |apppath|
-				self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
-				if apppath.basename('.rb').to_s == appname
-					path = apppath
-					break
-				end
-			end
-		else
-			self.log.debug "No gem name; searching them all:"
-			discovered_apps.each do |disc_gemname, paths|
-				self.log.debug "  %s: %d paths" % [ disc_gemname, paths.length ]
-				path = paths.find do |apppath|
-					self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
-					self.log.debug "    %p vs. %p" % [ apppath.basename('.rb').to_s, appname ]
-					apppath.basename('.rb').to_s == appname
-				end or next
-				gemname = disc_gemname
-				break
-			end
-		end
-
-		unless path
-			msg = "Couldn't find an app named '#{appname}'"
-			msg << " in the #{gemname} gem" if gemname
-			raise( msg )
-		end
-		self.log.debug "  found: %s" % [ path ]
-
-		return path, appname, gemname
-	end
-
 
 	### Load any requires added to the command via the '-r' option.
 	def load_additional_requires
