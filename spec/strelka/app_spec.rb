@@ -68,7 +68,7 @@ describe Strelka::App do
 
 	it "has a method for loading app class/es from a file" do
 		app_file = 'an_app.rb'
-		app_path = Pathname( 'an_app.rb' ).expand_path
+		app_path = Pathname( app_file ).expand_path
 		app_class = nil
 
 		Kernel.should_receive( :load ).with( app_path.to_s ).and_return do
@@ -385,6 +385,7 @@ describe Strelka::App do
 
 		res.should be_nil()
 	end
+
 
 	describe "process name" do
 

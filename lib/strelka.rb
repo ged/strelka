@@ -62,5 +62,19 @@ module Strelka
 		self.config.install
 	end
 
+
+	### Look up the application class of +appname+, optionally limiting it to the gem
+	### named +gemname+. Returns the first matching class, or raises an exception if no
+	### app class was found.
+	def self::App( appname, gemname=nil )
+		path, _ = Strelka::App.find( appname, gemname )
+		raise LoadError, "Can't find the %s app." % [ appname ] unless path
+
+		apps = Strelka::App.load( path ) or
+			raise ScriptError "Loading %s didn't define a Strelka::App class." % [ path ]
+
+		return apps.first
+	end
+
 end # module Strelka
 

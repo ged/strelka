@@ -13,7 +13,6 @@ require 'strelka/plugins'
 
 
 # The Strelka HTTP application base class.
-#
 class Strelka::App < Mongrel2::Handler
 	extend Loggability,
 	       Configurability,
@@ -100,7 +99,8 @@ class Strelka::App < Mongrel2::Handler
 	### classes correspond to which files.
 	def self::inherited( subclass )
 		super
-		@subclasses[ @loading_file ] << subclass if self == Strelka::App
+		self.log.debug "Adding %p to the subclasses hash." % [ subclass ]
+		Strelka::App.subclasses[ @loading_file ] << subclass #if self == Strelka::App
 	end
 
 
@@ -207,7 +207,7 @@ class Strelka::App < Mongrel2::Handler
 
 
 	### Find the first app with the given +appname+ and return the path to its file and the name of
-	### the gem it's from. If the optional +gemname+ is given, only consider apps from that gem. 
+	### the gem it's from. If the optional +gemname+ is given, only consider apps from that gem.
 	### Raises a RuntimeError if no app with the given +appname+ was found.
 	def self::find( appname, gemname=nil )
 		discovered_apps = self.discover_paths
