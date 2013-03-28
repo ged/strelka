@@ -27,7 +27,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'inversion',       '~> 0.12'
 	self.dependency 'loggability',     '~> 0.5'
 	self.dependency 'mongrel2',        '~> 0.36'
-	self.dependency 'pluggability',    '~> 0.0'
+	self.dependency 'pluggability',    '~> 0.2'
 	self.dependency 'sysexits',        '~> 1.1'
 	self.dependency 'trollop',         '~> 2.0'
 	self.dependency 'uuidtools',       '~> 2.1'
