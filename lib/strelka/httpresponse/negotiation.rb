@@ -8,6 +8,7 @@ require 'yajl'
 
 require 'strelka/constants'
 require 'strelka/exceptions'
+require 'strelka/mixins'
 require 'strelka/httpresponse' unless defined?( Strelka::HTTPResponse )
 
 
@@ -23,11 +24,12 @@ require 'strelka/httpresponse' unless defined?( Strelka::HTTPResponse )
 # is acceptable according to its request's `Accept*` headers.
 #
 module Strelka::HTTPResponse::Negotiation
+	extend Strelka::MethodUtilities
 	include Strelka::Constants
 
 	# TODO: Perhaps replace this with something like this:
 	#   Mongrel2::Config::Mimetype.to_hash( :extension => :mimetype )
-	BUILTIN_MIMETYPES = {
+	BUILTIN_MIMETYPE_MAP = {
 		:html => 'text/html',
 		:text => 'text/plain',
 
@@ -43,10 +45,10 @@ module Strelka::HTTPResponse::Negotiation
 		:atom => 'application/atom+xml',
 	}
 
-	# A collection of stringifier callbacks, keyed by mimetype. If an object other
-	# than a String is returned by a content callback, and an entry for the callback's
-	# mimetype exists in this Hash, it will be #call()ed to stringify the object.
-	STRINGIFIERS = {
+	# A collection of default stringifier callbacks, keyed by mimetype. If an entry
+	# for the content-negotiation callback's mimetype exists in this Hash, it will
+	# be #call()ed on the callback's return value to stringify the body.
+	BUILTIN_STRINGIFIERS = {
 		'application/x-yaml' => YAML.method( :dump ),
 		'application/json'   => Yajl.method( :dump ),
 		'text/plain'         => Proc.new {|obj| obj.to_s },
@@ -60,6 +62,18 @@ module Strelka::HTTPResponse::Negotiation
 		Encoding::UTF_16BE,
 		Encoding::UTF_32BE,
 	]
+
+
+	##
+	# The Hash of symbolic mediatypes of the form:
+	#   { <name (Symbol)> => <mimetype> }
+	singleton_attr_reader :mimetype_map
+	@mimetype_map = BUILTIN_MIMETYPE_MAP.dup
+
+	##
+	# The Hash of stringification callbacks, keyed by mimetype.
+	singleton_attr_reader :stringifiers
+	@stringifiers = BUILTIN_STRINGIFIERS.dup
 
 
 	### Add some instance variables for negotiation.
@@ -267,7 +281,11 @@ module Strelka::HTTPResponse::Negotiation
 	### to HTTP::OK.
 	def for( *mediatypes, &callback )
 		mediatypes.each do |mimetype|
-			mimetype = BUILTIN_MIMETYPES[ mimetype ] if mimetype.is_a?( Symbol )
+			if mimetype.is_a?( Symbol )
+				mimetype = Strelka::HTTPResponse::Negotiation.mimetype_map[ mimetype ] or
+					raise "No known mimetype mapped to %p" % [ mimetype ]
+			end
+
 			self.mediatype_callbacks[ mimetype ] = callback
 		end
 
@@ -307,17 +325,19 @@ module Strelka::HTTPResponse::Negotiation
 	### until one returns a true-ish value, which becomes the new entity
 	### body. If the body object is not a String,
 	def transform_content_type
+		self.log.debug "Applying content-type transforms (if any)"
 		return if self.mediatype_callbacks.empty?
 
-		self.log.debug "Applying content-type transforms (if any)"
+		self.log.debug "  transform callbacks registered: %p" % [ self.mediatype_callbacks ]
 		self.better_mediatypes.each do |mediatype|
 			callbacks = self.mediatype_callbacks.find_all do |mimetype, _|
 				mediatype =~ mimetype
 			end
 
 			if callbacks.empty?
-				self.log.debug "  no transforms for %s" % [ mediatype ]
+				self.log.debug "    no transforms for %s" % [ mediatype ]
 			else
+				self.log.debug "    %d transform/s for %s" % [ callbacks.length, mediatype ]
 				callbacks.each do |mimetype, callback|
 					return if self.try_content_type_callback( mimetype, callback )
 				end
@@ -334,9 +354,13 @@ module Strelka::HTTPResponse::Negotiation
 
 		new_body = callback.call( mimetype ) or return false
 
-		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body ]
-		new_body = STRINGIFIERS[ mimetype ].call( new_body ) if
-			STRINGIFIERS.key?( mimetype ) && !new_body.is_a?( String )
+		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body.class ]
+		stringifiers = Strelka::HTTPResponse::Negotiation.stringifiers
+		if stringifiers.key?( mimetype )
+			new_body = stringifiers[ mimetype ].call( new_body )
+		else
+			self.log.debug "    no stringifier registered for %p" % [ mimetype ]
+		end
 
 		self.body = new_body
 		self.content_type = mimetype.dup # :TODO: Why is this frozen?
@@ -512,7 +536,7 @@ module Strelka::HTTPResponse::Negotiation
 
 				# Don't close the FD when this IO goes out of scope
 				oldbody = self.body
-				oldbody.auto_close = false
+				oldbody.autoclose = false
 
 				# Re-open the same file descriptor, but transcoding to the wanted encoding
 				self.body = IO.for_fd( oldbody.fileno, internal_encoding: enc )

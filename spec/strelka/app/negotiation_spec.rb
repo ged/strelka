@@ -46,6 +46,19 @@ describe Strelka::App::Negotiation do
 				def initialize( appid='conneg-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
 				end
+
+				add_content_type :tnetstring, 'text/x-tnetstring', TNetstring.method(:dump)
+
+				def handle_request( req )
+					super do
+						res = req.response
+						res.for( :tnetstring ) {[ 'an', {'array' => 'of stuff'} ]}
+						res.for( :html ) do
+							"<html><head><title>Yep</title></head><body>Yeah!</body></html>"
+						end
+						res
+					end
+				end
 			end
 		end
 
@@ -53,18 +66,6 @@ describe Strelka::App::Negotiation do
 			@app = nil
 		end
 
-
-		it "has its config inherited by subclasses" do
-			@app.add_content_type :text, 'text/plain' do
-				"It's all text now, baby"
-			end
-			subclass = Class.new( @app )
-
-			subclass.transform_names.should == @app.transform_names
-			subclass.transform_names.should_not equal( @app.transform_names )
-			subclass.content_type_transforms.should == @app.content_type_transforms
-			subclass.content_type_transforms.should_not equal( @app.content_type_transforms )
-		end
 
 		it "gets requests that have been extended with content-negotiation" do
 			req = @request_factory.get( '/service/user/estark' )
@@ -78,6 +79,13 @@ describe Strelka::App::Negotiation do
 			res = @app.new.handle( req )
 			res.singleton_class.included_modules.
 				should include( Strelka::HTTPResponse::Negotiation )
+		end
+
+		it "adds custom content-type transforms to outgoing responses" do
+			req = @request_factory.get( '/service/user/astark', :accept => 'text/x-tnetstring' )
+			res = @app.new.handle( req )
+			res.content_type.should == 'text/x-tnetstring'
+			res.body.read.should == '28:2:an,19:5:array,8:of stuff,}]'
 		end
 
 	end

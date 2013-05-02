@@ -63,11 +63,11 @@ describe Strelka::HTTPResponse::Negotiation do
 		it "can provide blocks for bodies of several different mediatypes" do
 			@req.headers.accept = 'application/x-yaml, application/json; q=0.7, text/xml; q=0.2'
 
-			@res.for( 'application/json' ) { %{["a JSON dump"]} }
-			@res.for( 'application/x-yaml' ) { "---\na: YAML dump\n\n" }
+			@res.for( 'application/json' ) { ["a JSON dump"] }
+			@res.for( 'application/x-yaml' ) { { 'a' => "YAML dump" } }
 
 			@res.negotiated_body.rewind
-			@res.negotiated_body.read.should == "---\na: YAML dump\n\n"
+			@res.negotiated_body.read.should == "---\na: YAML dump\n"
 			@res.content_type.should == "application/x-yaml"
 			@res.header_data.should =~ /accept(?!-)/i
 		end
@@ -98,6 +98,12 @@ describe Strelka::HTTPResponse::Negotiation do
 				"\"name\":\"Harlot's Garden\"}"
 			@res.content_type.should == "application/json"
 			@res.header_data.should =~ /accept(?!-)/i
+		end
+
+		it "raises an exception if given a block for an unknown symbolic mediatype" do
+			expect {
+				@res.for( :yaquil ) {}
+			}.to raise_error( StandardError, /no known mimetype/i )
 		end
 
 	end
@@ -132,7 +138,7 @@ describe Strelka::HTTPResponse::Negotiation do
 				@res.body = File.open( __FILE__, 'r:iso-8859-5' )
 				@res.content_type = 'text/plain'
 
-				@res.negotiated_body.encoding.should == Encoding::KOI8_R
+				@res.negotiated_body.read.encoding.should == Encoding::KOI8_R
 				@res.header_data.should =~ /accept-charset(?!-)/i
 			end
 		end

@@ -21,21 +21,7 @@ require 'strelka/httpresponse/negotiation'
 #
 #       plugins :routing, :negotiation
 #
-#       add_content_type :tnetstring, 'text/x-tnetstring' do |response|
-#           tnetstr = nil
-#           begin
-#               response.body.rewind
-#               tnetstr = TNetString.dump( response.body )
-#           rescue => err
-#               self.log.error "%p while transforming entity body to a TNetString: %s" %
-#                   [ err.class, err.message ]
-#               return false
-#           else
-#               response.body = tnetstr
-#               response.content_type = 'text/x-tnetstring'
-#               return true
-#           end
-#       end
+#       add_content_type :tnetstring, 'text/x-tnetstring', TNetstring.method( :dump )
 #
 #   end # class UserService
 #
@@ -50,31 +36,16 @@ module Strelka::App::Negotiation
 	# Class methods to add to classes with content-negotiation.
 	module ClassMethods # :nodoc:
 
-		# Content-type tranform registry, keyed by name
-		@content_type_transforms = {}
-		attr_reader :content_type_transforms
-
-		# Content-type transform names, keyed by mimetype
-		@transform_names = {}
-		attr_reader :transform_names
-
-
-		### Extension callback -- add instance variables to extending objects.
-		def inherited( subclass )
-			super
-			subclass.instance_variable_set( :@content_type_transforms, @content_type_transforms.dup )
-			subclass.instance_variable_set( :@transform_names, @transform_names.dup )
-		end
-
-
 		### Define a new media-type associated with the specified +name+ and +mimetype+. Responses
-		### whose requests accept content of the given +mimetype+ will pass their response to the
-		### specified +transform_block+, which should re-write the response's entity body if it can
-		### transform it to its mimetype. If it successfully does so, it should return +true+, else
-		### the next-best mimetype's transform will be called, etc.
-		def add_content_type( name, mimetype, &transform_block )
-			self.transform_names[ mimetype ] = name
-			self.content_type_transforms[ name ] = transform_block
+		### whose requests accept content of the given +mimetype+ will #call the
+		### specified +callback+ with the current response body, and should return the
+		### transformed body. If the conversion failed, the callback can either raise an
+		### exception or return +nil+, either of which will continue on to any remaining
+		### transforms. If no +callback+ is given, the method's block will be used.
+		def add_content_type( name, mimetype, callback=nil ) # :yield: response.body
+			callback ||= Proc.new # Use the block
+			Strelka::HTTPResponse::Negotiation.mimetype_map[ name.to_sym ] = mimetype
+			Strelka::HTTPResponse::Negotiation.stringifiers[ mimetype ] = callback
 		end
 
 	end # module ClassMethods
