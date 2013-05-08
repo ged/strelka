@@ -428,6 +428,11 @@ class Strelka::ParamValidator
 			:uuid		  => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i,
 			:date         => /.*\d.*/,
 			:json         => JSON_VALIDATOR_RE,
+			:md5sum       => /^(?<md5sum>[[:xdigit:]]{32})$/i,
+			:sha1sum      => /^(?<sha1sum>[[:xdigit:]]{40})$/i,
+			:sha256sum    => /^(?<sha256sum>[[:xdigit:]]{64})$/i,
+			:sha384sum    => /^(?<sha384sum>[[:xdigit:]]{96})$/i,
+			:sha512sum    => /^(?<sha512sum>[[:xdigit:]]{128})$/i,
 		}
 
 		# Field values which result in a valid ‘true’ value for :boolean constraints

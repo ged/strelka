@@ -360,6 +360,60 @@ describe Strelka::ParamValidator do
 
 	end # describe "hash parameters"
 
+	describe "merging new parameters" do
+
+		it "can be merged with another set of parameters" do
+			@validator.add( :foo, :integer, :required )
+			@validator.validate( {} )
+			newval = @validator.merge( 'foo' => '1' )
+
+			newval.should_not equal( @validator )
+
+			@validator.should_not be_okay()
+			@validator.should have_errors()
+			newval.should be_okay()
+			newval.should_not have_errors()
+
+			@validator[:foo].should == nil
+			newval[:foo].should == 1
+		end
+
+		it "can have required parameters merged into it after the initial validation" do
+			@validator.add( :foo, :integer, :required )
+			@validator.validate( {} )
+			@validator.merge!( 'foo' => '1' )
+
+			@validator.should be_okay()
+			@validator.should_not have_errors()
+
+			@validator[:foo].should == 1
+		end
+
+		it "can have optional parameters merged into it after the initial validation" do
+			@validator.add( :foom, /^\d+$/ )
+			@validator.validate( {} )
+			@validator.merge!( 'foom' => '5' )
+
+			@validator.should be_okay()
+			@validator.should_not have_errors()
+
+			@validator[:foom].should == '5'
+		end
+
+	    it "rejects invalid parameters when they're merged after initial validation" do
+	            @validator.add( :foom, /^\d+$/ )
+	            @validator.add( :bewm, /^\d+$/ )
+	            @validator.validate( 'foom' => "1" )
+
+	            @validator.merge!( 'bewm' => 'buckwheat noodles' )
+
+	            @validator.should_not be_okay()
+	            @validator.should have_errors()
+	            @validator[:bewm].should == nil
+	    end
+
+	end # describe "merging new parameters"
+
 	describe "builtin constraint type" do
 
 		it "treats ArgumentErrors as validation failures" do
@@ -1066,60 +1120,6 @@ describe Strelka::ParamValidator do
 
 		end
 
-		describe "merging new parameters" do
-
-			it "can be merged with another set of parameters" do
-				@validator.add( :foo, :integer, :required )
-				@validator.validate( {} )
-				newval = @validator.merge( 'foo' => '1' )
-
-				newval.should_not equal( @validator )
-
-				@validator.should_not be_okay()
-				@validator.should have_errors()
-				newval.should be_okay()
-				newval.should_not have_errors()
-
-				@validator[:foo].should == nil
-				newval[:foo].should == 1
-			end
-
-			it "can have required parameters merged into it after the initial validation" do
-				@validator.add( :foo, :integer, :required )
-				@validator.validate( {} )
-				@validator.merge!( 'foo' => '1' )
-
-				@validator.should be_okay()
-				@validator.should_not have_errors()
-
-				@validator[:foo].should == 1
-			end
-
-			it "can have optional parameters merged into it after the initial validation" do
-				@validator.add( :foom, /^\d+$/ )
-				@validator.validate( {} )
-				@validator.merge!( 'foom' => '5' )
-
-				@validator.should be_okay()
-				@validator.should_not have_errors()
-
-				@validator[:foom].should == '5'
-			end
-
-		    it "rejects invalid parameters when they're merged after initial validation" do
-		            @validator.add( :foom, /^\d+$/ )
-		            @validator.add( :bewm, /^\d+$/ )
-		            @validator.validate( 'foom' => "1" )
-
-		            @validator.merge!( 'bewm' => 'buckwheat noodles' )
-
-		            @validator.should_not be_okay()
-		            @validator.should have_errors()
-		            @validator[:bewm].should == nil
-		    end
-
-		end
-
 		describe ":json constraint" do
 
 			# Some tests derived from the json-smart feature test matrix by Uriel Chemouni:
@@ -1344,9 +1344,138 @@ describe Strelka::ParamValidator do
 			end
 		end
 
+		describe ":md5sum constraint" do
 
+			let( :sum ) { Digest::MD5.hexdigest('an api key') }
+
+			it "accepts a 32-character hex string" do
+				@validator.add( :apikey, :md5sum )
+				@validator.validate( 'apikey' => sum )
+
+				@validator.should_not have_errors()
+				@validator.should be_okay()
+
+				@validator[:apikey].should == sum
+			end
+
+			it "rejects anything but a 32-character hex string" do
+				@validator.add( :apikey, :md5sum )
+				@validator.validate( 'apikey' => 'my ponies have WINGS!!!11' )
+
+				@validator.should have_errors()
+				@validator.should_not be_okay()
+
+				@validator[:apikey].should be_nil()
+			end
+
+		end
+
+		describe ":sha1sum constraint" do
+
+			let( :sum ) { Digest::SHA1.hexdigest('an api key') }
+
+			it "accepts a 40-character hex string" do
+				@validator.add( :apikey, :sha1sum )
+				@validator.validate( 'apikey' => sum )
+
+				@validator.should_not have_errors()
+				@validator.should be_okay()
+
+				@validator[:apikey].should == sum
+			end
+
+			it "rejects anything but a 40-character hex string" do
+				@validator.add( :apikey, :sha1sum )
+				@validator.validate( 'apikey' => '084444a9979487f43a238e45afc1ec1277a' )
+
+				@validator.should have_errors()
+				@validator.should_not be_okay()
+
+				@validator[:apikey].should be_nil()
+			end
+
+		end
+
+		describe ":sha256sum constraint" do
+
+			let( :sum ) { Digest::SHA256.hexdigest('an api key') }
+
+			it "accepts a 64-character hex string" do
+				@validator.add( :apikey, :sha256sum )
+				@validator.validate( 'apikey' => sum )
+
+				@validator.should_not have_errors()
+				@validator.should be_okay()
+
+				@validator[:apikey].should == sum
+			end
+
+			it "rejects anything but a 64-character hex string" do
+				@validator.add( :apikey, :sha256sum )
+				@validator.validate( 'apikey' => 'a_key' )
+
+				@validator.should have_errors()
+				@validator.should_not be_okay()
+
+				@validator[:apikey].should be_nil()
+			end
+
+		end
+
+		describe ":sha384sum constraint" do
+
+			let( :sum ) { Digest::SHA384.hexdigest('an api key') }
+
+			it "accepts a 96-character hex string" do
+				@validator.add( :apikey, :sha384sum )
+				@validator.validate( 'apikey' => sum )
+
+				@validator.should_not have_errors()
+				@validator.should be_okay()
+
+				@validator[:apikey].should == sum
+			end
+
+			it "rejects anything but a 96-character hex string" do
+				@validator.add( :apikey, :sha384sum )
+				@validator.validate( 'apikey' => ' ' + sum )
+
+				@validator.should have_errors()
+				@validator.should_not be_okay()
+
+				@validator[:apikey].should be_nil()
+			end
+
+		end
+
+		describe ":sha512sum constraint" do
+
+			let( :sum ) { Digest::SHA512.hexdigest('an api key') }
+
+			it "accepts a 128-character hex string" do
+				@validator.add( :apikey, :sha512sum )
+				@validator.validate( 'apikey' => sum )
+
+				@validator.should_not have_errors()
+				@validator.should be_okay()
+
+				@validator[:apikey].should == sum
+			end
+
+			it "rejects anything but a 128-character hex string" do
+				@validator.add( :apikey, :sha512sum )
+				@validator.validate( 'apikey' => '..,,..' )
+
+				@validator.should have_errors()
+				@validator.should_not be_okay()
+
+				@validator[:apikey].should be_nil()
+			end
+
+		end
 
 	end # describe "constraints"
+
 
 end
 
