@@ -427,6 +427,7 @@ class Strelka::ParamValidator
 			:uri		  => /^(?<uri>#{URI::URI_REF})$/,
 			:uuid		  => /^(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})$/i,
 			:date         => /.*\d.*/,
+			:datetime     => /.*\d.*/,
 			:json         => JSON_VALIDATOR_RE,
 			:md5sum       => /^(?<md5sum>[[:xdigit:]]{32})$/i,
 			:sha1sum      => /^(?<sha1sum>[[:xdigit:]]{40})$/i,
@@ -517,6 +518,14 @@ class Strelka::ParamValidator
 		### Constrain a value to a parseable Date
 		def post_process_date( val )
 			return Date.parse( val )
+		rescue ArgumentError
+			return nil
+		end
+
+
+		### Constrain a value to a parseable Date
+		def post_process_datetime( val )
+			return Time.parse( val )
 		rescue ArgumentError
 			return nil
 		end

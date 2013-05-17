@@ -769,6 +769,41 @@ describe Strelka::ParamValidator do
 
 		end
 
+		describe ":datetime constaints" do
+
+			before( :each ) do
+				@validator.add( :expires, :datetime )
+			end
+
+			it "accepts dates" do
+				@validator.validate( 'expires' => '2008-11-18' )
+
+				@validator.should be_okay()
+				@validator.should_not have_errors()
+
+				@validator[:expires].should == Time.parse( '2008-11-18' )
+			end
+
+			it "accepts a date with a time" do
+				@validator.validate( 'expires' => '2008-11-18T12:31:18.818Z' )
+
+				@validator.should be_okay()
+				@validator.should_not have_errors()
+
+				@validator[:expires].should == Time.parse( '2008-11-18T12:31:18.818Z' )
+			end
+
+			it "rejects non-dates" do
+				@validator.validate( 'expires' => 'someday' )
+
+				@validator.should_not be_okay()
+				@validator.should have_errors()
+
+				@validator[:expires].should be_nil()
+			end
+
+		end
+
 		describe ":uri constraints" do
 			VALID_URIS = %w{
 				http://127.0.0.1
