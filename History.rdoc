@@ -1,3 +1,11 @@
+== v0.5.0 [2013-05-17] Michael Granger <ged@FaerieMUD.org>
+
+- Add :datetime builtin validator
+- Add builtin validators for various checksums.
+- Wire up custom mediatype handlers to content negotiation. Fixes #5.
+- Bump Pluggability dependency
+
+
 == v0.4.0 [2013-03-26] Michael Granger <ged@FaerieMUD.org>
 
 - Handle Strelka::App subclass inheritance, add Strelka::App syntactic
