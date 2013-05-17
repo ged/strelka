@@ -65,6 +65,17 @@ require 'strelka/app' unless defined?( Strelka::App )
 #       end
 #
 #
+# == Supported/Planned Options
+#
+# The 'resource' directive accepts options that control which methods it
+# creates for the specified resource:
+#
+# [√] :readonly     => false
+# [ ] :include      => <array of verbs>
+# [ ] :exclude      => <array of verbs>
+# [ ] :subsets      => <boolean or array>
+# [ ] :associations => <boolean or array>
+#
 module Strelka::App::RestResources
 	extend Strelka::Plugin
 
@@ -202,7 +213,6 @@ module Strelka::App::RestResources
 					"Attributes: \n" +
 					attributes.map {|name,type| "  "}
 				end
-
 
 				return res
 			end
