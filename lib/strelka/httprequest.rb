@@ -3,7 +3,7 @@
 # encoding: utf-8
 
 require 'yajl'
-require 'yaml'
+require 'safe_yaml'
 require 'uri'
 require 'loggability'
 
@@ -203,7 +203,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		when 'application/json', 'text/javascript'
 			return Yajl.load( self.body )
 		when 'text/x-yaml', 'application/x-yaml'
-			return YAML.load( self.body )
+			return YAML.load( self.body, safe: true )
 		when 'multipart/form-data'
 			boundary = self.content_type[ /\bboundary=(\S+)/, 1 ] or
 				raise Strelka::ParseError, "no boundary found for form data: %p" %

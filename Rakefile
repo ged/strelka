@@ -31,10 +31,12 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'sysexits',        '~> 1.1'
 	self.dependency 'trollop',         '~> 2.0'
 	self.dependency 'uuidtools',       '~> 2.1'
+	self.dependency 'safe_yaml',       '~> 0.9'
 
-	self.dependency 'hoe-deveiate',            '~> 0.1', :developer
-	self.dependency 'simplecov',               '~> 0.7', :developer
-	self.dependency 'rdoc-generator-fivefish', '~> 0.2', :developer
+	self.dependency 'hoe-deveiate',            '~> 0.1',  :developer
+	self.dependency 'rspec',                   '~> 0.14', :developer
+	self.dependency 'simplecov',               '~> 0.7',  :developer
+	self.dependency 'rdoc-generator-fivefish', '~> 0.2',  :developer
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.spec_extras[:rdoc_options] = [

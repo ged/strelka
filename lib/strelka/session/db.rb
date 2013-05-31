@@ -87,7 +87,11 @@ class Strelka::Session::Db < Strelka::Session::Default
 	### Load a session instance from storage using the given +session_id+.
 	def self::load( session_id )
 		session_row = self.dataset.filter( :session_id => session_id ).first
-		session = session_row.nil? ? {} : YAML.load( session_row[:session] )
+		session = if session_row.nil?
+				{}
+			else
+				YAML.load( session_row[:session], safe: false )
+			end
 		return new( session_id, session )
 	end
 

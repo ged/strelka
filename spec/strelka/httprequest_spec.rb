@@ -38,43 +38,43 @@ describe Strelka::HTTPRequest do
 		end
 
 		it "knows what the request's parsed URI is" do
-			@req.uri.should be_a( URI )
-			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged'
+			expect( @req.uri ).to be_a( URI )
+			expect( @req.uri.to_s ).to eq( 'http://localhost:8080/directory/userinfo/ged' )
 		end
 
 		it "knows what the request's parsed URI is when it's an HTTPS request" do
 			@req.headers.url_scheme = 'https'
-			@req.uri.should be_a( URI )
-			@req.uri.to_s.should == 'https://localhost:8080/directory/userinfo/ged'
+			expect( @req.uri ).to be_a( URI )
+			expect( @req.uri.to_s ).to eq( 'https://localhost:8080/directory/userinfo/ged' )
 		end
 
 		it "doesn't error when run under earlier versions of Mongrel that didn't set the " +
 		   "url-scheme header" do
 			@req.headers.url_scheme = nil
-			@req.uri.should be_a( URI )
-			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged'
+			expect( @req.uri ).to be_a( URI )
+			expect( @req.uri.to_s ).to eq( 'http://localhost:8080/directory/userinfo/ged' )
 		end
 
 		it "knows what Mongrel2 route it followed" do
-			@req.pattern.should == '/directory'
+			expect( @req.pattern ).to eq( '/directory' )
 		end
 
 		it "knows what the URI of the route handling the request is" do
-			@req.base_uri.should be_a( URI )
-			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+			expect( @req.base_uri ).to be_a( URI )
+			expect( @req.base_uri.to_s ).to eq( 'http://localhost:8080/directory' )
 		end
 
 		it "knows what the path of the request past its route is" do
-			@req.app_path.should == '/userinfo/ged'
+			expect( @req.app_path ).to eq( '/userinfo/ged' )
 		end
 
 		it "knows what HTTP verb the request used" do
-			@req.verb.should == :GET
+			expect( @req.verb ).to eq(:GET)
 		end
 
 		it "can get and set notes for communication between plugins" do
-			@req.notes.should be_a( Hash )
-			@req.notes[:routing].should be_a( Hash )
+			expect( @req.notes ).to be_a( Hash )
+			expect( @req.notes[:routing] ).to be_a( Hash )
 		end
 
 		it "can redirect the request to a different URI" do
@@ -97,21 +97,21 @@ describe Strelka::HTTPRequest do
 		end
 
 		it "knows what the request's parsed URI is" do
-			@req.uri.should be_a( URI )
-			@req.uri.to_s.should == 'http://localhost:8080/directory/user%20info/ged%00'
+			expect( @req.uri ).to be_a( URI )
+			expect( @req.uri.to_s ).to eq( 'http://localhost:8080/directory/user%20info/ged%00' )
 		end
 
 		it "knows what Mongrel2 route it followed" do
-			@req.pattern.should == "/directory"
+			expect( @req.pattern ).to eq('/directory')
 		end
 
 		it "knows what the URI of the route handling the request is" do
-			@req.base_uri.should be_a( URI )
-			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+			expect( @req.base_uri ).to be_a( URI )
+			expect( @req.base_uri.to_s ).to eq( 'http://localhost:8080/directory' )
 		end
 
 		it "knows what the path of the request past its route is" do
-			@req.app_path.should == "/user info/ged\0"
+			expect( @req.app_path ).to eq("/user info/ged\0")
 		end
 
 	end
@@ -124,26 +124,26 @@ describe Strelka::HTTPRequest do
 		end
 
 		it "knows what the request's parsed URI is" do
-			@req.uri.should be_a( URI )
-			@req.uri.to_s.should == 'http://localhost:8080/directory/userinfo/ged?limit=10;offset=20'
+			expect( @req.uri ).to be_a( URI )
+			expect( @req.uri.to_s ).to eq( 'http://localhost:8080/directory/userinfo/ged?limit=10;offset=20' )
 		end
 
 		it "knows what Mongrel2 route it followed" do
-			@req.pattern.should == '/directory'
+			expect( @req.pattern ).to eq( '/directory' )
 		end
 
 		it "knows what the URI of the route handling the request is" do
-			@req.base_uri.should be_a( URI )
-			@req.base_uri.to_s.should == 'http://localhost:8080/directory'
+			expect( @req.base_uri ).to be_a( URI )
+			expect( @req.base_uri.to_s ).to eq( 'http://localhost:8080/directory' )
 		end
 
 		it "knows what the path of the request past its route is" do
-			@req.app_path.should == '/userinfo/ged'
-			@req.app_path.should == '/userinfo/ged' # make sure the slice is non-destructive
+			expect( @req.app_path ).to eq( '/userinfo/ged' )
+			expect( @req.app_path ).to eq( '/userinfo/ged' ) # make sure the slice is non-destructive
 		end
 
 		it "knows what HTTP verb the request used" do
-			@req.verb.should == :GET
+			expect( @req.verb ).to eq(:GET)
 		end
 
 	end
@@ -154,53 +154,53 @@ describe Strelka::HTTPRequest do
 		context "a GET request" do
 			it "has an empty params Hash if the request doesn't have a query string " do
 				req = @request_factory.get( '/directory/path' )
-				req.params.should == {}
+				expect( req.params ).to eq({})
 			end
 
 			it "has a params Hash with the key/value pair in it if the query string has " +
 			   "one key/value pair" do
 				req = @request_factory.get( '/directory/path?foo=bar' )
-				req.params.should == {'foo' => 'bar'}
+				expect( req.params ).to eq({'foo' => 'bar'})
 			end
 
 			it "has a params Hash with the key/value pairs in it if the query string has " +
 			   "two pairs seperated with a an ampersand" do
 				req = @request_factory.get( '/directory/path?foo=bar&chunky=pork' )
-				req.params.should == {
+				expect( req.params ).to eq({
 					'foo'    => 'bar',
 					'chunky' => 'pork',
-				}
+				})
 			end
 
 			it "has a params Hash with the key/value pairs in it if the query string has " +
 			   "two pairs with a semi-colon separator" do
 				req = @request_factory.get( '/directory/path?potato=gun;legume=bazooka' )
-				req.params.should == {
+				expect( req.params ).to  eq({
 					'potato' => 'gun',
 					'legume' => 'bazooka',
-				}
+				})
 			end
 
 			it "has a params Hash with an Array of values if the query string has two values " +
 			   "for the same key" do
 				req = @request_factory.get( '/directory/path?foo=bar&foo=baz' )
-				req.params.should == {
+				expect( req.params ).to eq({
 					'foo'    => ['bar', 'baz'],
-				}
+				})
 			end
 
 			it "has a params Hash with one Array of values and a scalar value if the query " +
 			   "string has three values and two keys" do
 				req = @request_factory.get( '/directory/path?foo=bar&foo=pork;mirror=sequel' )
-				req.params.should == {
+				expect( req.params ).to eq({
 					'foo'    => ['bar', 'pork'],
 					'mirror' => 'sequel',
-				}
+				})
 			end
 
 			it "treats a malformed query string as the lack of a query" do
 				req = @request_factory.get( '/directory/path?foo' )
-				req.params.should == {}
+				expect( req.params ).to eq({})
 			end
 		end
 
@@ -212,7 +212,7 @@ describe Strelka::HTTPRequest do
 
 
 			it "Doesn't respond with a 400 (BAD_REQUEST)" do
-				@req.params.should be_nil
+				expect( @req.params ).to be_nil
 			end
 		end
 
@@ -231,7 +231,7 @@ describe Strelka::HTTPRequest do
 					%{I really don't like this path.\r\n} +
 					%{----a_boundary--\r\n}
 
-				@req.params.should == {'reason' => "I really don't like this path."}
+				expect( @req.params ).to eq({'reason' => "I really don't like this path."})
 			end
 
 		end
@@ -267,46 +267,46 @@ describe Strelka::HTTPRequest do
 
 			it "returns an empty Hash for an empty body" do
 				@req.body = ''
-				@req.params.should == {}
+				expect( @req.params ).to eq({})
 			end
 
 			it "has a params Hash with the key/value pair in it if the form data has " +
 			   "one key/value pair" do
 				@req.body = 'foo=bar'
-				@req.params.should == {'foo' => 'bar'}
+				expect( @req.params ).to eq({'foo' => 'bar'})
 			end
 
 			it "has a params Hash with the key/value pairs in it if the form data has " +
 			   "two pairs seperated with a an ampersand" do
 				@req.body = 'foo=bar&chunky=pork'
-				@req.params.should == {
+				expect( @req.params ).to eq({
 					'foo'    => 'bar',
 					'chunky' => 'pork',
-				}
+				})
 			end
 
 			it "has a params Hash with the key/value pairs in it if the form data has " +
 			   "two pairs with a semi-colon separator" do
 				@req.body = 'potato=gun;legume=bazooka'
-				@req.params.should == {
+				expect( @req.params ).to eq({
 					'potato' => 'gun',
 					'legume' => 'bazooka',
-				}
+				})
 			end
 
 			it "has a params Hash with an Array of values if the form data has two values " +
 			   "for the same key" do
 				@req.body = 'foo=bar&foo=baz'
-				@req.params.should == { 'foo' => ['bar', 'baz'] }
+				expect( @req.params ).to eq({ 'foo' => ['bar', 'baz'] })
 			end
 
 			it "has a params Hash with one Array of values and a scalar value if the form " +
 			   "data has three values and two keys" do
 				@req.body = 'foo=bar&foo=pork;mirror=sequel'
-				@req.params.should == {
+				expect( @req.params ).to eq({
 					'foo'    => ['bar', 'pork'],
 					'mirror' => 'sequel',
-				}
+				})
 			end
 		end
 
@@ -324,7 +324,7 @@ describe Strelka::HTTPRequest do
 					%{An Impossible Task\r\n} +
 					%{----a_boundary--\r\n}
 
-				@req.params.should == {'title' => 'An Impossible Task'}
+				expect( @req.params ).to eq({'title' => 'An Impossible Task'})
 			end
 
 		end
@@ -338,16 +338,64 @@ describe Strelka::HTTPRequest do
 
 			it "returns nil for an empty body" do
 				@req.body = ''
-				@req.params.should be_nil()
+				expect( @req.params ).to be_nil()
 			end
 
-			it "has the JSON data as the params if it has a body with JSON object in it" do
+			it "has the JSON data as the params if it has a body with a JSON object in it" do
 				data = {
 					'animal' => 'ducky',
 					'adjectives' => ['fluffy', 'puddle-ey'],
 				}
 				@req.body = Yajl.dump( data )
-				@req.params.should == data
+				expect( @req.params ).to eq( data )
+			end
+
+		end
+
+		context "a POST request with a 'text/x-yaml' body" do
+			before( :each ) do
+				@req = @request_factory.post( '/directory/path', '',
+					'Content-type' => 'text/x-yaml' )
+			end
+
+			it "returns nil for an empty body" do
+				@req.body = ''
+				expect( @req.params ).to be_false()
+			end
+
+			it "has the YAML data as the params if it has a body with YAML in it" do
+				data = {
+					'animal' => 'ducky',
+					'adjectives' => ['fluffy', 'puddle-ey'],
+				}
+				@req.body = data.to_yaml
+				expect( @req.params ).to eq( data )
+			end
+
+			it "doesn't deserialize Symbols from the YAML body" do
+				data = {
+					animal: 'horsie',
+					adjectives: ['cuddly', 'stompery'],
+				}
+				@req.body = data.to_yaml
+
+				expect( @req.params.keys ).not_to include( :animal, :adjectives )
+			end
+
+			it "doesn't deserialize unsafe objects" do
+				obj = OpenStruct.new
+				obj.foo = 'stuff'
+				obj.bar = 'some other stuff'
+				@req.body = obj.to_yaml
+
+				expect( @req.params ).not_to be_a( OpenStruct )
+				expect( @req.params ).to eq({
+					"table" => {
+						":foo" => "stuff",
+						":bar" => "some other stuff"
+					},
+					"modifiable"=>true
+				})
 			end
 
 		end
@@ -364,16 +412,16 @@ describe Strelka::HTTPRequest do
 
 		it "parses a single cookie into a cookieset with the cookie in it" do
 			@req.header.cookie = 'foom=chuckUfarly'
-			@req.cookies.should have( 1 ).member
-			@req.cookies['foom'].value.should == 'chuckUfarly'
+			expect( @req.cookies ).to have( 1 ).member
+			expect( @req.cookies['foom'].value ).to eq( 'chuckUfarly' )
 		end
 
 		it "parses multiple cookies into a cookieset with multiple cookies in it" do
 			@req.header.cookie = 'foom=chuckUfarly; glarn=hotchinfalcheck'
 
-			@req.cookies.should have( 2 ).members
-			@req.cookies['foom'].value.should == 'chuckUfarly'
-			@req.cookies['glarn'].value.should == 'hotchinfalcheck'
+			expect( @req.cookies ).to have( 2 ).members
+			expect( @req.cookies['foom'].value ).to eq( 'chuckUfarly' )
+			expect( @req.cookies['glarn'].value ).to eq( 'hotchinfalcheck' )
 		end
 
 	end
