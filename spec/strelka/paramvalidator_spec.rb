@@ -508,8 +508,17 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_true()
 			end
 
-			it "accepts the value 'false'" do
+			it "accepts the string 'false'" do
 				@validator.validate( 'enabled' => 'false' )
+
+				@validator.should be_okay()
+				@validator.should_not have_errors()
+
+				@validator[:enabled].should be_false()
+			end
+
+			it "accepts the literal false value" do
+				@validator.validate( 'enabled' => false )
 
 				@validator.should be_okay()
 				@validator.should_not have_errors()
@@ -562,6 +571,12 @@ describe Strelka::ParamValidator do
 				@validator[:enabled].should be_nil()
 			end
 
+			it "includes literal false values in the hash of valid data" do
+				@validator.validate( 'enabled' => false )
+
+				@validator.valid.should include( enabled: false )
+			end
+
 		end
 
 		describe ":integer constraints" do
@@ -594,6 +609,16 @@ describe Strelka::ParamValidator do
 				@validator.should_not have_errors()
 
 				@validator[:count].should == -407
+			end
+
+			it "accepts literal integers" do
+				@validator.add( :count, :integer )
+				@validator.validate( 'count' => 118 )
+
+				@validator.should be_okay()
+				@validator.should_not have_errors()
+
+				@validator[:count].should == 118
 			end
 
 			it "rejects non-integers" do

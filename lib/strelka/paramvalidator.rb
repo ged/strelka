@@ -728,6 +728,8 @@ class Strelka::ParamValidator
 		params = stringify_keys( params )
 		@fields = deep_copy( params )
 
+		self.log.debug "Starting validation with fields: %p" % [ @fields ]
+
 		# Use the constraints list to extract all the parameters that have corresponding
 		# constraints
 		self.constraints.each do |field, constraint|
@@ -751,7 +753,7 @@ class Strelka::ParamValidator
 	### the given +value+, and add the field to the appropriate field list based on the
 	### result.
 	def apply_constraint( constraint, value )
-		if value
+		if !value.nil?
 			result = constraint.apply( value, self.untaint_all? )
 
 			if !result.nil?
@@ -807,9 +809,11 @@ class Strelka::ParamValidator
 	def valid
 		self.validate unless self.validated?
 
+		self.log.debug "Building valid fields hash from raw data: %p" % [ @valid ]
 		unless @parsed_params
 			@parsed_params = {}
 			for key, value in @valid
+				self.log.debug "  adding %s: %p" % [ key, value ]
 				value = [ value ] if key.to_s.end_with?( '[]' )
 				if key.to_s.include?( '[' )
 					build_deep_hash( value, @parsed_params, get_levels(key.to_s) )
