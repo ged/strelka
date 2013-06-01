@@ -47,6 +47,8 @@ require 'strelka/app' unless defined?( Strelka::App )
 #
 # [√] Composite resources generated from associations
 # [ ] Honor If-unmodified-since and If-match headers
+# [ ] Support the 'fields' parameter for GET /collection
+# [ ] Support reverse-ordering (via '-fieldname'?)
 # [ ] Caching support (ETag, If-modified-since)
 # [ ] Means of tailoring responses for requests for which the response
 #     isn't clearly specified in the RFC (DELETE /resource)
