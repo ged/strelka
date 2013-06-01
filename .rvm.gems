@@ -1,5 +1,5 @@
 # .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
-rspec -v0.14.0.rc1
+rspec -v2.14.0.rc1
 configurability -v2.0.0
 foreman -v0.62.0
 highline -v1.6.15
