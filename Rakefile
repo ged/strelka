@@ -25,7 +25,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'foreman',         '~> 0.62'
 	self.dependency 'highline',        '~> 1.6'
 	self.dependency 'inversion',       '~> 0.12'
-	self.dependency 'loggability',     '~> 0.5'
+	self.dependency 'loggability',     '~> 0.6'
 	self.dependency 'mongrel2',        '~> 0.36'
 	self.dependency 'pluggability',    '~> 0.2'
 	self.dependency 'sysexits',        '~> 1.1'
