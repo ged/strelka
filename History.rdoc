@@ -1,3 +1,14 @@
+== v0.6.0 [2013-06-12] Michael Granger <ged@FaerieMUD.org>
+
+- Bump dependency on Loggability and Configurability
+- Add some planned features to restresources
+- Fix the rspec version in the RMV gemset
+- Use the safe_yaml gem for loading untrusted request bodies.
+- Fix validator for literal "false" (via JSON)
+- Change HTTPRequest#params to consistently return a Hash, regardless of
+  whether or not the request body is one.
+
+
 == v0.5.0 [2013-05-17] Michael Granger <ged@FaerieMUD.org>
 
 - Add :datetime builtin validator
