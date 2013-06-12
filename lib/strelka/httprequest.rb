@@ -127,24 +127,32 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 	### Parse the request parameters and return them as a Hash. For GET requests, these are
 	### taken from the query arguments.  For requests that commonly
-	### contain an entity-body, try and parse that.
+	### contain an entity-body, this method will attempt to parse that.
 	###
 	###   # For a handler with a route of '/user', for the request:
 	###   # "GET /user/1/profile?checkbox=1&checkbox=2&text=foo HTTP/1.1"
 	###   # r.params
 	###   # => {"checkbox"=>["1", "2"], "text"=>"foo"}
+	###
+	### If the request body is not a Hash, an empty Hash with the body's value as the default
+	### value will be returned instead.
 	def params
 		unless @params
+			value = nil
+
 			case self.verb
 			when :GET, :HEAD
-				@params = self.parse_query_args
+				value = self.parse_query_args
 			when :POST, :PUT
-				@params = self.parse_form_data
+				value = self.parse_form_data
 			when :TRACE
 				self.log.debug "No parameters for a TRACE request."
 			else
-				@params = self.parse_form_data if self.content_type
+				value = self.parse_form_data if self.content_type
 			end
+
+			value = Hash.new( value ) unless value.is_a?( Hash )
+			@params = value
 		end
 
 		return @params

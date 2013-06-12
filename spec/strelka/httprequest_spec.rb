@@ -211,8 +211,8 @@ describe Strelka::HTTPRequest do
 			end
 
 
-			it "Doesn't respond with a 400 (BAD_REQUEST)" do
-				expect( @req.params ).to be_nil
+			it "params are all nil" do
+				expect( @req.params[:foo] ).to be_nil
 			end
 		end
 
@@ -267,7 +267,7 @@ describe Strelka::HTTPRequest do
 
 			it "returns an empty Hash for an empty body" do
 				@req.body = ''
-				expect( @req.params ).to eq({})
+				expect( @req.params['foo'] ).to be_nil
 			end
 
 			it "has a params Hash with the key/value pair in it if the form data has " +
@@ -336,9 +336,9 @@ describe Strelka::HTTPRequest do
 					'Content-type' => 'application/json' )
 			end
 
-			it "returns nil for an empty body" do
+			it "returns a default params hash for an empty body" do
 				@req.body = ''
-				expect( @req.params ).to be_nil()
+				expect( @req.params[:foo] ).to be_nil
 			end
 
 			it "has the JSON data as the params if it has a body with a JSON object in it" do
@@ -350,6 +350,12 @@ describe Strelka::HTTPRequest do
 				expect( @req.params ).to eq( data )
 			end
 
+			it "has the array as the default param value if the body has a JSON array in it" do
+				data = %w[an array of stuff]
+				@req.body = Yajl.dump( data )
+				expect( @req.params[:foo] ).to eq( data )
+			end
+
 		end
 
 		context "a POST request with a 'text/x-yaml' body" do
@@ -358,9 +364,9 @@ describe Strelka::HTTPRequest do
 					'Content-type' => 'text/x-yaml' )
 			end
 
-			it "returns nil for an empty body" do
+			it "returns a params hash in which all values are nil for an empty body" do
 				@req.body = ''
-				expect( @req.params ).to be_false()
+				expect( @req.params[:profile] ).to be_false
 			end
 
 			it "has the YAML data as the params if it has a body with YAML in it" do
@@ -396,6 +402,11 @@ describe Strelka::HTTPRequest do
 					},
 					"modifiable"=>true
 				})
+			end
+
+			it "handles null entity bodies by returning an empty Hash" do
+				@req.body = ''
+				expect( @req.params ).to eq( {} )
 			end
 
 		end
