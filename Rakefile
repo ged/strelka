@@ -19,6 +19,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = FileList[ '*.rdoc' ]
 
+	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 
 	self.dependency 'configurability', '~> 2.0'
