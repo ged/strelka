@@ -463,6 +463,7 @@ class Strelka::App < Mongrel2::Handler
 		# Some status codes allow explanatory text to be returned; some forbid it. Append the
 		# message for those that allow one.
 		unless request.verb == :HEAD || response.bodiless?
+			self.log.debug "Writing plain-text response body: %p" % [ message ]
 			response.content_type = 'text/plain'
 			response.puts( message )
 		end

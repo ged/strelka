@@ -108,6 +108,22 @@ describe Strelka::HTTPResponse::Negotiation do
 			}.to raise_error( StandardError, /no known mimetype/i )
 		end
 
+		it "treat exceptions raised from the block as failed transformations" do
+			@req.headers.accept = 'application/json, text/plain; q=0.9'
+
+			@res.for( :json ) do
+				raise "Oops! I fail at JSON!"
+			end
+			@res.for( :text ) do
+				"But I can do plain-text all day long!"
+			end
+
+			@res.negotiated_body.rewind
+			expect( @res.negotiated_body.read ).to eq( "But I can do plain-text all day long!" )
+			expect( @res.content_type ).to eq( 'text/plain' )
+			expect( @res.header_data ).to match( /accept(?!-)/i )
+		end
+
 	end
 
 

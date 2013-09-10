@@ -352,7 +352,13 @@ module Strelka::HTTPResponse::Negotiation
 	def try_content_type_callback( mimetype, callback )
 		self.log.debug "  trying content-type callback %p (%s)" % [ callback, mimetype ]
 
-		new_body = callback.call( mimetype ) or return false
+		new_body = begin
+			callback.call( mimetype )
+		rescue => err
+			self.log.error "  %p raised from the callback for %s: %s" %
+				[ err.class, mimetype, err.message ]
+			return false
+		end
 
 		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body.class ]
 		stringifiers = Strelka::HTTPResponse::Negotiation.stringifiers
