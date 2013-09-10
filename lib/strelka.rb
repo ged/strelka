@@ -36,6 +36,7 @@ module Strelka
 	require 'strelka/app'
 	require 'strelka/httprequest'
 	require 'strelka/httpresponse'
+	require 'strelka/discovery'
 
 
 	### Get the library version. If +include_buildnum+ is true, the version string will
@@ -67,10 +68,10 @@ module Strelka
 	### named +gemname+. Returns the first matching class, or raises an exception if no
 	### app class was found.
 	def self::App( appname, gemname=nil )
-		path, _ = Strelka::App.find( appname, gemname )
+		path, _ = Strelka::Discovery.find( appname, gemname )
 		raise LoadError, "Can't find the %s app." % [ appname ] unless path
 
-		apps = Strelka::App.load( path ) or
+		apps = Strelka::Discovery.load( path ) or
 			raise ScriptError "Loading %s didn't define a Strelka::App class." % [ path ]
 
 		return apps.first

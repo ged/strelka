@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 
 require 'strelka'
+require 'strelka/discovery'
+
 require 'trollop'
 require 'highline'
 require 'loggability'
@@ -211,7 +213,7 @@ class Strelka::CLICommand
 		# Set the datadir override if it's given
 		if self.options.datadir
 			self.log.debug "Using data dir option: %s" % [ self.options.datadir ]
-			Strelka::App.local_data_dirs = Pathname( self.options.datadir )
+			Strelka::Discovery.local_data_dirs = Pathname( self.options.datadir )
 		end
 
 		# Include a 'lib' directory if there is one
@@ -266,7 +268,7 @@ class Strelka::CLICommand
 
 		self.load_additional_requires
 
-		paths = Strelka::App.discover_paths
+		paths = Strelka::Discovery.discover_paths
 		if paths.empty?
 			message "None found."
 		else
@@ -297,14 +299,14 @@ class Strelka::CLICommand
 	def start_command( *args )
 		appname = args.pop
 		gemname = args.pop
-		path, gemname = Strelka::App.find( appname, gemname )
+		path, gemname = Strelka::Discovery.find( appname, gemname )
 
 		header "Starting the %s app%s" % [
 			appname,
 			gemname == '' ? '' : " from the #{gemname} gem"
 		]
 
-		apps = Strelka::App.load( path )
+		apps = Strelka::Discovery.load( path )
 		Strelka.load_config( self.options.config ) if self.options.config
 		self.log.debug "  loaded: %p" % [ apps ]
 
@@ -328,13 +330,13 @@ class Strelka::CLICommand
 		discovery_name = gemname || ''
 
 		header "Dumping config for %s" % [ gemname || 'local apps' ]
-		discovered_apps = Strelka::App.discover_paths
+		discovered_apps = Strelka::Discovery.discover_paths
 
 		raise ArgumentError, "No apps discovered" unless discovered_apps.key?( discovery_name )
 
 		discovered_apps[ discovery_name ].each do |apppath|
 			message "  loading %s (%s)" % [ apppath, apppath.basename('.rb') ]
-			Strelka::App.load( apppath )
+			Strelka::Discovery.load( apppath )
 		end
 
 		self.load_additional_requires

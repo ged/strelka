@@ -33,7 +33,7 @@ describe Strelka::App::Sessions do
 	end
 
 
-	it_should_behave_like( "A Strelka::App Plugin" )
+	it_should_behave_like( "A Strelka Plugin" )
 
 
 	describe "session-class loading" do

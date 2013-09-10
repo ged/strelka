@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+require 'strelka/websocketserver'
+
+
+# An example of a Strelka WebSocketServer that echoes back whatever (non-control) frames you send
+# it.
+class WebSocketEchoServer < Strelka::WebSocketServer
+
+	# Application ID
+	ID = 'ws-echo'
+
+	#
+	# Heartbeat plugin
+	#
+	# plugin :heartbeat
+	#
+	# heartbeat_rate 5.0
+	# idle_timeout 15.0
+
+
+	#
+	# Routing
+	#
+
+	plugin :routing
+
+	# Handle TEXT, BINARY, and CONTINUATION frames by replying with an echo of the
+	# same data. Fragmented frames get echoed back as-is without any reassembly.
+	on_text do |frame|
+		self.log.info "Echoing data frame: %p" % [ frame ]
+
+		# Make the response frame
+		response = frame.response
+		response.fin = frame.fin?
+		IO.copy_stream( frame.payload, response.payload )
+
+		return response
+	end
+	alias_method :handle_binary_frame, :on_text_frame
+	alias_method :handle_continuation_frame, :on_text_frame
+
+
+	# Handle close frames
+	on_close do |frame|
+
+		# There will still be a connection slot if this close originated with
+		# the client. In that case, reply with the ACK CLOSE frame
+		self.conn.reply( frame.response(:close) ) if
+			self.connections.delete( [frame.sender_id, frame.conn_id] )
+
+		self.conn.reply_close( frame )
+		return nil
+	end
+
+
+end # class RequestDumper
+
+Encoding.default_internal = Encoding::UTF_8
+WebSocketEchoServer.run if __FILE__ == $0

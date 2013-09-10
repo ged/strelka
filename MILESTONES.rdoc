@@ -4,7 +4,7 @@
 
 === Documentation
 
-[ ] Ensure the README is up to date
+[√] Ensure the README is up to date
 [ ] Update the IDEAS doc
 [ ] Extract the rest of the tutorial part of the manual out into RDoc for the app classes
 [ ] Lay out the framework for the 'cookbook' section of the manual

@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+require 'strelka/websocketserver'
+
+
+# An example of a Strelka WebSocketServer that echoes back whatever (non-control) frames you send
+# it.
+class WebSocketChatServer < Strelka::WebSocketServer
+	include Mongrel2::WebSocket::Constants
+
+
+	### Set up the user registry.
+	def initialize( * )
+		super
+		@users = {}
+	end
+
+
+	#
+	# Heartbeat plugin
+	#
+	plugin :heartbeat
+
+	heartbeat_rate 5.0
+	idle_timeout 15.0
+
+
+	# Make a new user slot for sockets when they start up.
+	on_handshake do |frame|
+		super
+		@users[ frame.socket_id ] = nil
+	end
+
+
+	# When a text frame comes in (or is assembled from :continuation frames), parse it as JSON
+	# and decide what to do based on its contents.
+	on_text do |frame|
+		
+	end
+
+
+
+	# Handle close frames
+	on_close do |frame|
+
+		username = self.users.delete( frame.socket_id )
+		self.broadcast_notice( "#{username} disconnected." ) if username
+
+		# There will still be a connection slot if this close originated with
+		# the client. In that case, reply with the ACK CLOSE frame
+		self.conn.reply( frame.response(:close) ) if
+			self.connections.delete( [frame.sender_id, frame.conn_id] )
+
+		self.conn.reply_close( frame )
+		return nil
+	end
+
+
+end # class RequestDumper
+
+Loggability.level = $DEBUG||$VERBOSE ? :debug : :info
+Loggability.format_as( :color ) if $stdin.tty?
+
+# Point to the config database, which will cause the handler to use
+# its ID to look up its own socket info.
+Mongrel2::Config.configure( :configdb => 'examples.sqlite' )
+WebSocketEchoServer.run( 'ws-echo' )
+

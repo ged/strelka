@@ -26,4 +26,5 @@ end # class HelloWorldApp
 
 
 # Run the app
+Encoding.default_internal = Encoding::UTF_8
 HelloWorldApp.run if __FILE__ == $0

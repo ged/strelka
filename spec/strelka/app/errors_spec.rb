@@ -36,7 +36,7 @@ describe Strelka::App::Errors do
 	end
 
 
-	it_should_behave_like( "A Strelka::App Plugin" )
+	it_should_behave_like( "A Strelka Plugin" )
 
 
 	describe "an including App" do

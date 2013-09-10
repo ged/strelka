@@ -5,5 +5,5 @@ auth: ../bin/strelka -D . -l warn -c config.yml start auth-demo
 auth2: ../bin/strelka -D . -l warn -c config.yml start auth-demo2
 sessions: ../bin/strelka -D . -l debug -c config.yml start sessions-demo
 upload: ../bin/strelka -D . -l debug -c config.yml start upload-demo
-# ws: ../bin/strelka -l info -c config.yml start ws-echo
+ws: ../bin/strelka -l info -c config.yml start ws-echo
 

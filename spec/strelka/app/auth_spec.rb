@@ -35,7 +35,7 @@ describe Strelka::App::Auth do
 	end
 
 
-	it_should_behave_like( "A Strelka::App Plugin" )
+	it_should_behave_like( "A Strelka Plugin" )
 
 
 	it "gives including apps a default authprovider" do

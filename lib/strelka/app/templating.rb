@@ -123,7 +123,7 @@ module Strelka::App::Templating
 	### Return an Array of Pathnames to all directories named 'templates' under the
 	### data dirctories of loaded gems which have a dependency on Strelka.
 	def self::discover_template_dirs
-		directories = Strelka::App.discover_data_dirs.values.flatten
+		directories = Strelka::Discovery.discover_data_dirs.values.flatten
 
 		self.log.debug "Discovered data directories: %p" % [ directories ]
 

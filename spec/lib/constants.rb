@@ -8,7 +8,8 @@ require 'strelka' unless defined?( Strelka )
 ### A collection of constants used in testing
 module Strelka::TestConstants # :nodoc:all
 
-	include Strelka::Constants
+	include Strelka::Constants,
+	        Mongrel2::WebSocket::Constants
 
 	unless defined?( TEST_HOST )
 
@@ -24,7 +25,7 @@ module Strelka::TestConstants # :nodoc:all
 
 		# Freeze all testing constants
 		constants.each do |cname|
-			const_get(cname).freeze
+			const_get(cname).freeze if cname.to_s.start_with?( 'TEST_' )
 		end
 	end
 
