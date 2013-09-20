@@ -27,6 +27,8 @@ examples/apps/auth-demo2
 examples/apps/hello-world
 examples/apps/sessions-demo
 examples/apps/upload-demo
+examples/apps/ws-chat
+examples/apps/ws-echo
 examples/config.yml
 examples/gen-config.rb
 examples/static/examples.css
@@ -55,6 +57,7 @@ lib/strelka/behavior/plugin.rb
 lib/strelka/constants.rb
 lib/strelka/cookie.rb
 lib/strelka/cookieset.rb
+lib/strelka/discovery.rb
 lib/strelka/exceptions.rb
 lib/strelka/httprequest.rb
 lib/strelka/httprequest/acceptparams.rb
@@ -75,6 +78,8 @@ lib/strelka/session.rb
 lib/strelka/session/db.rb
 lib/strelka/session/default.rb
 lib/strelka/testing.rb
+lib/strelka/websocketserver.rb
+lib/strelka/websocketserver/routing.rb
 spec/data/error.tmpl
 spec/data/forms/2_images.form
 spec/data/forms/singleupload.form
@@ -104,6 +109,7 @@ spec/strelka/authprovider/hostaccess_spec.rb
 spec/strelka/authprovider_spec.rb
 spec/strelka/cookie_spec.rb
 spec/strelka/cookieset_spec.rb
+spec/strelka/discovery_spec.rb
 spec/strelka/exceptions_spec.rb
 spec/strelka/httprequest/acceptparams_spec.rb
 spec/strelka/httprequest/auth_spec.rb
@@ -123,4 +129,6 @@ spec/strelka/router_spec.rb
 spec/strelka/session/db_spec.rb
 spec/strelka/session/default_spec.rb
 spec/strelka/session_spec.rb
+spec/strelka/websocketserver/routing_spec.rb
+spec/strelka/websocketserver_spec.rb
 spec/strelka_spec.rb
