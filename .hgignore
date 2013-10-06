@@ -10,3 +10,5 @@ manual/output/
 ChangeLog
 examples/var/
 \.lock$
+\.log$
+examples/\.env$
