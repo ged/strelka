@@ -9,3 +9,4 @@
 manual/output/
 ChangeLog
 examples/var/
+\.lock$

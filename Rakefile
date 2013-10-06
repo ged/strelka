@@ -11,6 +11,7 @@ end
 Hoe.plugin :mercurial
 Hoe.plugin :signing
 Hoe.plugin :deveiate
+Hoe.plugin :bundler
 
 Hoe.plugins.delete :rubyforge
 
@@ -35,6 +36,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'safe_yaml',       '~> 0.9'
 
 	self.dependency 'hoe-deveiate',            '~> 0.1',  :developer
+	self.dependency 'hoe-bundler',             '~> 1.2',  :developer
 	self.dependency 'rspec',                   '~> 0.14', :developer
 	self.dependency 'simplecov',               '~> 0.7',  :developer
 	self.dependency 'rdoc-generator-fivefish', '~> 0.2',  :developer
