@@ -17,17 +17,17 @@ server 'examples' do
 	name         'Strelka Examples'
 	default_host 'localhost'
 
-	access_log   '/logs/access.log'
-	error_log    '/logs/error.log'
-	chroot       '/var/mongrel2'
-	pid_file     '/run/mongrel2.pid'
+	access_log   'logs/access.log'
+	error_log    'logs/error.log'
+	pid_file     'run/mongrel2.pid'
 
+	chroot       ''
 	bind_addr    '0.0.0.0'
 	port         8113
 
 	host 'localhost' do
 
-		route '/', directory( 'examples/static/', 'examples.html', 'text/html' )
+		route '/', directory( 'static/', 'examples.html', 'text/html' )
 
 		# Handlers
 		route '/hello', handler( 'tcp://127.0.0.1:9900', 'hello-world' )
@@ -45,6 +45,7 @@ setting "zeromq.threads", 1
 
 setting 'limits.content_length', 8096
 setting 'upload.temp_store', 'var/uploads/mongrel2.upload.XXXXXX'
+setting 'server.daemonize', false
 
 mkdir_p 'var/uploads'
 mkdir_p 'run'
