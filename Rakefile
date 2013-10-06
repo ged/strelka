@@ -41,7 +41,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'simplecov',               '~> 0.7',  :developer
 	self.dependency 'rdoc-generator-fivefish', '~> 0.2',  :developer
 
-	self.spec_extras[:licenses] = ["BSD"]
+	self.license "BSD"
 	self.spec_extras[:rdoc_options] = [
 		'-t', 'Strelka Web Application Toolkit',
 		'-w', '4',
