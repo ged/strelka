@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'tempfile'
+
 require 'strelka' unless defined?( Strelka )
 require 'strelka/constants'
 
@@ -192,7 +194,8 @@ module Strelka
 			return obj if obj.class.name == 'RSpec::Mocks::Mock'
 
 			return case obj
-				when NilClass, Numeric, TrueClass, FalseClass, Symbol, Module
+				when NilClass, Numeric, TrueClass, FalseClass, Symbol,
+				     Module, Encoding, IO, Tempfile
 					obj
 
 				when Array
