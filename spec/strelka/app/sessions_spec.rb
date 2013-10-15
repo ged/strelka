@@ -1,14 +1,8 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -49,12 +43,12 @@ describe Strelka::App::Sessions do
 
 		it "has a default associated session class" do
 			Strelka::App::Sessions.configure
-			Strelka::App::Sessions.session_class.should be( Strelka::Session::Default )
+			expect( Strelka::App::Sessions.session_class ).to be( Strelka::Session::Default )
 		end
 
 		it "is can be configured to use a different session class" do
 			Strelka::App::Sessions.configure( :session_class => 'testing' )
-			Strelka::App::Sessions.session_class.should == @test_session_class
+			expect( Strelka::App::Sessions.session_class ).to eq( @test_session_class )
 		end
 
 	end
@@ -103,11 +97,11 @@ describe Strelka::App::Sessions do
 			@app.session_namespace :indian_gurbles
 			subclass = Class.new( @app )
 
-			subclass.session_namespace.should == @app.session_namespace
+			expect( subclass.session_namespace ).to eq( @app.session_namespace )
 		end
 
 		it "has a default session key that's the same as its appid" do
-			@app.session_namespace.should == @app.default_appid
+			expect( @app.session_namespace ).to eq( @app.default_appid )
 		end
 
 		it "can set its session namespace to something else" do
@@ -115,25 +109,25 @@ describe Strelka::App::Sessions do
 				session_namespace :findizzle
 			end
 
-			@app.session_namespace.should == :findizzle
+			expect( @app.session_namespace ).to eq( :findizzle )
 		end
 
 		it "extends the request and response classes" do
 			@app.install_plugins
-			Strelka::HTTPRequest.should < Strelka::HTTPRequest::Session
-			Strelka::HTTPResponse.should < Strelka::HTTPResponse::Session
+			expect( Strelka::HTTPRequest ).to be < Strelka::HTTPRequest::Session
+			expect( Strelka::HTTPResponse ).to be < Strelka::HTTPResponse::Session
 		end
 
 		it "sets the session namespace on requests" do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
-			req.session_namespace.should == @app.default_appid
+			expect( req.session_namespace ).to eq( @app.default_appid )
 		end
 
 		it "saves the session automatically" do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
-			res.cookies.should include( Strelka::Session::Default.cookie_name )
+			expect( res.cookies ).to include( Strelka::Session::Default.cookie_name )
 		end
 
 	end

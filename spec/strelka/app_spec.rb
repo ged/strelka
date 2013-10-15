@@ -2,17 +2,11 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
 require 'zmq'
 require 'mongrel2'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/app'
@@ -69,10 +63,10 @@ describe Strelka::App do
 	it "returns a No Content response by default" do
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.status_line.should == 'HTTP/1.1 204 No Content'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.status_line ).to eq( 'HTTP/1.1 204 No Content' )
 		res.body.rewind
-		res.body.read.should == ''
+		expect( res.body.read ).to eq( '' )
 	end
 
 
@@ -91,10 +85,10 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.status_line.should == 'HTTP/1.1 304 Not Modified'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.status_line ).to eq( 'HTTP/1.1 304 Not Modified' )
 		res.body.rewind
-		res.body.read.should == ''
+		expect( res.body.read ).to eq( '' )
 	end
 
 
@@ -112,11 +106,11 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.status_line.should == 'HTTP/1.1 403 Forbidden'
-		res.content_type.should == 'text/plain'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.status_line ).to eq( 'HTTP/1.1 403 Forbidden' )
+		expect( res.content_type ).to eq( 'text/plain' )
 		res.body.rewind
-		res.body.read.should == "You aren't allowed to look at that.\n"
+		expect( res.body.read ).to eq( "You aren't allowed to look at that.\n" )
 	end
 
 
@@ -135,11 +129,11 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.status_line.should == 'HTTP/1.1 403 Forbidden'
-		res.content_type.should == 'text/html'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.status_line ).to eq( 'HTTP/1.1 403 Forbidden' )
+		expect( res.content_type ).to eq( 'text/html' )
 		res.body.rewind
-		res.body.read.should == "You aren't allowed to look at that.\n"
+		expect( res.body.read ).to eq( "You aren't allowed to look at that.\n" )
 	end
 
 	it "sets the error status info in the transaction notes for error responses" do
@@ -155,10 +149,10 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.notes.should include( :status_info )
-		res.notes[:status_info].should include( :status, :message, :headers )
-		res.notes[:status_info][:status].should == HTTP::FORBIDDEN
-		res.notes[:status_info][:message].should == "You aren't allowed to look at that."
+		expect( res.notes ).to include( :status_info )
+		expect( res.notes[:status_info] ).to include( :status, :message, :headers )
+		expect( res.notes[:status_info][:status] ).to eq( HTTP::FORBIDDEN )
+		expect( res.notes[:status_info][:message] ).to eq( "You aren't allowed to look at that." )
 	end
 
 
@@ -173,8 +167,8 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.content_type.should == 'text/css'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.content_type ).to eq( 'text/css' )
 	end
 
 	it "doesn't override an explicitly-set content-type header with the default" do
@@ -189,8 +183,8 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.content_type.should == 'text/plain'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.content_type ).to eq( 'text/plain' )
 	end
 
 
@@ -206,11 +200,11 @@ describe Strelka::App do
 		req = @request_factory.head( '/mail/inbox' )
 		res = @app.new.handle( req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.content_type.should == 'text/plain'
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.content_type ).to eq( 'text/plain' )
 		res.body.rewind
-		res.body.read.should == ''
-		res.headers.content_length.should == "Rendered output.\n".bytesize
+		expect( res.body.read ).to eq( '' )
+		expect( res.headers.content_length ).to eq( "Rendered output.\n".bytesize )
 	end
 
 
@@ -218,9 +212,9 @@ describe Strelka::App do
 		@app.const_set( :ID, 'testing-app' )
 		conn = double( "Mongrel2 connection", close: true )
 
-		Mongrel2::Handler.should_receive( :connection_info_for ).with( 'testing-app' ).
+		expect( Mongrel2::Handler ).to receive( :connection_info_for ).with( 'testing-app' ).
 			and_return([ TEST_SEND_SPEC, TEST_RECV_SPEC ])
-		Mongrel2::Connection.should_receive( :new ).
+		expect( Mongrel2::Connection ).to receive( :new ).
 			with( 'testing-app', TEST_SEND_SPEC, TEST_RECV_SPEC ).
 			and_return( conn )
 
@@ -234,9 +228,9 @@ describe Strelka::App do
 		end
 		conn = double( "Mongrel2 connection", close: true )
 
-		Mongrel2::Handler.should_receive( :connection_info_for ).with( 'my-first-blog' ).
+		expect( Mongrel2::Handler ).to receive( :connection_info_for ).with( 'my-first-blog' ).
 			and_return([ TEST_SEND_SPEC, TEST_RECV_SPEC ])
-		Mongrel2::Connection.should_receive( :new ).
+		expect( Mongrel2::Connection ).to receive( :new ).
 			with( 'my-first-blog', TEST_SEND_SPEC, TEST_RECV_SPEC ).
 			and_return( conn )
 
@@ -253,20 +247,20 @@ describe Strelka::App do
 
 		res = @app.new.handle( @req )
 
-		res.should be_a( Mongrel2::HTTPResponse )
-		res.status.should == HTTP::SERVER_ERROR
+		expect( res ).to be_a( Mongrel2::HTTPResponse )
+		expect( res.status ).to eq( HTTP::SERVER_ERROR )
 		res.content_type = 'text/plain'
 		res.body.rewind
-		res.body.read.should =~ /internal server error/i
+		expect( res.body.read ).to match( /internal server error/i )
 	end
 
 	it "isn't in 'developer mode' by default" do
-		@app.should_not be_in_devmode()
+		expect( @app ).to_not be_in_devmode()
 	end
 
 	it "can be configured to be in 'developer mode' using the Configurability API" do
 		@app.configure( devmode: true )
-		@app.should be_in_devmode()
+		expect( @app ).to be_in_devmode()
 	end
 
 	it "configures itself to be in 'developer mode' if debugging is enabled" do
@@ -275,7 +269,7 @@ describe Strelka::App do
 		begin
 			$DEBUG = true
 			@app.configure
-			@app.should be_in_devmode()
+			expect( @app ).to be_in_devmode()
 		ensure
 			$DEBUG = debugsetting
 		end
@@ -285,12 +279,12 @@ describe Strelka::App do
 		@req.headers.x_mongrel2_upload_start = 'an/uploaded/file/path'
 
 		app = @app.new
-		app.conn.should_receive( :reply ).with( an_instance_of(Strelka::HTTPResponse) )
-		app.conn.should_receive( :reply_close ).with( @req )
+		expect( app.conn ).to receive( :reply ).with( an_instance_of(Strelka::HTTPResponse) )
+		expect( app.conn ).to receive( :reply_close ).with( @req )
 
 		res = app.handle_async_upload_start( @req )
 
-		res.should be_nil()
+		expect( res ).to be_nil()
 	end
 
 
@@ -307,8 +301,8 @@ describe Strelka::App do
 		it "sets the process name to something more interesting than the command line" do
 			@app.new.run
 
-			$0.should =~ /#{@app.inspect}/
-			$0.should =~ %r|\{\S+\} tcp://\S+ <-> \S+|
+			expect( $0 ).to match( /#{@app.inspect}/ )
+			expect( $0 ).to match( %r|\{\S+\} tcp://\S+ <-> \S+| )
 		end
 
 	end
@@ -335,10 +329,10 @@ describe Strelka::App do
 
 			res = @app.new.handle( @req )
 
-			res.should be_a( Mongrel2::HTTPResponse )
-			res.status_line.should == 'HTTP/1.1 200 OK'
+			expect( res ).to be_a( Mongrel2::HTTPResponse )
+			expect( res.status_line ).to eq( 'HTTP/1.1 200 OK' )
 			res.body.rewind
-			res.body.read.should == "Request was funted by Cragnux/1.1.3!\n"
+			expect( res.body.read ).to eq( "Request was funted by Cragnux/1.1.3!\n" )
 		end
 
 
@@ -362,9 +356,9 @@ describe Strelka::App do
 
 			res = @app.new.handle( @req )
 
-			res.should be_a( Mongrel2::HTTPResponse )
-			res.status_line.should == 'HTTP/1.1 200 OK'
-			res.header_data.should =~ %r{X-Funted-By: Cragnux/1.1.3}
+			expect( res ).to be_a( Mongrel2::HTTPResponse )
+			expect( res.status_line ).to eq( 'HTTP/1.1 200 OK' )
+			expect( res.header_data ).to match( %r{X-Funted-By: Cragnux/1.1.3} )
 		end
 
 	end

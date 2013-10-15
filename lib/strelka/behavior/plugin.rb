@@ -30,7 +30,7 @@ shared_examples_for "A Strelka Plugin" do
 
 
 	it "extends Strelka::Plugin" do
-		plugin.should be_a( Strelka::Plugin )
+		expect( plugin ).to be_a( Strelka::Plugin )
 	end
 
 end

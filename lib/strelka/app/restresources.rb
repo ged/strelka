@@ -369,7 +369,7 @@ module Strelka::App::RestResources
 		end
 
 
-		### Add a handler method for updating all instances of +rsrcobj+ collection.
+		### Add a handler method for replacing all instances of +rsrcobj+ collection.
 		### PUT /resources
 		def add_collection_update_handler( route, rsrcobj, options )
 			pkey = rsrcobj.primary_key
@@ -388,7 +388,8 @@ module Strelka::App::RestResources
 				# Save it in a transaction, erroring if any of 'em fail validations
 				begin
 					rsrcobj.db.transaction do
-						rsrcobj.update( newvals )
+						rsrcobj.truncate
+						rsrcobj.create( newvals )
 					end
 				rescue Sequel::ValidationFailed => err
 					finish_with( HTTP::BAD_REQUEST, err.message )

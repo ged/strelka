@@ -1,15 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/session'
@@ -32,7 +26,7 @@ describe Strelka::Session do
 
 
 	it "looks for plugins under strelka/session" do
-		described_class.plugin_prefixes.should include( 'strelka/session' )
+		expect( described_class.plugin_prefixes ).to include( 'strelka/session' )
 	end
 
 
@@ -50,7 +44,7 @@ describe Strelka::Session do
 
 	it "can be asked to load an instance of itself by session ID" do
 		# By default, loading always fails
-		described_class.load( 'the_session_id' ).should be_nil()
+		expect( described_class.load( 'the_session_id' ) ).to be_nil()
 	end
 
 

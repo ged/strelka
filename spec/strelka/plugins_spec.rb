@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -80,7 +74,7 @@ describe "Strelka plugin system" do
 		end
 
 		it "registers itself with a plugin registry" do
-			Strelka::Pluggable.loaded_plugins.should include( @plugin.plugin_name => @plugin )
+			expect( Strelka::Pluggable.loaded_plugins ).to include( @plugin.plugin_name => @plugin )
 		end
 
 
@@ -128,7 +122,7 @@ describe "Strelka plugin system" do
 	context "loading" do
 
 		it "requires plugins from a directory based on the name of the loader" do
-			Strelka::Pluggable.should_receive( :require ).
+			expect( Strelka::Pluggable ).to receive( :require ).
 				with( 'strelka/pluggable/scheduler' ).
 				and_return do
 					Module.new do
@@ -152,7 +146,7 @@ describe "Strelka plugin system" do
 			app = Class.new( Strelka::Pluggable )
 			app.register_plugin( plugin )
 
-			app.a_class_method.should == "yep."
+			expect( app.a_class_method ).to eq( "yep." )
 		end
 
 		it "adds class-instance variables to the class if the plugin has them" do
@@ -168,9 +162,9 @@ describe "Strelka plugin system" do
 			app = Class.new( Strelka::Pluggable )
 			app.register_plugin( plugin )
 
-			app.testing_value.should == :default
+			expect( app.testing_value ).to eq( :default )
 			app.testing_value = :not_the_default
-			app.testing_value.should == :not_the_default
+			expect( app.testing_value ).to eq( :not_the_default )
 		end
 
 		it "adds class-instance variables to the class if the plugin has them" do
@@ -187,7 +181,7 @@ describe "Strelka plugin system" do
 			app.instance_variable_set( :@testing_value, :pre_existing_value )
 			app.register_plugin( plugin )
 
-			app.testing_value.should == :pre_existing_value
+			expect( app.testing_value ).to eq( :pre_existing_value )
 		end
 
 	end
@@ -221,7 +215,7 @@ describe "Strelka plugin system" do
 			end
 			klass.install_plugins
 
-			klass.ancestors.should include( @routing_plugin )
+			expect( klass.ancestors ).to include( @routing_plugin )
 		end
 
 		it "can declare a list of plugins to load" do
@@ -229,7 +223,7 @@ describe "Strelka plugin system" do
 				plugins :templating, :routing
 			end
 			klass.install_plugins
-			klass.ancestors.should include( @routing_plugin, @templating_plugin )
+			expect( klass.ancestors ).to include( @routing_plugin, @templating_plugin )
 		end
 
 		it "has an introspection method for examining the list of loaded plugins" do
@@ -237,7 +231,7 @@ describe "Strelka plugin system" do
 				plugins :templating, :routing
 			end
 			klass.install_plugins
-			klass.application_stack.should == [ @templating_plugin, @routing_plugin ]
+			expect( klass.application_stack ).to eq( [ @templating_plugin, @routing_plugin ] )
 		end
 
 
@@ -250,16 +244,16 @@ describe "Strelka plugin system" do
 			end
 			subclass.install_plugins
 
-			subclass.ancestors.should order( @templating_plugin ).before( @routing_plugin )
+			expect( subclass.ancestors ).to order( @templating_plugin ).before( @routing_plugin )
 		end
 
 		it "adds information about where plugins were installed" do
 			klass = Class.new( Strelka::Pluggable ) do
 				plugin :routing
 			end
-			klass.plugins_installed_from.should be_nil()
+			expect( klass.plugins_installed_from ).to be_nil()
 			klass.install_plugins
-			klass.plugins_installed_from.should =~ /#{__FILE__}:#{__LINE__ - 1}/
+			expect( klass.plugins_installed_from ).to match( /#{__FILE__}:#{__LINE__ - 1}/ )
 		end
 
 		it "are inherited by subclasses" do
@@ -270,7 +264,7 @@ describe "Strelka plugin system" do
 				route_some_stuff
 			end
 
-			subclass.routed.should be_true()
+			expect( subclass.routed ).to be_true()
 		end
 
 	end

@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -51,124 +45,126 @@ describe Strelka::App::Routing do
 
 
 		it "has an Array of raw routes" do
-			@app.routes.should be_a( Array )
+			expect( @app.routes ).to be_a( Array )
 		end
 
 		it "knows what its route methods are" do
-			@app.route_methods.should == []
+			expect( @app.route_methods ).to eq( [] )
 			@app.class_eval do
 				get() {}
 				post( '/clowns' ) {}
 				options( '/clowns' ) {}
 			end
 
-			@app.route_methods.should == [ :GET, :POST_clowns, :OPTIONS_clowns ]
+			expect( @app.route_methods ).to eq( [ :GET, :POST_clowns, :OPTIONS_clowns ] )
 		end
 
 		# OPTIONS GET/HEAD POST PUT DELETE TRACE CONNECT
 
 		it "can declare a OPTIONS route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				options do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :OPTIONS, [], {action: @app.instance_method(:OPTIONS), options: {}} ]
-			]
+			])
 		end
 
 		it "can declare a GET route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				get do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :GET, [], {action: @app.instance_method(:GET), options: {}} ]
-			]
+			])
 		end
 
 		it "can declare a POST route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				post do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :POST, [], {action: @app.instance_method(:POST), options: {}} ]
-			]
+			])
 		end
 
 		it "can declare a PUT route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				put do |req|
 				end
 			end
 
-			@app.routes.should == [[ :PUT, [], {action: @app.instance_method(:PUT), options: {}} ]]
+			expect( @app.routes ).to eq([
+				[ :PUT, [], {action: @app.instance_method(:PUT), options: {}} ]
+			])
 		end
 
 		it "can declare a DELETE route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				delete do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :DELETE, [], {action: @app.instance_method(:DELETE), options: {}} ]
-			]
+			])
 		end
 
 		it "can declare a TRACE route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				trace do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :TRACE, [], {action: @app.instance_method(:TRACE), options: {}} ]
-			]
+			])
 		end
 
 		it "can declare a CONNECT route" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				connect do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :CONNECT, [], {action: @app.instance_method(:CONNECT), options: {}} ]
-			]
+			])
 		end
 
 
 
 		it "allows a route to specify a path" do
-			@app.routes.should be_empty()
+			expect( @app.routes ).to be_empty()
 
 			@app.class_eval do
 				get '/info' do |req|
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ]
-			]
+			])
 		end
 
 		it "allows a route to omit the leading '/' when specifying a path" do
@@ -177,9 +173,9 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.should == [
+			expect( @app.routes ).to eq([
 				[ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ]
-			]
+			])
 		end
 
 		it "allows a route to specify a path via a Regex" do
@@ -188,13 +184,13 @@ describe Strelka::App::Routing do
 				end
 			end
 
-			@app.routes.first[0,2].should == [ :GET, [/\.pdf$/] ]
+			expect( @app.routes.first[0,2] ).to eq( [ :GET, [/\.pdf$/] ] )
 		end
 
 
 		it "uses the Strelka::Router::Default as it's router by default" do
-			@app.routerclass.should == :default
-			@app.new.router.should be_a( Strelka::Router::Default )
+			expect( @app.routerclass ).to eq( :default )
+			expect( @app.new.router ).to be_a( Strelka::Router::Default )
 		end
 
 		it "can specify a different Router class than the default" do
@@ -202,8 +198,8 @@ describe Strelka::App::Routing do
 			@app.class_eval do
 				router MyRouter
 			end
-			@app.routerclass.should equal( MyRouter )
-			@app.new.router.should be_a( MyRouter )
+			expect( @app.routerclass ).to equal( MyRouter )
+			expect( @app.new.router ).to be_a( MyRouter )
 		end
 
 
@@ -218,17 +214,17 @@ describe Strelka::App::Routing do
 				get( '/origami' ) {}
 			end
 
-			subclass.routes.should have( 3 ).members
+			expect( subclass.routes ).to have( 3 ).members
 
 			subclass.routes.
 				should include([ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ])
 			subclass.routes.
 				should include([ :GET, ['about'], {action: @app.instance_method(:GET_about), options: {}} ])
-			subclass.routes.should include(
+			expect( subclass.routes ).to include(
 				[ :GET, ['origami'], {action: subclass.instance_method(:GET_origami), options: {}} ]
 			)
 
-			subclass.routerclass.should == @app.routerclass
+			expect( subclass.routerclass ).to eq( @app.routerclass )
 		end
 
 		describe "that also uses the :parameters plugin" do
@@ -244,9 +240,10 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
+				expect( @app.routes ).to eq([
+					[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]
+				])
 			end
 
 			it "unbinds parameter patterns bound with ^ and $ for the route" do
@@ -256,9 +253,10 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
+				expect( @app.routes ).to eq([
+					[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]
+				])
 			end
 
 			it "unbinds parameter patterns bound with \\A and \\z for the route" do
@@ -268,9 +266,10 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					   {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
+				expect( @app.routes ).to eq([
+					[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]
+				])
 			end
 
 			it "unbinds parameter patterns bound with \\Z for the route" do
@@ -280,9 +279,10 @@ describe Strelka::App::Routing do
 					end
 				end
 
-				@app.routes.should ==
-					[[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
-					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]]
+				expect( @app.routes ).to eq([
+					[ :POST, ['userinfo', /(?<username>[a-z]\w+)/i],
+					  {action: @app.instance_method(:POST_userinfo__re_username), options: {}} ]
+				])
 			end
 
 			it "merges parameters from the route path into the request's param validator" do
@@ -295,7 +295,7 @@ describe Strelka::App::Routing do
 				req = @request_factory.get( '/userinfo/benthik' )
 				@app.new.handle( req )
 
-				req.params[:username].should == 'benthik'
+				expect( req.params[:username] ).to eq( 'benthik' )
 			end
 
 

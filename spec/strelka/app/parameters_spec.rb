@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -56,12 +50,12 @@ describe Strelka::App::Parameters do
 			@app.param :string
 			subclass = Class.new( @app )
 
-			subclass.paramvalidator.param_names.should == @app.paramvalidator.param_names
-			subclass.paramvalidator.should_not equal( @app.paramvalidator )
+			expect( subclass.paramvalidator.param_names ).to eq( @app.paramvalidator.param_names )
+			expect( subclass.paramvalidator ).to_not equal( @app.paramvalidator )
 		end
 
 		it "has a ParamValidator" do
-			@app.paramvalidator.should be_a( Strelka::ParamValidator )
+			expect( @app.paramvalidator ).to be_a( Strelka::ParamValidator )
 		end
 
 		it "can declare a parameter with a regular-expression constraint" do
@@ -69,7 +63,7 @@ describe Strelka::App::Parameters do
 				param :username, /\w+/i
 			end
 
-			@app.paramvalidator.param_names.should == [ 'username' ]
+			expect( @app.paramvalidator.param_names ).to eq( [ 'username' ] )
 		end
 
 		it "can declare a parameter with a builtin constraint" do
@@ -77,7 +71,7 @@ describe Strelka::App::Parameters do
 				param :comment_body, :printable
 			end
 
-			@app.paramvalidator.param_names.should == [ 'comment_body' ]
+			expect( @app.paramvalidator.param_names ).to eq( [ 'comment_body' ] )
 		end
 
 		it "can declare a parameter with a Proc constraint" do
@@ -87,7 +81,7 @@ describe Strelka::App::Parameters do
 				end
 			end
 
-			@app.paramvalidator.param_names.should == [ 'start_time' ]
+			expect( @app.paramvalidator.param_names ).to eq( [ 'start_time' ] )
 		end
 
 
@@ -98,7 +92,7 @@ describe Strelka::App::Parameters do
 				end
 			end
 
-			@app.paramvalidator.param_names.should == [ 'created_at' ]
+			expect( @app.paramvalidator.param_names ).to eq( [ 'created_at' ] )
 		end
 
 
@@ -108,7 +102,7 @@ describe Strelka::App::Parameters do
 			end
 			subapp = Class.new( @app )
 
-			subapp.paramvalidator.param_names.should == [ 'username' ]
+			expect( subapp.paramvalidator.param_names ).to eq( [ 'username' ] )
 		end
 
 		describe "instance" do
@@ -124,20 +118,20 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search' )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::ParamValidator )
-				req.params.should have_errors()
-				req.params.error_messages.should == ["Missing value for 'Username'"]
+				expect( req.params ).to be_a( Strelka::ParamValidator )
+				expect( req.params ).to have_errors()
+				expect( req.params.error_messages ).to eq( ["Missing value for 'Username'"] )
 			end
 
 			it "validates parameters from the request" do
 				req = @request_factory.get( '/user/search?username=anheptoh'.taint )
 				@app.new.handle( req )
 
-				req.params.should be_a( Strelka::ParamValidator )
-				req.params.should be_okay()
-				req.params.should_not have_errors()
-				req.params[:username].should == 'anheptoh'
-				req.params[:username].should be_tainted()
+				expect( req.params ).to be_a( Strelka::ParamValidator )
+				expect( req.params ).to be_okay()
+				expect( req.params ).to_not have_errors()
+				expect( req.params[:username] ).to eq( 'anheptoh' )
+				expect( req.params[:username] ).to be_tainted()
 			end
 
 			it "untaints all parameters if global untainting is enabled" do
@@ -145,12 +139,12 @@ describe Strelka::App::Parameters do
 					untaint_all_constraints true
 				end
 
-				@app.untaint_all_constraints.should be_true()
+				expect( @app.untaint_all_constraints ).to be_true()
 				req = @request_factory.get( '/user/search?username=shereshnaheth'.taint )
 				@app.new.handle( req )
 
-				req.params[:username].should == 'shereshnaheth'
-				req.params[:username].should_not be_tainted()
+				expect( req.params[:username] ).to eq( 'shereshnaheth' )
+				expect( req.params[:username] ).to_not be_tainted()
 			end
 
 			it "untaints parameters flagged for untainting" do
@@ -161,8 +155,8 @@ describe Strelka::App::Parameters do
 				req = @request_factory.get( '/user/search?message=I+love+the+circus.'.taint )
 				@app.new.handle( req )
 
-				req.params[:message].should_not be_tainted()
-				req.params[:message].should == 'I love the circus.'
+				expect( req.params[:message] ).to_not be_tainted()
+				expect( req.params[:message] ).to eq( 'I love the circus.' )
 			end
 
 		end

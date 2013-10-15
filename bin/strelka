@@ -299,12 +299,19 @@ class Strelka::CLICommand
 	def start_command( *args )
 		appname = args.pop
 		gemname = args.pop
-		path, gemname = Strelka::Discovery.find( appname, gemname )
+		path    = nil
 
-		header "Starting the %s app%s" % [
-			appname,
-			gemname == '' ? '' : " from the #{gemname} gem"
-		]
+		if File.exist?( appname )
+			header "Starting %s." % [ appname ]
+			path = appname
+		else
+			path, gemname = Strelka::Discovery.find( appname, gemname )
+
+			header "Starting the %s app%s" % [
+				appname,
+				gemname == '' ? '' : " from the #{gemname} gem"
+			]
+		end
 
 		apps = Strelka::Discovery.load( path )
 		Strelka.load_config( self.options.config ) if self.options.config

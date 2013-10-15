@@ -2,16 +2,10 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
 require 'inversion'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -55,27 +49,28 @@ describe Strelka::App::Templating do
 			specs[:karate]      = make_gemspec( 'karate',    '1.0.0', false )
 			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
 
-			expectation = Gem::Specification.should_receive( :each )
-			specs.values.each {|spec| expectation.and_yield(spec) }
+			expect( Gem::Specification ).to receive( :each ).once do |&block|
+				specs.values.each {|spec| block.call(spec) }
+			end
 
 			gymnastics_path  = specs[:gymnastics].full_gem_path
 			cycling_path  = specs[:cycling_new].full_gem_path
 			javelin_path = specs[:javelin].full_gem_path
 
-			Dir.should_receive( :glob ).with( 'data/*/templates' ).
+			expect( Dir ).to receive( :glob ).with( 'data/*/templates' ).
 				and_return([ "data/foom/templates" ])
-			Dir.should_receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
+			expect( Dir ).to receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
 				and_return([ "#{javelin_path}/data/javelin/templates" ])
-			Dir.should_receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
+			expect( Dir ).to receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
 				and_return([ "#{gymnastics_path}/data/gymnastics/templates" ])
 
-			Dir.should_receive( :glob ).with( "#{cycling_path}/data/cycling/templates" ).
+			expect( Dir ).to receive( :glob ).with( "#{cycling_path}/data/cycling/templates" ).
 				and_return([])
 
 			template_dirs = described_class.discover_template_dirs
 
-			# template_dirs.should have( 4 ).members
-			template_dirs.should include(
+			expect( template_dirs ).to have( 3 ).pathnames
+			expect( template_dirs ).to include(
 				Pathname("data/foom/templates"),
 				Pathname("#{javelin_path}/data/javelin/templates"),
 				Pathname("#{gymnastics_path}/data/gymnastics/templates")
@@ -88,22 +83,23 @@ describe Strelka::App::Templating do
 			specs[:gymnastics]  = make_gemspec( 'gymnastics',  '1.0.0' )
 			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
 
-			expectation = Gem::Specification.should_receive( :each )
-			specs.values.each {|spec| expectation.and_yield(spec) }
+			expect( Gem::Specification ).to receive( :each ).once do |&block|
+				specs.values.each {|spec| block.call(spec) }
+			end
 
 			gymnastics_path = specs[:gymnastics].full_gem_path
 			javelin_path    = specs[:javelin].full_gem_path
 
-			Dir.should_receive( :glob ).with( 'data/*/templates' ).
+			expect( Dir ).to receive( :glob ).with( 'data/*/templates' ).
 				and_return([ "data/foom/templates" ])
-			Dir.should_receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
+			expect( Dir ).to receive( :glob ).with( "#{javelin_path}/data/javelin/templates" ).
 				and_return([ "#{javelin_path}/data/javelin/templates" ])
-			Dir.should_receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
+			expect( Dir ).to receive( :glob ).with( "#{gymnastics_path}/data/gymnastics/templates" ).
 				and_return([ "#{gymnastics_path}/data/gymnastics/templates" ])
 
 			Module.new { include Strelka::App::Templating }
 
-			Inversion::Template.template_paths.should include(
+			expect( Inversion::Template.template_paths ).to include(
 				Pathname("data/foom/templates"),
 				Pathname("#{javelin_path}/data/javelin/templates"),
 				Pathname("#{gymnastics_path}/data/gymnastics/templates")
@@ -133,14 +129,14 @@ describe Strelka::App::Templating do
 			@app.layout 'layout.tmpl'
 			subclass = Class.new( @app )
 
-			subclass.template_map.should == @app.template_map
-			subclass.template_map.should_not equal( @app.template_map )
-			subclass.layout_template.should == @app.layout_template
-			subclass.layout_template.should_not equal( @app.layout_template )
+			expect( subclass.template_map ).to eq( @app.template_map )
+			expect( subclass.template_map ).to_not equal( @app.template_map )
+			expect( subclass.layout_template ).to eq( @app.layout_template )
+			expect( subclass.layout_template ).to_not equal( @app.layout_template )
 		end
 
 		it "has a Hash of templates" do
-			@app.templates.should be_a( Hash )
+			expect( @app.templates ).to be_a( Hash )
 		end
 
 		it "can add templates that it wants to use to its templates hash" do
@@ -148,7 +144,7 @@ describe Strelka::App::Templating do
 				templates :main => 'main.tmpl'
 			end
 
-			@app.templates.should == { :main => 'main.tmpl' }
+			expect( @app.templates ).to eq( { :main => 'main.tmpl' } )
 		end
 
 		it "can declare a layout template" do
@@ -156,7 +152,7 @@ describe Strelka::App::Templating do
 				layout 'layout.tmpl'
 			end
 
-			@app.layout.should == 'layout.tmpl'
+			expect( @app.layout ).to eq( 'layout.tmpl' )
 		end
 
 		describe "instance" do
@@ -178,7 +174,7 @@ describe Strelka::App::Templating do
 
 
 			it "can load declared templates by mentioning the symbol" do
-				@app.new.template( :main ).should be_a( Inversion::Template )
+				expect( @app.new.template( :main ) ).to be_a( Inversion::Template )
 			end
 
 			it "can respond with just a template name" do
@@ -191,8 +187,8 @@ describe Strelka::App::Templating do
 				res = @app.new.handle( @req )
 
 				res.body.rewind
-				res.body.read.should == "A template for testing the Templating plugin.\n"
-				res.status.should == 200
+				expect( res.body.read ).to eq( "A template for testing the Templating plugin.\n" )
+				expect( res.status ).to eq( 200 )
 			end
 
 			it "can respond with just a template instance" do
@@ -205,8 +201,8 @@ describe Strelka::App::Templating do
 				res = @app.new.handle( @req )
 
 				res.body.rewind
-				res.body.read.should == "A template for testing the Templating plugin.\n"
-				res.status.should == 200
+				expect( res.body.read ).to eq( "A template for testing the Templating plugin.\n" )
+				expect( res.status ).to eq( 200 )
 			end
 
 			it "can respond with a Mongrel2::HTTPResponse with a template instance as its body" do
@@ -223,8 +219,8 @@ describe Strelka::App::Templating do
 				res = @app.new.handle( @req )
 
 				res.body.rewind
-				res.body.read.should == "A template for testing the Templating plugin.\n"
-				res.status.should == 200
+				expect( res.body.read ).to eq( "A template for testing the Templating plugin.\n" )
+				expect( res.status ).to eq( 200 )
 			end
 
 
@@ -245,9 +241,9 @@ describe Strelka::App::Templating do
 				res = @app.new.handle( @req )
 
 				res.body.rewind
-				res.body.read.should == "A minimal layout template.\n" +
-					"A template for testing the Templating plugin.\n\n"
-				res.status.should == 200
+				expect( res.body.read ).to eq( "A minimal layout template.\n" +
+					"A template for testing the Templating plugin.\n\n" )
+				expect( res.status ).to eq( 200 )
 			end
 
 			it "doesn't wrap the layout around non-template responses" do
@@ -267,7 +263,7 @@ describe Strelka::App::Templating do
 				res = @app.new.handle( @req )
 
 				res.body.rewind
-				res.body.read.should == "A template for testing the Templating plugin.\n"
+				expect( res.body.read ).to eq( "A template for testing the Templating plugin.\n" )
 			end
 
 		end

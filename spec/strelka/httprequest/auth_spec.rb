@@ -1,19 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/httprequest/auth'
@@ -41,15 +31,15 @@ describe Strelka::HTTPRequest::Auth do
 
 
 	it "adds an authenticated? predicate" do
-		@req.should_not be_authenticated()
+		expect( @req ).to_not be_authenticated()
 		@req.authenticated_user = 'anonymous'
-		@req.should be_authenticated()
+		expect( @req ).to be_authenticated()
 	end
 
 	it "adds an authenticated_user attribute" do
-		@req.authenticated_user.should be_nil()
+		expect( @req.authenticated_user ).to be_nil()
 		@req.authenticated_user = 'someone'
-		@req.authenticated_user.should == 'someone'
+		expect( @req.authenticated_user ).to eq( 'someone' )
 	end
 
 end

@@ -2,16 +2,10 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
 require 'inversion'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -55,8 +49,8 @@ describe Strelka::App::Errors do
 				'blap'
 			end
 			subclass = Class.new( @app )
-			subclass.status_handlers.should == @app.status_handlers
-			subclass.status_handlers.should_not equal( @app.status_handlers )
+			expect( subclass.status_handlers ).to eq( @app.status_handlers )
+			expect( subclass.status_handlers ).to_not equal( @app.status_handlers )
 		end
 
 		it "doesn't alter normal responses" do
@@ -72,9 +66,9 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/koolaid' )
 			res = @app.new.handle( req )
 
-			res.status.should == HTTP::OK
+			expect( res.status ).to eq( HTTP::OK )
 			res.body.rewind
-			res.body.read.should == "Oh yeah! Kool-Aid!\n"
+			expect( res.body.read ).to eq( "Oh yeah! Kool-Aid!\n" )
 		end
 
 		it "raises an error if a handler is declared with both a template and a block" do
@@ -107,7 +101,7 @@ describe Strelka::App::Errors do
 			res = @app.new.handle( req )
 
 			res.body.rewind
-			res.body.read.should =~ /internal server error/i
+			expect( res.body.read ).to match( /internal server error/i )
 		end
 
 		it "calls a callback-style handler for any status when finished with BAD_REQUEST" do
@@ -125,9 +119,9 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.status.should == HTTP::BAD_REQUEST
+			expect( res.status ).to eq( HTTP::BAD_REQUEST )
 			res.body.rewind
-			res.body.read.should == '(400) Filthy banana'
+			expect( res.body.read ).to eq( '(400) Filthy banana' )
 		end
 
 
@@ -143,7 +137,7 @@ describe Strelka::App::Errors do
 			res = @app.new.handle( req )
 
 			res.body.rewind
-			res.body.read.should == 'NOPE!'
+			expect( res.body.read ).to eq( 'NOPE!' )
 		end
 
 
@@ -159,7 +153,7 @@ describe Strelka::App::Errors do
 			res = @app.new.handle( req )
 
 			res.body.rewind
-			res.body.read.should == 'Error:  JAMBA'
+			expect( res.body.read ).to eq( 'Error:  JAMBA' )
 		end
 
 		it "sets the error status info in the transaction notes when the response is handled by a status-handler" do
@@ -177,9 +171,9 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.notes[:status_info].should include( :status, :message, :headers )
-			res.notes[:status_info][:status].should == HTTP::BAD_REQUEST
-			res.notes[:status_info][:message].should == "Your sandwich is missing something."
+			expect( res.notes[:status_info] ).to include( :status, :message, :headers )
+			expect( res.notes[:status_info][:status] ).to eq( HTTP::BAD_REQUEST )
+			expect( res.notes[:status_info][:message] ).to eq( "Your sandwich is missing something." )
 		end
 
 		it "provides its own exception handler for the request phase" do
@@ -197,12 +191,12 @@ describe Strelka::App::Errors do
 			req = @request_factory.get( '/foom' )
 			res = @app.new.handle( req )
 
-			res.notes[:status_info].should include( :status, :message, :headers, :exception )
-			res.notes[:status_info][:status].should == HTTP::SERVER_ERROR
-			res.notes[:status_info][:message].should == "An uncaught exception"
-			res.notes[:status_info][:exception].should be_a( RuntimeError )
+			expect( res.notes[:status_info] ).to include( :status, :message, :headers, :exception )
+			expect( res.notes[:status_info][:status] ).to eq( HTTP::SERVER_ERROR )
+			expect( res.notes[:status_info][:message] ).to eq( "An uncaught exception" )
+			expect( res.notes[:status_info][:exception] ).to be_a( RuntimeError )
 			res.body.rewind
-			res.body.read.should == "RuntimeError"
+			expect( res.body.read ).to eq( "RuntimeError" )
 		end
 
 
@@ -235,7 +229,7 @@ describe Strelka::App::Errors do
 				res = @app.new.handle( req )
 
 				res.body.rewind
-				res.body.read.should =~ /error-handler template/i
+				expect( res.body.read ).to match( /error-handler template/i )
 			end
 		end
 

@@ -1,16 +1,10 @@
 #!/usr/bin/env ruby
 #encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'date'
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/paramvalidator'
@@ -36,8 +30,8 @@ describe Strelka::ParamValidator do
 
 
 	it "starts out empty" do
-		@validator.should be_empty()
-		@validator.should_not have_args()
+		expect( @validator ).to be_empty()
+		expect( @validator ).to_not have_args()
 	end
 
 	it "is no longer empty if at least one set of parameters has been validated" do
@@ -45,8 +39,8 @@ describe Strelka::ParamValidator do
 
 		@validator.validate( {'foo' => "1"} )
 
-		@validator.should_not be_empty()
-		@validator.should have_args()
+		expect( @validator ).to_not be_empty()
+		expect( @validator ).to have_args()
 	end
 
 
@@ -54,20 +48,20 @@ describe Strelka::ParamValidator do
 
 		it "allows constraints to be added" do
 			@validator.add( :a_field, :string )
-			@validator.param_names.should include( 'a_field' )
+			expect( @validator.param_names ).to include( 'a_field' )
 		end
 
 		it "revalidates parameters when new constraints are added" do
 			@validator.validate( 'blorp' => 'true' )
-			@validator[ :blorp ].should be_nil
+			expect( @validator[ :blorp ] ).to be_nil
 			@validator.add( :blorp, :boolean )
-			@validator[ :blorp ].should be_true
+			expect( @validator[ :blorp ] ).to be_true
 		end
 
 		it "ignores identical duplicate constraints to be added twice" do
 			@validator.add( :a_field, :string )
 			@validator.add( :a_field, :string )
-			@validator.param_names.should include( 'a_field' )
+			expect( @validator.param_names ).to include( 'a_field' )
 		end
 
 		it "throws an error if a constraint is re-added with different values" do
@@ -80,18 +74,18 @@ describe Strelka::ParamValidator do
 		it "allows an existing constraint to be overridden" do
 			@validator.add( :a_field, :string )
 			@validator.override( :a_field, :integer )
-			@validator.param_names.should include( 'a_field' )
+			expect( @validator.param_names ).to include( 'a_field' )
 			@validator.validate( 'a_field' => 'a string!' )
-			@validator.should have_errors()
-			@validator.should_not be_okay()
-			@validator.error_messages.should include( "Invalid value for 'A Field'" )
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
+			expect( @validator.error_messages ).to include( "Invalid value for 'A Field'" )
 		end
 
 		it "doesn't allow a non-existant constraint to be overridden" do
 			expect {
 				@validator.override( :a_field, :string )
 			}.to raise_error( /no parameter "a_field" defined/i )
-			@validator.param_names.should_not include( 'a_field' )
+			expect( @validator.param_names ).to_not include( 'a_field' )
 		end
 
 		it "raises an exception on an unknown constraint type" do
@@ -104,9 +98,9 @@ describe Strelka::ParamValidator do
 			@validator.add( :foo, :string, :required )
 			dup = @validator.dup
 			@validator.validate( {} )
-			@validator.should_not be_okay()
-			@validator.should have_errors()
-			@validator.error_messages.should == ["Missing value for 'Foo'"]
+			expect( @validator ).to_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator.error_messages ).to eq( ["Missing value for 'Foo'"] )
 		end
 
 	end # describe "profile"
@@ -117,33 +111,33 @@ describe Strelka::ParamValidator do
 			@validator.add( :foo, /^\d+$/ )
 
 			@validator.validate( {'foo' => "1"} )
-			@validator[:foo].should == "1"
+			expect( @validator[:foo] ).to eq( "1" )
 
 			@validator[:foo] = "bar"
-			@validator["foo"].should == "bar"
+			expect( @validator["foo"] ).to eq( "bar" )
 		end
 
 		it "handles multiple values for the same parameter" do
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => %w[1 2]} )
-			@validator[:foo].should == ['1', '2']
+			expect( @validator[:foo] ).to eq( ['1', '2'] )
 		end
 
 		it "always returns an Array for parameters marked as :multiple" do
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => '1'} )
-			@validator[:foo].should == ['1']
+			expect( @validator[:foo] ).to eq( ['1'] )
 		end
 
 		it "fails to validate if one of a multiple-value parameter doesn't validate" do
 			@validator.add( :foo, /^\d+$/, :multiple )
 
 			@validator.validate( {'foo' => %[1 victor 8]} )
-			@validator.should_not be_okay()
-			@validator.should have_errors()
-			@validator.error_messages.first.should =~ /foo/i
+			expect( @validator ).to_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator.error_messages.first ).to match( /foo/i )
 		end
 
 		it "untaints valid args if told to do so" do
@@ -153,30 +147,30 @@ describe Strelka::ParamValidator do
 			@validator.add( :number, /^\d+$/, :untaint )
 			@validator.validate( 'number' => tainted_one )
 
-			@validator[:number].should == "1"
-			@validator[:number].tainted?.should be_false()
+			expect( @validator[:number] ).to eq( "1" )
+			expect( @validator[:number].tainted? ).to be_false()
 		end
 
 		it "knows the names of fields that were required but missing from the parameters" do
 			@validator.add( :id, :integer, :required )
 			@validator.validate( {} )
 
-			@validator.should have_errors()
-			@validator.should_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
 
-			@validator.missing.should have(1).members
-			@validator.missing.should == ['id']
+			expect( @validator.missing ).to have(1).members
+			expect( @validator.missing ).to eq( ['id'] )
 		end
 
 		it "knows the names of fields that did not meet their constraints" do
 			@validator.add( :number, :integer, :required )
 			@validator.validate( 'number' => 'rhinoceros' )
 
-			@validator.should have_errors()
-			@validator.should_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
 
-			@validator.invalid.should have(1).keys
-			@validator.invalid.keys.should == ['number']
+			expect( @validator.invalid ).to have(1).keys
+			expect( @validator.invalid.keys ).to eq( ['number'] )
 		end
 
 		it "can return a combined list of missing and invalid fields" do
@@ -185,43 +179,43 @@ describe Strelka::ParamValidator do
 
 			@validator.validate( 'number' => 'rhinoceros' )
 
-			@validator.should have_errors()
-			@validator.should_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
 
-			@validator.error_fields.should have(2).members
-			@validator.error_fields.should include('number')
-			@validator.error_fields.should include('id')
+			expect( @validator.error_fields ).to have(2).members
+			expect( @validator.error_fields ).to include('number')
+			expect( @validator.error_fields ).to include('id')
 		end
 
 		it "allows valid parameters to be fetched en masse" do
 			@validator.add( :foom, /^\d+$/ )
 			@validator.add( :bewm, /^\d+$/ )
 			@validator.validate( 'foom' => "1", "bewm" => "2" )
-			@validator.values_at( :foom, :bewm ).should == [ '1', '2' ]
+			expect( @validator.values_at( :foom, :bewm ) ).to eq( [ '1', '2' ] )
 		end
 
 		it "re-validates if profile is modified" do
 			@validator.add( :a_field, :string )
 			@validator.validate( 'a_field' => 'a string!' )
-			@validator.should_not have_errors()
-			@validator.should be_okay()
+			expect( @validator ).to_not have_errors()
+			expect( @validator ).to be_okay()
 
 			@validator.override( :a_field, :integer )
-			@validator.should have_errors()
-			@validator.should_not be_okay()
-			@validator.error_messages.should include( "Invalid value for 'A Field'" )
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
+			expect( @validator.error_messages ).to include( "Invalid value for 'A Field'" )
 		end
 
 		it "re-validates if profile is modified, even with no parameters" do
 			@validator.add( :a_field, :string )
 			@validator.validate
-			@validator.should_not have_errors()
-			@validator.should be_okay()
+			expect( @validator ).to_not have_errors()
+			expect( @validator ).to be_okay()
 
 			@validator.override( :a_field, :string, :required )
-			@validator.should have_errors()
-			@validator.should_not be_okay()
-			@validator.error_messages.should include( "Missing value for 'A Field'" )
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
+			expect( @validator.error_messages ).to include( "Missing value for 'A Field'" )
 		end
 
 	end # describe "validation"
@@ -233,9 +227,9 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			@validator.error_messages.should have(2).members
-			@validator.error_messages.should include("Missing value for 'Id'")
-			@validator.error_messages.should include("Invalid value for 'Number'")
+			expect( @validator.error_messages ).to have(2).members
+			expect( @validator.error_messages ).to include("Missing value for 'Id'")
+			expect( @validator.error_messages ).to include("Invalid value for 'Number'")
 		end
 
 		it "can include unknown fields in its human descriptions of validation errors" do
@@ -243,10 +237,10 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			@validator.error_messages(true).should have(3).members
-			@validator.error_messages(true).should include("Missing value for 'Id'")
-			@validator.error_messages(true).should include("Invalid value for 'Number'")
-			@validator.error_messages(true).should include("Unknown parameter 'Unknown'")
+			expect( @validator.error_messages(true) ).to have(3).members
+			expect( @validator.error_messages(true) ).to include("Missing value for 'Id'")
+			expect( @validator.error_messages(true) ).to include("Invalid value for 'Number'")
+			expect( @validator.error_messages(true) ).to include("Unknown parameter 'Unknown'")
 		end
 
 		it "can use descriptions of parameters when constructing human validation error messages" do
@@ -254,9 +248,9 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, "Test Name", :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			@validator.error_messages.should have(2).members
-			@validator.error_messages.should include("Missing value for 'Test Name'")
-			@validator.error_messages.should include("Invalid value for 'Numeral'")
+			expect( @validator.error_messages ).to have(2).members
+			expect( @validator.error_messages ).to include("Missing value for 'Test Name'")
+			expect( @validator.error_messages ).to include("Invalid value for 'Numeral'")
 		end
 
 		it "can get and set the profile's descriptions directly" do
@@ -269,30 +263,30 @@ describe Strelka::ParamValidator do
 			}
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			@validator.descriptions.should have( 2 ).members
-			@validator.error_messages.should have( 2 ).members
-			@validator.error_messages.should include("Missing value for 'Test Name'")
-			@validator.error_messages.should include("Invalid value for 'Numeral'")
+			expect( @validator.descriptions ).to have( 2 ).members
+			expect( @validator.error_messages ).to have( 2 ).members
+			expect( @validator.error_messages ).to include("Missing value for 'Test Name'")
+			expect( @validator.error_messages ).to include("Invalid value for 'Numeral'")
 		end
 
 		it "capitalizes the names of simple fields for descriptions" do
 			@validator.add( :required, :string )
-			@validator.get_description( "required" ).should == 'Required'
+			expect( @validator.get_description( "required" ) ).to eq( 'Required' )
 		end
 
 		it "splits apart underbarred field names into capitalized words for descriptions" do
 			@validator.add( :rodent_size, :string )
-			@validator.get_description( "rodent_size" ).should == 'Rodent Size'
+			expect( @validator.get_description( "rodent_size" ) ).to eq( 'Rodent Size' )
 		end
 
 		it "uses the key for descriptions of hash fields" do
 			@validator.add( 'rodent[size]', :string )
-			@validator.get_description( "rodent[size]" ).should == 'Size'
+			expect( @validator.get_description( "rodent[size]" ) ).to eq( 'Size' )
 		end
 
 		it "uses separate capitalized words for descriptions of hash fields with underbarred keys " do
 			@validator.add( 'castle[baron_id]', :string )
-			@validator.get_description( "castle[baron_id]" ).should == 'Baron Id'
+			expect( @validator.get_description( "castle[baron_id]" ) ).to eq( 'Baron Id' )
 		end
 
 	end # describe "validation error descriptions"
@@ -303,7 +297,7 @@ describe Strelka::ParamValidator do
 			@validator.add( 'rodent[size]', :string )
 			@validator.validate( 'rodent[size]' => 'unusual' )
 
-			@validator.valid.should == {'rodent' => {'size' => 'unusual'}}
+			expect( @validator.valid ).to eq( {'rodent' => {'size' => 'unusual'}} )
 		end
 
 		it "coalesces complex hash fields into a nested hash of validated values" do
@@ -318,12 +312,12 @@ describe Strelka::ParamValidator do
 			}
 			@validator.validate( args )
 
-			@validator.valid.should == {
+			expect( @validator.valid ).to eq({
 				'recipe' => {
 					'ingredient' => { 'name' => 'nutmeg', 'cost' => '$0.18' },
 					'yield' => '2 loaves'
 				}
-			}
+			})
 		end
 
 		it "untaints both keys and values in complex hash fields if untainting is turned on" do
@@ -341,21 +335,21 @@ describe Strelka::ParamValidator do
 			}
 			@validator.validate( args )
 
-			@validator.valid.should == {
+			expect( @validator.valid ).to eq({
 				'recipe' => {
 					'ingredient' => { 'name' => 'nutmeg', 'cost' => '$0.18', 'rarity' => 'super-rare' },
 					'yield' => '2 loaves'
 				}
-			}
+			})
 
-			@validator.valid.keys.all? {|key| key.should_not be_tainted() }
-			@validator.valid.values.all? {|key| key.should_not be_tainted() }
-			@validator.valid['recipe'].keys.all? {|key| key.should_not be_tainted() }
-			@validator.valid['recipe']['ingredient'].keys.all? {|key| key.should_not be_tainted() }
-			@validator.valid['recipe']['yield'].should_not be_tainted()
-			@validator.valid['recipe']['ingredient']['rarity'].should_not be_tainted()
-			@validator.valid['recipe']['ingredient']['name'].should_not be_tainted()
-			@validator.valid['recipe']['ingredient']['cost'].should_not be_tainted()
+			@validator.valid.keys.each {|key| expect(key).to_not be_tainted() }
+			@validator.valid.values.each {|key| expect(key).to_not be_tainted() }
+			@validator.valid['recipe'].keys.each {|key| expect(key).to_not be_tainted() }
+			@validator.valid['recipe']['ingredient'].keys.each {|key| expect(key).to_not be_tainted() }
+			expect( @validator.valid['recipe']['yield'] ).to_not be_tainted()
+			expect( @validator.valid['recipe']['ingredient']['rarity'] ).to_not be_tainted()
+			expect( @validator.valid['recipe']['ingredient']['name'] ).to_not be_tainted()
+			expect( @validator.valid['recipe']['ingredient']['cost'] ).to_not be_tainted()
 		end
 
 	end # describe "hash parameters"
@@ -367,15 +361,15 @@ describe Strelka::ParamValidator do
 			@validator.validate( {} )
 			newval = @validator.merge( 'foo' => '1' )
 
-			newval.should_not equal( @validator )
+			expect( newval ).to_not equal( @validator )
 
-			@validator.should_not be_okay()
-			@validator.should have_errors()
-			newval.should be_okay()
-			newval.should_not have_errors()
+			expect( @validator ).to_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( newval ).to be_okay()
+			expect( newval ).to_not have_errors()
 
-			@validator[:foo].should == nil
-			newval[:foo].should == 1
+			expect( @validator[:foo] ).to eq( nil )
+			expect( newval[:foo] ).to eq( 1 )
 		end
 
 		it "can have required parameters merged into it after the initial validation" do
@@ -383,10 +377,10 @@ describe Strelka::ParamValidator do
 			@validator.validate( {} )
 			@validator.merge!( 'foo' => '1' )
 
-			@validator.should be_okay()
-			@validator.should_not have_errors()
+			expect( @validator ).to be_okay()
+			expect( @validator ).to_not have_errors()
 
-			@validator[:foo].should == 1
+			expect( @validator[:foo] ).to eq( 1 )
 		end
 
 		it "can have optional parameters merged into it after the initial validation" do
@@ -394,23 +388,23 @@ describe Strelka::ParamValidator do
 			@validator.validate( {} )
 			@validator.merge!( 'foom' => '5' )
 
-			@validator.should be_okay()
-			@validator.should_not have_errors()
+			expect( @validator ).to be_okay()
+			expect( @validator ).to_not have_errors()
 
-			@validator[:foom].should == '5'
+			expect( @validator[:foom] ).to eq( '5' )
 		end
 
-	    it "rejects invalid parameters when they're merged after initial validation" do
-	            @validator.add( :foom, /^\d+$/ )
-	            @validator.add( :bewm, /^\d+$/ )
-	            @validator.validate( 'foom' => "1" )
+		it "rejects invalid parameters when they're merged after initial validation" do
+			@validator.add( :foom, /^\d+$/ )
+			@validator.add( :bewm, /^\d+$/ )
+			@validator.validate( 'foom' => "1" )
 
-	            @validator.merge!( 'bewm' => 'buckwheat noodles' )
+			@validator.merge!( 'bewm' => 'buckwheat noodles' )
 
-	            @validator.should_not be_okay()
-	            @validator.should have_errors()
-	            @validator[:bewm].should == nil
-	    end
+			expect( @validator ).to_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator[:bewm] ).to eq( nil )
+		end
 
 	end # describe "merging new parameters"
 
@@ -419,9 +413,9 @@ describe Strelka::ParamValidator do
 		it "treats ArgumentErrors as validation failures" do
 			@validator.add( :integer )
 			@validator.validate( 'integer' => 'jalopy' )
-			@validator.should_not be_okay()
-			@validator.should have_errors()
-			@validator[:integer].should be_nil()
+			expect( @validator ).to_not be_okay()
+			expect( @validator ).to have_errors()
+			expect( @validator[:integer] ).to be_nil()
 		end
 
 		describe "Regexp" do
@@ -429,22 +423,22 @@ describe Strelka::ParamValidator do
 			it "returns the capture if it has only one" do
 				@validator.add( :treename, /(\w+)/ )
 				@validator.validate( 'treename' => "   ygdrassil   " )
-				@validator[:treename].should == 'ygdrassil'
+				expect( @validator[:treename] ).to eq( 'ygdrassil' )
 			end
 
 			it "returns the captures as an array if it has more than one" do
 				@validator.add( :stuff, /(\w+)(\S+)?/ )
 				@validator.validate( 'stuff' => "   the1tree(!)   " )
-				@validator[:stuff].should == ['the1tree', '(!)']
+				expect( @validator[:stuff] ).to eq( ['the1tree', '(!)'] )
 			end
 
 			it "returns the captures with named captures as a Hash" do
 				@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/, :untaint )
 				@validator.validate( 'order_number' => "   JVV-886451300133   ".taint )
 
-				@validator[:order_number].should == {:category => 'JVV', :sku => '886451300133'}
-				@validator[:order_number][:category].should_not be_tainted()
-				@validator[:order_number][:sku].should_not be_tainted()
+				expect( @validator[:order_number] ).to eq( {:category => 'JVV', :sku => '886451300133'} )
+				expect( @validator[:order_number][:category] ).to_not be_tainted()
+				expect( @validator[:order_number][:sku] ).to_not be_tainted()
 			end
 
 			it "returns the captures as an array " +
@@ -452,7 +446,7 @@ describe Strelka::ParamValidator do
 				@validator.add( :amount, /^([\-+])?(\d+(?:\.\d+)?)/ )
 				@validator.validate( 'amount' => '2.28' )
 
-				@validator[:amount].should == [ nil, '2.28' ]
+				expect( @validator[:amount] ).to eq( [ nil, '2.28' ] )
 			end
 
 		end
@@ -466,115 +460,115 @@ describe Strelka::ParamValidator do
 			it "accepts the value 'true'" do
 				@validator.validate( 'enabled' => 'true' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_true()
+				expect( @validator[:enabled] ).to be_true()
 			end
 
 			it "accepts the value 't'" do
 				@validator.validate( 'enabled' => 't' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_true()
+				expect( @validator[:enabled] ).to be_true()
 			end
 
 			it "accepts the value 'yes'" do
 				@validator.validate( 'enabled' => 'yes' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_true()
+				expect( @validator[:enabled] ).to be_true()
 			end
 
 			it "accepts the value 'y'" do
 				@validator.validate( 'enabled' => 'y' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_true()
+				expect( @validator[:enabled] ).to be_true()
 			end
 
 			it "accepts the value '1'" do
 				@validator.validate( 'enabled' => '1' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_true()
+				expect( @validator[:enabled] ).to be_true()
 			end
 
 			it "accepts the string 'false'" do
 				@validator.validate( 'enabled' => 'false' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "accepts the literal false value" do
 				@validator.validate( 'enabled' => false )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "accepts the value 'f'" do
 				@validator.validate( 'enabled' => 'f' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "accepts the value 'no'" do
 				@validator.validate( 'enabled' => 'no' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "accepts the value 'n'" do
 				@validator.validate( 'enabled' => 'n' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "accepts the value '0'" do
 				@validator.validate( 'enabled' => '0' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:enabled].should be_false()
+				expect( @validator[:enabled] ).to be_false()
 			end
 
 			it "rejects non-boolean parameters" do
 				@validator.validate( 'enabled' => 'peanut' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:enabled].should be_nil()
+				expect( @validator[:enabled] ).to be_nil()
 			end
 
 			it "includes literal false values in the hash of valid data" do
 				@validator.validate( 'enabled' => false )
 
-				@validator.valid.should include( enabled: false )
+				expect( @validator.valid ).to include( enabled: false )
 			end
 
 		end
@@ -585,60 +579,60 @@ describe Strelka::ParamValidator do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '11' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:count].should == 11
+				expect( @validator[:count] ).to eq( 11 )
 			end
 
 			it "accepts '0'" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '0' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:count].should == 0
+				expect( @validator[:count] ).to eq( 0 )
 			end
 
 			it "accepts negative integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '-407' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:count].should == -407
+				expect( @validator[:count] ).to eq( -407 )
 			end
 
 			it "accepts literal integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => 118 )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:count].should == 118
+				expect( @validator[:count] ).to eq( 118 )
 			end
 
 			it "rejects non-integers" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '11.1' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:count].should be_nil()
+				expect( @validator[:count] ).to be_nil()
 			end
 
 			it "rejects integer values with other cruft in them" do
 				@validator.add( :count, :integer )
 				@validator.validate( 'count' => '88licks' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:count].should be_nil()
+				expect( @validator[:count] ).to be_nil()
 			end
 
 		end
@@ -652,118 +646,118 @@ describe Strelka::ParamValidator do
 			it "accepts simple floats" do
 				@validator.validate( 'amount' => '3.14' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 3.14
+				expect( @validator[:amount] ).to eq( 3.14 )
 			end
 
 			it "accepts negative floats" do
 				@validator.validate( 'amount' => '-3.14' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == -3.14
+				expect( @validator[:amount] ).to eq( -3.14 )
 			end
 
 			it "accepts positive floats" do
 				@validator.validate( 'amount' => '+3.14' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 3.14
+				expect( @validator[:amount] ).to eq( 3.14 )
 			end
 
 			it "accepts floats that begin with '.'" do
 				@validator.validate( 'amount' => '.1418' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 0.1418
+				expect( @validator[:amount] ).to eq( 0.1418 )
 			end
 
 			it "accepts negative floats that begin with '.'" do
 				@validator.validate( 'amount' => '-.171' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == -0.171
+				expect( @validator[:amount] ).to eq( -0.171 )
 			end
 
 			it "accepts positive floats that begin with '.'" do
 				@validator.validate( 'amount' => '+.86668001' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 0.86668001
+				expect( @validator[:amount] ).to eq( 0.86668001 )
 			end
 
 			it "accepts floats in exponential notation" do
 				@validator.validate( 'amount' => '1756e-5' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 1756e-5
+				expect( @validator[:amount] ).to eq( 1756e-5 )
 			end
 
 			it "accepts negative floats in exponential notation" do
 				@validator.validate( 'amount' => '-28e8' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == -28e8
+				expect( @validator[:amount] ).to eq( -28e8 )
 			end
 
 			it "accepts floats that start with '.' in exponential notation" do
 				@validator.validate( 'amount' => '.5552e-10' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 0.5552e-10
+				expect( @validator[:amount] ).to eq( 0.5552e-10 )
 			end
 
 			it "accepts negative floats that start with '.' in exponential notation" do
 			   @validator.validate( 'amount' => '-.288088e18' )
 
-			   @validator.should be_okay()
-			   @validator.should_not have_errors()
+			expect(    @validator ).to be_okay()
+			expect(    @validator ).to_not have_errors()
 
-			   @validator[:amount].should == -0.288088e18
+			expect(    @validator[:amount] ).to eq( -0.288088e18 )
 			end
 
 			it "accepts integers" do
 				@validator.validate( 'amount' => '288' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 288.0
+				expect( @validator[:amount] ).to eq( 288.0 )
 			end
 
 			it "accepts negative integers" do
 				@validator.validate( 'amount' => '-1606' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == -1606.0
+				expect( @validator[:amount] ).to eq( -1606.0 )
 			end
 
 			it "accepts positive integers" do
 				@validator.validate( 'amount' => '2600' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:amount].should == 2600.0
+				expect( @validator[:amount] ).to eq( 2600.0 )
 			end
 
 		end
@@ -777,19 +771,19 @@ describe Strelka::ParamValidator do
 			it "accepts dates" do
 				@validator.validate( 'expires' => '2008-11-18' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:expires].should == Date.parse( '2008-11-18' )
+				expect( @validator[:expires] ).to eq( Date.parse( '2008-11-18' ) )
 			end
 
 			it "rejects non-dates" do
 				@validator.validate( 'expires' => 'Mexico' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:expires].should be_nil()
+				expect( @validator[:expires] ).to be_nil()
 			end
 
 		end
@@ -803,28 +797,28 @@ describe Strelka::ParamValidator do
 			it "accepts dates" do
 				@validator.validate( 'expires' => '2008-11-18' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:expires].should == Time.parse( '2008-11-18' )
+				expect( @validator[:expires] ).to eq( Time.parse( '2008-11-18' ) )
 			end
 
 			it "accepts a date with a time" do
 				@validator.validate( 'expires' => '2008-11-18T12:31:18.818Z' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:expires].should == Time.parse( '2008-11-18T12:31:18.818Z' )
+				expect( @validator[:expires] ).to eq( Time.parse( '2008-11-18T12:31:18.818Z' ) )
 			end
 
 			it "rejects non-dates" do
 				@validator.validate( 'expires' => 'someday' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:expires].should be_nil()
+				expect( @validator[:expires] ).to be_nil()
 			end
 
 		end
@@ -899,11 +893,11 @@ describe Strelka::ParamValidator do
 				it "accepts #{uri_string}" do
 					@validator.validate( 'homepage' => uri_string )
 
-					@validator.should be_okay()
-					@validator.should_not have_errors()
+					expect( @validator ).to be_okay()
+					expect( @validator ).to_not have_errors()
 
-					@validator[:homepage].should be_a_kind_of( URI::Generic )
-					@validator[:homepage].to_s.should == uri_string
+					expect( @validator[:homepage] ).to be_a_kind_of( URI::Generic )
+					expect( @validator[:homepage].to_s ).to eq( uri_string )
 				end
 			end
 
@@ -911,10 +905,10 @@ describe Strelka::ParamValidator do
 				it "rejects #{uri_string}" do
 					@validator.validate( 'homepage' => uri_string )
 
-					@validator.should_not be_okay()
-					@validator.should have_errors()
+					expect( @validator ).to_not be_okay()
+					expect( @validator ).to have_errors()
 
-					@validator[:homepage].should be_nil()
+					expect( @validator[:homepage] ).to be_nil()
 				end
 			end
 
@@ -940,20 +934,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :email )
 				@validator.validate( 'email' => 'jrandom@hacker.ie' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:email].should == 'jrandom@hacker.ie'
+				expect( @validator[:email] ).to eq( 'jrandom@hacker.ie' )
 			end
 
 			it "accepts hyphenated domains in RFC822 addresses" do
 				@validator.add( :email )
 				@validator.validate( 'email' => 'jrandom@just-another-hacquer.fr' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:email].should == 'jrandom@just-another-hacquer.fr'
+				expect( @validator[:email] ).to eq( 'jrandom@just-another-hacquer.fr' )
 			end
 
 			COMPLEX_ADDRESSES.each do |addy|
@@ -961,10 +955,10 @@ describe Strelka::ParamValidator do
 					@validator.add( :mail, :email )
 					@validator.validate( 'mail' => addy )
 
-					@validator.should be_okay()
-					@validator.should_not have_errors()
+					expect( @validator ).to be_okay()
+					expect( @validator ).to_not have_errors()
 
-					@validator[:mail].should == addy
+					expect( @validator[:mail] ).to eq( addy )
 				end
 			end
 
@@ -973,10 +967,10 @@ describe Strelka::ParamValidator do
 					@validator.add( :mail, :email )
 					@validator.validate( 'mail' => addy )
 
-					@validator.should_not be_okay()
-					@validator.should have_errors()
+					expect( @validator ).to_not be_okay()
+					expect( @validator ).to have_errors()
 
-					@validator[:mail].should be_nil()
+					expect( @validator[:mail] ).to be_nil()
 				end
 			end
 
@@ -996,20 +990,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :host, :hostname )
 				@validator.validate( 'host' => 'deveiate.org' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:host].should == 'deveiate.org'
+				expect( @validator[:host] ).to eq( 'deveiate.org' )
 			end
 
 			it "accepts hyphenated hostnames" do
 				@validator.add( :hostname )
 				@validator.validate( 'hostname' => 'your-characters-can-fly.kr' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:hostname].should == 'your-characters-can-fly.kr'
+				expect( @validator[:hostname] ).to eq( 'your-characters-can-fly.kr' )
 			end
 
 			BOGUS_HOSTS.each do |hostname|
@@ -1017,10 +1011,10 @@ describe Strelka::ParamValidator do
 					@validator.add( :hostname )
 					@validator.validate( 'hostname' => hostname )
 
-					@validator.should_not be_okay()
-					@validator.should have_errors()
+					expect( @validator ).to_not be_okay()
+					expect( @validator ).to have_errors()
 
-					@validator[:hostname].should be_nil()
+					expect( @validator[:hostname] ).to be_nil()
 				end
 			end
 
@@ -1032,20 +1026,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :alpha )
 				@validator.validate( 'alpha' => 'abelincoln' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:alpha].should == 'abelincoln'
+				expect( @validator[:alpha] ).to eq( 'abelincoln' )
 			end
 
 			it "rejects non-alpha characters" do
 				@validator.add( :alpha )
 				@validator.validate( 'alpha' => 'duck45' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:alpha].should be_nil()
+				expect( @validator[:alpha] ).to be_nil()
 			end
 
 		end
@@ -1056,20 +1050,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :uuid )
 				@validator.validate( 'uuid' => '21BEBFCD-d222-4c40-831e-26730dc9531f' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:uuid].should == '21BEBFCD-d222-4c40-831e-26730dc9531f'
+				expect( @validator[:uuid] ).to eq( '21BEBFCD-d222-4c40-831e-26730dc9531f' )
 			end
 
 			it "rejects invalid UUIDs" do
 				@validator.add( :uuid )
 				@validator.validate( 'uuid' => '21bebfcd-d222-4c40-g31e-26730dc9531f' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:uuid].should be_nil()
+				expect( @validator[:uuid] ).to be_nil()
 			end
 
 		end
@@ -1080,20 +1074,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :username, :alphanumeric )
 				@validator.validate( 'username' => 'zombieabe11' )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:username].should == 'zombieabe11'
+				expect( @validator[:username] ).to eq( 'zombieabe11' )
 			end
 
 			it "rejects non-alphanumeric characters" do
 				@validator.add( :username, :alphanumeric )
 				@validator.validate( 'username' => 'duck!ling' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:username].should be_nil()
+				expect( @validator[:username] ).to be_nil()
 			end
 
 		end
@@ -1110,18 +1104,18 @@ describe Strelka::ParamValidator do
 				@validator.add( :prologue, :printable )
 				@validator.validate( 'prologue' => test_content )
 
-				@validator.should be_okay()
-				@validator[:prologue].should == test_content
+				expect( @validator ).to be_okay()
+				expect( @validator[:prologue] ).to eq( test_content )
 			end
 
 			it "rejects non-printable characters" do
 				@validator.add( :prologue, :printable )
 				@validator.validate( 'prologue' => %{\0Something cold\0} )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:prologue].should be_nil()
+				expect( @validator[:prologue] ).to be_nil()
 			end
 
 		end
@@ -1132,20 +1126,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :vocab_word, :word )
 				@validator.validate( 'vocab_word' => "Собака" )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:vocab_word].should == "Собака"
+				expect( @validator[:vocab_word] ).to eq( "Собака" )
 			end
 
 			it "rejects non-word characters" do
 				@validator.add( :vocab_word, :word )
 				@validator.validate( 'vocab_word' => "Собака!" )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:vocab_word].should be_nil()
+				expect( @validator[:vocab_word] ).to be_nil()
 			end
 
 		end
@@ -1160,10 +1154,10 @@ describe Strelka::ParamValidator do
 				end
 				@validator.validate( 'creation_date' => test_date )
 
-				@validator.should be_okay()
-				@validator.should_not have_errors()
+				expect( @validator ).to be_okay()
+				expect( @validator ).to_not have_errors()
 
-				@validator[:creation_date].should == Date.parse( test_date )
+				expect( @validator[:creation_date] ).to eq( Date.parse( test_date ) )
 			end
 
 			it "rejects parameters if the Proc returns a false value" do
@@ -1172,10 +1166,10 @@ describe Strelka::ParamValidator do
 				end
 				@validator.validate( 'creation_date' => '::::' )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:creation_date].should be_nil()
+				expect( @validator[:creation_date] ).to be_nil()
 			end
 
 		end
@@ -1191,8 +1185,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a simple object string value" do
@@ -1200,8 +1194,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts whitespace in a value" do
@@ -1209,8 +1203,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a simple object integer value" do
@@ -1218,8 +1212,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a single quote in a string value" do
@@ -1227,8 +1221,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a exponented float value" do
@@ -1236,8 +1230,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a lowercase exponented value" do
@@ -1245,8 +1239,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a long number value" do
@@ -1254,8 +1248,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a Bigint value" do
@@ -1263,8 +1257,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a simple digit array value" do
@@ -1272,8 +1266,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a simple string array value" do
@@ -1281,8 +1275,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts an array of empty values" do
@@ -1290,8 +1284,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts lowercase Unicode text values" do
@@ -1299,8 +1293,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a uppercase Unicode value" do
@@ -1308,8 +1302,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts an escaped backslash value" do
@@ -1317,8 +1311,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts null values" do
@@ -1326,8 +1320,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a boolean true value" do
@@ -1335,8 +1329,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a boolean value with whitespace" do
@@ -1344,8 +1338,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 			it "accepts a double-precision floating value" do
@@ -1353,8 +1347,8 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should be_okay()
-				@validator[:object].should == json
+				expect( @validator ).to be_okay()
+				expect( @validator[:object] ).to eq( json )
 			end
 
 
@@ -1364,10 +1358,10 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:object].should be_nil()
+				expect( @validator[:object] ).to be_nil()
 			end
 
 			it "rejects a truncated Object value" do
@@ -1375,10 +1369,10 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:object].should be_nil()
+				expect( @validator[:object] ).to be_nil()
 			end
 
 			it "rejects a truncated String value" do
@@ -1386,10 +1380,10 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:object].should be_nil()
+				expect( @validator[:object] ).to be_nil()
 			end
 
 			it "rejects unescaped control characters in a String value" do
@@ -1397,10 +1391,10 @@ describe Strelka::ParamValidator do
 				@validator.add( :object, :json )
 				@validator.validate( 'object' => json )
 
-				@validator.should_not be_okay()
-				@validator.should have_errors()
+				expect( @validator ).to_not be_okay()
+				expect( @validator ).to have_errors()
 
-				@validator[:object].should be_nil()
+				expect( @validator[:object] ).to be_nil()
 			end
 		end
 
@@ -1412,20 +1406,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :apikey, :md5sum )
 				@validator.validate( 'apikey' => sum )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:apikey].should == sum
+				expect( @validator[:apikey] ).to eq( sum )
 			end
 
 			it "rejects anything but a 32-character hex string" do
 				@validator.add( :apikey, :md5sum )
 				@validator.validate( 'apikey' => 'my ponies have WINGS!!!11' )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:apikey].should be_nil()
+				expect( @validator[:apikey] ).to be_nil()
 			end
 
 		end
@@ -1438,20 +1432,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :apikey, :sha1sum )
 				@validator.validate( 'apikey' => sum )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:apikey].should == sum
+				expect( @validator[:apikey] ).to eq( sum )
 			end
 
 			it "rejects anything but a 40-character hex string" do
 				@validator.add( :apikey, :sha1sum )
 				@validator.validate( 'apikey' => '084444a9979487f43a238e45afc1ec1277a' )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:apikey].should be_nil()
+				expect( @validator[:apikey] ).to be_nil()
 			end
 
 		end
@@ -1464,20 +1458,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :apikey, :sha256sum )
 				@validator.validate( 'apikey' => sum )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:apikey].should == sum
+				expect( @validator[:apikey] ).to eq( sum )
 			end
 
 			it "rejects anything but a 64-character hex string" do
 				@validator.add( :apikey, :sha256sum )
 				@validator.validate( 'apikey' => 'a_key' )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:apikey].should be_nil()
+				expect( @validator[:apikey] ).to be_nil()
 			end
 
 		end
@@ -1490,20 +1484,20 @@ describe Strelka::ParamValidator do
 				@validator.add( :apikey, :sha384sum )
 				@validator.validate( 'apikey' => sum )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:apikey].should == sum
+				expect( @validator[:apikey] ).to eq( sum )
 			end
 
 			it "rejects anything but a 96-character hex string" do
 				@validator.add( :apikey, :sha384sum )
 				@validator.validate( 'apikey' => ' ' + sum )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:apikey].should be_nil()
+				expect( @validator[:apikey] ).to be_nil()
 			end
 
 		end
@@ -1516,26 +1510,25 @@ describe Strelka::ParamValidator do
 				@validator.add( :apikey, :sha512sum )
 				@validator.validate( 'apikey' => sum )
 
-				@validator.should_not have_errors()
-				@validator.should be_okay()
+				expect( @validator ).to_not have_errors()
+				expect( @validator ).to be_okay()
 
-				@validator[:apikey].should == sum
+				expect( @validator[:apikey] ).to eq( sum )
 			end
 
 			it "rejects anything but a 128-character hex string" do
 				@validator.add( :apikey, :sha512sum )
 				@validator.validate( 'apikey' => '..,,..' )
 
-				@validator.should have_errors()
-				@validator.should_not be_okay()
+				expect( @validator ).to have_errors()
+				expect( @validator ).to_not be_okay()
 
-				@validator[:apikey].should be_nil()
+				expect( @validator[:apikey] ).to be_nil()
 			end
 
 		end
 
 	end # describe "constraints"
-
 
 end
 

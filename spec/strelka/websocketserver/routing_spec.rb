@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -51,18 +45,18 @@ describe Strelka::WebSocketServer::Routing do
 
 
 		it "has an Hash of raw routes" do
-			@app.op_callbacks.should be_a( Hash )
+			expect( @app.op_callbacks ).to be_a( Hash )
 		end
 
 		it "knows what its route methods are" do
-			@app.op_callbacks.should == {}
+			expect( @app.op_callbacks ).to eq( {} )
 			@app.class_eval do
 				on_text() {}
 				on_binary() {}
 				on_ping() {}
 			end
 
-			@app.op_callbacks.keys.should == [ :text, :binary, :ping ]
+			expect( @app.op_callbacks.keys ).to eq([ :text, :binary, :ping ])
 		end
 
 		it "allows the declaration of custom opcodes" do
@@ -70,8 +64,8 @@ describe Strelka::WebSocketServer::Routing do
 			@app.class_eval do
 				on_nick() {}
 			end
-			@app.op_callbacks.should have( 1 ).member
-			@app.op_callbacks[ :nick ].should be_a( UnboundMethod )
+			expect( @app.op_callbacks ).to have( 1 ).member
+			expect( @app.op_callbacks[ :nick ] ).to be_a( UnboundMethod )
 		end
 
 
@@ -87,10 +81,10 @@ describe Strelka::WebSocketServer::Routing do
 			frame = @frame_factory.text( "/chat", "Clowns?" )
 			response = @app.new.handle_websocket( frame )
 
-			response.should be_a( Mongrel2::WebSocket::Frame )
-			response.opcode.should == :text
+			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response.opcode ).to eq( :text )
 			response.body.rewind
-			response.body.read.should == "Clowns? Yep!\n"
+			expect( response.body.read ).to eq( "Clowns? Yep!\n" )
 		end
 
 		it "dispatches custom frame type to its handler if one is declared" do
@@ -105,9 +99,9 @@ describe Strelka::WebSocketServer::Routing do
 			frame = @frame_factory.create( '/chat', '', 0xB )
 			response = @app.new.handle_websocket( frame )
 
-			response.should be_a( Mongrel2::WebSocket::Frame )
-			response.opcode.should == :reserved
-			response.numeric_opcode.should == 0xB
+			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response.opcode ).to eq( :reserved )
+			expect( response.numeric_opcode ).to eq( 0xB )
 		end
 
 
@@ -115,8 +109,8 @@ describe Strelka::WebSocketServer::Routing do
 			frame = @frame_factory.text( '/chat', '' )
 			response = @app.new.handle_websocket( frame )
 
-			response.should be_a( Mongrel2::WebSocket::Frame )
-			response.opcode.should == :close
+			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response.opcode ).to eq( :close )
 		end
 
 	end

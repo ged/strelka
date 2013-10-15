@@ -2,19 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/httprequest/acceptparams'
@@ -25,6 +15,7 @@ require 'strelka/httprequest/acceptparams'
 #####################################################################
 
 describe Strelka::HTTPRequest, "accept params" do
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -80,14 +71,14 @@ describe Strelka::HTTPRequest, "accept params" do
 			VALID_HEADERS.each do |hdr, expectations|
 				rval = Strelka::HTTPRequest::MediaType.parse( hdr )
 
-				rval.should be_an_instance_of( Strelka::HTTPRequest::MediaType )
-				rval.type.should    == expectations[:type]
-				rval.subtype.should == expectations[:subtype]
-				rval.qvalue.should  == expectations[:qval]
+				expect( rval ).to be_an_instance_of( Strelka::HTTPRequest::MediaType )
+				expect( rval.type ).to eq( expectations[:type] )
+				expect( rval.subtype ).to eq( expectations[:subtype] )
+				expect( rval.qvalue ).to eq( expectations[:qval] )
 
 				if expectations[:extensions]
 					expectations[:extensions].each do |ext|
-						rval.extensions.should include( ext )
+						expect( rval.extensions ).to include( ext )
 					end
 				end
 			end
@@ -96,29 +87,29 @@ describe Strelka::HTTPRequest, "accept params" do
 
 		it "is lenient (but warns) about invalid qvalues" do
 			rval = Strelka::HTTPRequest::MediaType.parse( '*/*; q=18' )
-			rval.should be_an_instance_of( Strelka::HTTPRequest::MediaType )
-			rval.qvalue.should == 1.0
+			expect( rval ).to be_an_instance_of( Strelka::HTTPRequest::MediaType )
+			expect( rval.qvalue ).to eq( 1.0 )
 		end
 
 
 		it "rejects invalid Accept header values" do
-			lambda {
+			expect {
 				Strelka::HTTPRequest::MediaType.parse( 'porksausage' )
-			}.should raise_error()
+			}.to raise_error()
 		end
 
 
 		it "can represent itself in a human-readable object format" do
 			header = "text/html; q=0.9; level=2"
 			acceptparam = Strelka::HTTPRequest::MediaType.parse( header )
-			acceptparam.inspect.should =~ %r{MediaType.*text/html.*q=0.9}
+			expect( acceptparam.inspect ).to match( %r{MediaType.*text/html.*q=0.9} )
 		end
 
 
 		it "can represent itself as an Accept header" do
 			header = "text/html;q=0.9;level=2"
 			acceptparam = Strelka::HTTPRequest::MediaType.parse( header )
-			acceptparam.to_s.should == header
+			expect( acceptparam.to_s ).to eq( header )
 		end
 
 
@@ -130,14 +121,14 @@ describe Strelka::HTTPRequest, "accept params" do
 				collect {|par| Strelka::HTTPRequest::MediaType.parse( par ) }.
 				sort
 
-			params[0].to_s.should == 'application/xhtml+xml;q=1.0'
-			params[1].to_s.should == 'application/xml;q=1.0'
-			params[2].to_s.should == 'image/png;q=1.0'
-			params[3].to_s.should == 'text/xml;q=1.0'
-			params[4].to_s.should == 'text/html;q=0.9'
-			params[5].to_s.should == 'text/html;q=0.9;level=1'
-			params[6].to_s.should == 'text/plain;q=0.8'
-			params[7].to_s.should == '*/*;q=0.5'
+			expect( params[0].to_s ).to eq( 'application/xhtml+xml;q=1.0' )
+			expect( params[1].to_s ).to eq( 'application/xml;q=1.0' )
+			expect( params[2].to_s ).to eq( 'image/png;q=1.0' )
+			expect( params[3].to_s ).to eq( 'text/xml;q=1.0' )
+			expect( params[4].to_s ).to eq( 'text/html;q=0.9' )
+			expect( params[5].to_s ).to eq( 'text/html;q=0.9;level=1' )
+			expect( params[6].to_s ).to eq( 'text/plain;q=0.8' )
+			expect( params[7].to_s ).to eq( '*/*;q=0.5' )
 		end
 
 
@@ -145,12 +136,12 @@ describe Strelka::HTTPRequest, "accept params" do
 			specific_param = Strelka::HTTPRequest::MediaType.parse( 'text/html' )
 			subtype_wildcard_param = Strelka::HTTPRequest::MediaType.parse( 'image/*' )
 
-			( specific_param =~ 'text/html' ).should be_true()
-			( specific_param =~ 'image/png' ).should be_false()
+			expect( ( specific_param =~ 'text/html' ) ).to be_true()
+			expect( ( specific_param =~ 'image/png' ) ).to be_false()
 
-			( subtype_wildcard_param =~ 'image/png' ).should be_true()
-			( subtype_wildcard_param =~ 'image/jpeg' ).should be_true()
-			( subtype_wildcard_param =~ 'text/plain' ).should be_false()
+			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_true()
+			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_true()
+			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_false()
 		end
 	end
 
@@ -161,33 +152,33 @@ describe Strelka::HTTPRequest, "accept params" do
 			hdr = 'en'
 			param = Strelka::HTTPRequest::Language.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Language )
-			param.primary_tag.should == 'en'
-			param.subtag.should be_nil()
-			param.qvalue.should == 1.0
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Language )
+			expect( param.primary_tag ).to eq( 'en' )
+			expect( param.subtag ).to be_nil()
+			expect( param.qvalue ).to eq( 1.0 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can parse a language range with a dialect" do
 			hdr = 'en-gb'
 			param = Strelka::HTTPRequest::Language.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Language )
-			param.primary_tag.should == 'en'
-			param.subtag.should == 'gb'
-			param.qvalue.should == 1.0
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Language )
+			expect( param.primary_tag ).to eq( 'en' )
+			expect( param.subtag ).to eq( 'gb' )
+			expect( param.qvalue ).to eq( 1.0 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can parse a language tag with a q-value" do
 			hdr = 'en-US; q=0.8'
 			param = Strelka::HTTPRequest::Language.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Language )
-			param.primary_tag.should == 'en'
-			param.subtag.should == 'us'
-			param.qvalue.should == 0.8
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Language )
+			expect( param.primary_tag ).to eq( 'en' )
+			expect( param.subtag ).to eq( 'us' )
+			expect( param.qvalue ).to eq( 0.8 )
+			expect( param.extensions ).to be_empty()
 		end
 
 	end
@@ -199,44 +190,44 @@ describe Strelka::HTTPRequest, "accept params" do
 			hdr = 'iso-8859-1'
 			param = Strelka::HTTPRequest::Charset.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Charset )
-			param.name.should == 'iso-8859-1'
-			param.subtype.should be_nil()
-			param.qvalue.should == 1.0
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Charset )
+			expect( param.name ).to eq( 'iso-8859-1' )
+			expect( param.subtype ).to be_nil()
+			expect( param.qvalue ).to eq( 1.0 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can parse a charset with a q-value" do
 			hdr = 'iso-8859-15; q=0.5'
 			param = Strelka::HTTPRequest::Charset.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Charset )
-			param.name.should == 'iso-8859-15'
-			param.subtype.should be_nil()
-			param.qvalue.should == 0.5
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Charset )
+			expect( param.name ).to eq( 'iso-8859-15' )
+			expect( param.subtype ).to be_nil()
+			expect( param.qvalue ).to eq( 0.5 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can return the Ruby Encoding object associated with its character set" do
 			param = Strelka::HTTPRequest::Charset.parse( 'koi8-r' )
-			param.name.should == 'koi8-r'
-			param.encoding_object.should == Encoding::KOI8_R
+			expect( param.name ).to eq( 'koi8-r' )
+			expect( param.encoding_object ).to eq( Encoding::KOI8_R )
 		end
 
 		it "can be compared against strings" do
 			specific_param = Strelka::HTTPRequest::Charset.parse( 'us-ascii' )
 
-			( specific_param =~ 'us-ascii' ).should be_true()
-			( specific_param =~ 'ansi_x3.4-1968' ).should be_true()
-			( specific_param =~ 'utf-8' ).should be_false()
+			expect( ( specific_param =~ 'us-ascii' ) ).to be_true()
+			expect( ( specific_param =~ 'ansi_x3.4-1968' ) ).to be_true()
+			expect( ( specific_param =~ 'utf-8' ) ).to be_false()
 		end
 
 		it "can be compared against Encoding objects" do
 			specific_param = Strelka::HTTPRequest::Charset.parse( 'utf-8' )
 
-			( specific_param =~ Encoding::UTF_8 ).should be_true()
-			( specific_param =~ Encoding::CP65001 ).should be_true()
-			( specific_param =~ Encoding::MacThai ).should be_false()
+			expect( ( specific_param =~ Encoding::UTF_8 ) ).to be_true()
+			expect( ( specific_param =~ Encoding::CP65001 ) ).to be_true()
+			expect( ( specific_param =~ Encoding::MacThai ) ).to be_false()
 		end
 	end
 
@@ -247,34 +238,34 @@ describe Strelka::HTTPRequest, "accept params" do
 			hdr = 'identity'
 			param = Strelka::HTTPRequest::Encoding.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Encoding )
-			param.content_coding.should == 'identity'
-			param.subtype.should be_nil()
-			param.qvalue.should == 1.0
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Encoding )
+			expect( param.content_coding ).to eq( 'identity' )
+			expect( param.subtype ).to be_nil()
+			expect( param.qvalue ).to eq( 1.0 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can parse an encoding with a q-value" do
 			hdr = 'gzip; q=0.55'
 			param = Strelka::HTTPRequest::Encoding.parse( hdr )
 
-			param.should be_an_instance_of( Strelka::HTTPRequest::Encoding )
-			param.content_coding.should == 'gzip'
-			param.subtype.should be_nil()
-			param.qvalue.should == 0.55
-			param.extensions.should be_empty()
+			expect( param ).to be_an_instance_of( Strelka::HTTPRequest::Encoding )
+			expect( param.content_coding ).to eq( 'gzip' )
+			expect( param.subtype ).to be_nil()
+			expect( param.qvalue ).to eq( 0.55 )
+			expect( param.extensions ).to be_empty()
 		end
 
 		it "can be compared against strings" do
 			specific_param = Strelka::HTTPRequest::MediaType.parse( 'text/html' )
 			subtype_wildcard_param = Strelka::HTTPRequest::MediaType.parse( 'image/*' )
 
-			( specific_param =~ 'text/html' ).should be_true()
-			( specific_param =~ 'image/png' ).should be_false()
+			expect( ( specific_param =~ 'text/html' ) ).to be_true()
+			expect( ( specific_param =~ 'image/png' ) ).to be_false()
 
-			( subtype_wildcard_param =~ 'image/png' ).should be_true()
-			( subtype_wildcard_param =~ 'image/jpeg' ).should be_true()
-			( subtype_wildcard_param =~ 'text/plain' ).should be_false()
+			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_true()
+			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_true()
+			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_false()
 		end
 	end
 

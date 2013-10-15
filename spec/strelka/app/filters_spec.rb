@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -55,26 +49,26 @@ describe Strelka::App::Filters do
 			end
 			subclass = Class.new( @app )
 
-			subclass.filters.should == @app.filters
-			subclass.filters.should_not equal( @app.filters )
-			subclass.filters[:request].should_not equal( @app.filters[:request] )
-			subclass.filters[:response].should_not equal( @app.filters[:response] )
-			subclass.filters[:both].should_not equal( @app.filters[:both] )
+			expect( subclass.filters ).to eq( @app.filters )
+			expect( subclass.filters ).to_not equal( @app.filters )
+			expect( subclass.filters[:request] ).to_not equal( @app.filters[:request] )
+			expect( subclass.filters[:response] ).to_not equal( @app.filters[:response] )
+			expect( subclass.filters[:both] ).to_not equal( @app.filters[:both] )
 		end
 
 		it "has a Hash of filters" do
-			@app.filters.should be_a( Hash )
+			expect( @app.filters ).to be_a( Hash )
 		end
 
 
 		describe "that doesn't declare any filters" do
 
 			it "doesn't have any request filters" do
-				@app.request_filters.should be_empty()
+				expect( @app.request_filters ).to be_empty()
 			end
 
 			it "doesn't have any response filters" do
-				@app.response_filters.should be_empty()
+				expect( @app.response_filters ).to be_empty()
 			end
 
 		end
@@ -102,11 +96,11 @@ describe Strelka::App::Filters do
 
 
 			it "has a single request filter" do
-				@app.request_filters.should have(1).member
+				expect( @app.request_filters ).to have(1).member
 			end
 
 			it "has a single response filter" do
-				@app.response_filters.should have(1).member
+				expect( @app.response_filters ).to have(1).member
 			end
 
 			it "passes both the request and the response through it" do
@@ -114,8 +108,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:saw][:request].should be_true()
-				res.notes[:saw][:response].should be_true()
+				expect( req.notes[:saw][:request] ).to be_true()
+				expect( res.notes[:saw][:response] ).to be_true()
 			end
 
 		end
@@ -142,11 +136,11 @@ describe Strelka::App::Filters do
 
 
 			it "has a single request filter" do
-				@app.request_filters.should have(1).member
+				expect( @app.request_filters ).to have(1).member
 			end
 
 			it "has no response filters" do
-				@app.response_filters.should be_empty()
+				expect( @app.response_filters ).to be_empty()
 			end
 
 			it "passes just the request through it" do
@@ -154,8 +148,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:saw][:request].should be_true()
-				res.notes[:saw][:response].should be_nil()
+				expect( req.notes[:saw][:request] ).to be_true()
+				expect( res.notes[:saw][:response] ).to be_nil()
 			end
 
 		end
@@ -182,11 +176,11 @@ describe Strelka::App::Filters do
 
 
 			it "has no request filters" do
-				@app.request_filters.should be_empty()
+				expect( @app.request_filters ).to be_empty()
 			end
 
 			it "has no response filters" do
-				@app.response_filters.should have(1).member
+				expect( @app.response_filters ).to have(1).member
 			end
 
 			it "passes just the response through it" do
@@ -194,8 +188,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				req.notes[:saw][:request].should be_nil()
-				res.notes[:saw][:response].should be_true()
+				expect( req.notes[:saw][:request] ).to be_nil()
+				expect( res.notes[:saw][:response] ).to be_true()
 			end
 
 		end

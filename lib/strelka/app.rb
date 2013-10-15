@@ -94,8 +94,7 @@ class Strelka::App < Mongrel2::Handler
 
 
 	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if
-	### one is not specified, and automatically install the config DB if it hasn't been
-	### already.
+	### one is not specified.
 	def self::run( appid=nil )
 		appid ||= self.default_appid
 		self.log.info "Starting up with appid %p." % [ appid ]

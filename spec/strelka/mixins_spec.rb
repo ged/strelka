@@ -2,15 +2,10 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'set'
 require 'rspec'
-require 'spec/lib/helpers'
 require 'strelka/mixins'
 
 
@@ -92,35 +87,35 @@ describe Strelka, "mixins" do
 			end
 
 			before( :each ) do
-				@subobj = mock( "delegate" )
+				@subobj = double( "delegate" )
 				@obj = @testclass.new( @subobj )
 			end
 
 
 			it "can be used to set up delegation through a method" do
-				@subobj.should_receive( :delegated_method )
+				expect( @subobj ).to receive( :delegated_method )
 				@obj.delegated_method
 			end
 
 			it "passes any arguments through to the delegate object's method" do
-				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1, :arg2 )
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
 			it "allows delegation to the delegate object's method with a block" do
-				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1 ).
 					and_yield( :the_block_argument )
 				blockarg = nil
 				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
-				blockarg.should == :the_block_argument
+				expect( blockarg ).to eq( :the_block_argument )
 			end
 
 			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
-					err.message.should =~ /nonexistant_method/
-					err.backtrace.first.should =~ /#{__FILE__}/
+					expect( err.message ).to match( /nonexistant_method/ )
+					expect( err.backtrace.first ).to match( /#{__FILE__}/ )
 				rescue ::Exception => err
 					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
 				else
@@ -146,35 +141,35 @@ describe Strelka, "mixins" do
 			end
 
 			before( :each ) do
-				@subobj = mock( "delegate" )
+				@subobj = double( "delegate" )
 				@obj = @testclass.new( @subobj )
 			end
 
 
 			it "can be used to set up delegation through a method" do
-				@subobj.should_receive( :delegated_method )
+				expect( @subobj ).to receive( :delegated_method )
 				@obj.delegated_method
 			end
 
 			it "passes any arguments through to the delegate's method" do
-				@subobj.should_receive( :delegated_method ).with( :arg1, :arg2 )
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1, :arg2 )
 				@obj.delegated_method( :arg1, :arg2 )
 			end
 
 			it "allows delegation to the delegate's method with a block" do
-				@subobj.should_receive( :delegated_method ).with( :arg1 ).
+				expect( @subobj ).to receive( :delegated_method ).with( :arg1 ).
 					and_yield( :the_block_argument )
 				blockarg = nil
 				@obj.delegated_method( :arg1 ) {|arg| blockarg = arg }
-				blockarg.should == :the_block_argument
+				expect( blockarg ).to eq( :the_block_argument )
 			end
 
 			it "reports errors from its caller's perspective", :ruby_1_8_only => true do
 				begin
 					@obj.erroring_delegated_method
 				rescue NoMethodError => err
-					err.message.should =~ /`erroring_delegated_method' for nil/
-					err.backtrace.first.should =~ /#{__FILE__}/
+					expect( err.message ).to match( /`erroring_delegated_method' for nil/ )
+					expect( err.backtrace.first ).to match( /#{__FILE__}/ )
 				rescue ::Exception => err
 					fail "Expected a NoMethodError, but got a %p (%s)" % [ err.class, err.message ]
 				else
@@ -190,26 +185,26 @@ describe Strelka, "mixins" do
 	describe Strelka::DataUtilities do
 
 		it "doesn't try to dup immediate objects" do
-			Strelka::DataUtilities.deep_copy( nil ).should be( nil )
-			Strelka::DataUtilities.deep_copy( 112 ).should be( 112 )
-			Strelka::DataUtilities.deep_copy( true ).should be( true )
-			Strelka::DataUtilities.deep_copy( false ).should be( false )
-			Strelka::DataUtilities.deep_copy( :a_symbol ).should be( :a_symbol )
+			expect( Strelka::DataUtilities.deep_copy( nil ) ).to be( nil )
+			expect( Strelka::DataUtilities.deep_copy( 112 ) ).to be( 112 )
+			expect( Strelka::DataUtilities.deep_copy( true ) ).to be( true )
+			expect( Strelka::DataUtilities.deep_copy( false ) ).to be( false )
+			expect( Strelka::DataUtilities.deep_copy( :a_symbol ) ).to be( :a_symbol )
 		end
 
 		it "doesn't try to dup modules/classes" do
 			klass = Class.new
-			Strelka::DataUtilities.deep_copy( klass ).should be( klass )
+			expect( Strelka::DataUtilities.deep_copy( klass ) ).to be( klass )
 		end
 
 		it "doesn't try to dup IOs" do
 			data = [ $stdin ]
-			Strelka::DataUtilities.deep_copy( data[0] ).should be( $stdin )
+			expect( Strelka::DataUtilities.deep_copy( data[0] ) ).to be( $stdin )
 		end
 
 		it "doesn't try to dup Tempfiles" do
 			data = Tempfile.new( 'strelka_deepcopy.XXXXX' )
-			Strelka::DataUtilities.deep_copy( data ).should be( data )
+			expect( Strelka::DataUtilities.deep_copy( data ) ).to be( data )
 		end
 
 		it "makes distinct copies of arrays and their members" do
@@ -217,14 +212,14 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should == original
-			copy.should_not be( original )
-			copy[0].should == original[0]
-			copy[0].should_not be( original[0] )
-			copy[1].should == original[1]
-			copy[1].should_not be( original[1] )
-			copy[2].should == original[2]
-			copy[2].should be( original[2] ) # Immediate
+			expect( copy ).to eq( original )
+			expect( copy ).to_not be( original )
+			expect( copy[0] ).to eq( original[0] )
+			expect( copy[0] ).to_not be( original[0] )
+			expect( copy[1] ).to eq( original[1] )
+			expect( copy[1] ).to_not be( original[1] )
+			expect( copy[2] ).to eq( original[2] )
+			expect( copy[2] ).to be( original[2] ) # Immediate
 		end
 
 		it "makes recursive copies of deeply-nested Arrays" do
@@ -232,12 +227,12 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should == original
-			copy.should_not be( original )
-			copy[1].should_not be( original[1] )
-			copy[1][2].should_not be( original[1][2] )
-			copy[3].should_not be( original[3] )
-			copy[3][1].should_not be( original[3][1] )
+			expect( copy ).to eq( original )
+			expect( copy ).to_not be( original )
+			expect( copy[1] ).to_not be( original[1] )
+			expect( copy[1][2] ).to_not be( original[1][2] )
+			expect( copy[3] ).to_not be( original[3] )
+			expect( copy[3][1] ).to_not be( original[3][1] )
 		end
 
 		it "makes distinct copies of Hashes and their members" do
@@ -249,13 +244,13 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should == original
-			copy.should_not be( original )
-			copy[:a].should == 1
-			copy.key( 2 ).should == 'b'
-			copy.key( 2 ).should_not be( original.key(2) )
-			copy[3].should == 'c'
-			copy[3].should_not be( original[3] )
+			expect( copy ).to eq( original )
+			expect( copy ).to_not be( original )
+			expect( copy[:a] ).to eq( 1 )
+			expect( copy.key( 2 ) ).to eq( 'b' )
+			expect( copy.key( 2 ) ).to_not be( original.key(2) )
+			expect( copy[3] ).to eq( 'c' )
+			expect( copy[3] ).to_not be( original[3] )
 		end
 
 		it "makes distinct copies of deeply-nested Hashes" do
@@ -272,15 +267,15 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should == original
-			copy[:a][:b][:c].should == 'd'
-			copy[:a][:b][:c].should_not be( original[:a][:b][:c] )
-			copy[:a][:b][:e].should == 'f'
-			copy[:a][:b][:e].should_not be( original[:a][:b][:e] )
-			copy[:a][:g].should == 'h'
-			copy[:a][:g].should_not be( original[:a][:g] )
-			copy[:i].should == 'j'
-			copy[:i].should_not be( original[:i] )
+			expect( copy ).to eq( original )
+			expect( copy[:a][:b][:c] ).to eq( 'd' )
+			expect( copy[:a][:b][:c] ).to_not be( original[:a][:b][:c] )
+			expect( copy[:a][:b][:e] ).to eq( 'f' )
+			expect( copy[:a][:b][:e] ).to_not be( original[:a][:b][:e] )
+			expect( copy[:a][:g] ).to eq( 'h' )
+			expect( copy[:a][:g] ).to_not be( original[:a][:g] )
+			expect( copy[:i] ).to eq( 'j' )
+			expect( copy[:i] ).to_not be( original[:i] )
 		end
 
 		it "copies the default proc of copied Hashes" do
@@ -288,7 +283,7 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.default_proc.should == original.default_proc
+			expect( copy.default_proc ).to eq( original.default_proc )
 		end
 
 		it "preserves taintedness of copied objects" do
@@ -297,8 +292,8 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should_not be( original )
-			copy.should be_tainted()
+			expect( copy ).to_not be( original )
+			expect( copy ).to be_tainted()
 		end
 
 		it "preserves frozen-ness of copied objects" do
@@ -307,8 +302,8 @@ describe Strelka, "mixins" do
 
 			copy = Strelka::DataUtilities.deep_copy( original )
 
-			copy.should_not be( original )
-			copy.should be_frozen()
+			expect( copy ).to_not be( original )
+			expect( copy ).to be_frozen()
 		end
 
 	end

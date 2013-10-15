@@ -1,19 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/app/sessions'
@@ -48,28 +38,28 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 
 	it "has a session_namespace attribute" do
-		@req.should respond_to( :session_namespace )
+		expect( @req ).to respond_to( :session_namespace )
 	end
 
 
 	context "with no session ID" do
 
 		it "knows that it doesn't have a session" do
-			@req.should_not have_session()
+			expect( @req ).to_not have_session()
 		end
 
 		it "doesn't load the session when the session namespace is set" do
 			@req.session_namespace = 'an_appid'
-			@req.should_not have_session()
+			expect( @req ).to_not have_session()
 		end
 
 		it "creates a new session as soon as it's accessed" do
-			@req.session.should be_a( Strelka::Session::Default )
+			expect( @req.session ).to be_a( Strelka::Session::Default )
 		end
 
 		it "sets its session's namespace when it loads if the session_namespace is set" do
 			@req.session_namespace = 'an_appid'
-			@req.session.namespace.should == :an_appid
+			expect( @req.session.namespace ).to eq( :an_appid )
 		end
 
 
@@ -81,12 +71,12 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 			end
 
 			it "knows that it has a session" do
-				@req.should have_session()
+				expect( @req ).to have_session()
 			end
 
 			it "sets the session's namespace when its session_namespace is set" do
 				@req.session_namespace = 'the_appid'
-				@session.namespace.should == :the_appid
+				expect( @session.namespace ).to eq( :the_appid )
 			end
 		end
 
@@ -100,7 +90,7 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 		end
 
 		it "knows that it doesn't have a session unless the ID exists" do
-			@req.should_not have_session()
+			expect( @req ).to_not have_session()
 		end
 
 
@@ -113,16 +103,16 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 			it "knows that it has a session" do
 				cookie_name = Strelka::Session::Default.cookie_name
 				@req.header.cookie = "#{cookie_name}=#{@sess_id}"
-				@req.should have_session()
+				expect( @req ).to have_session()
 			end
 
 			it "knows when its session hasn't been loaded" do
-				@req.session_loaded?.should be_false()
+				expect( @req.session_loaded? ).to be_false()
 			end
 
 			it "knows when its session has been loaded" do
 				@req.session # Load it
-				@req.session_loaded?.should be_true()
+				expect( @req.session_loaded? ).to be_true()
 			end
 
 		end

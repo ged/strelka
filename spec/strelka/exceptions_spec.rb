@@ -2,17 +2,11 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
 require 'zmq'
 require 'mongrel2'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/exceptions'
@@ -46,7 +40,7 @@ describe Strelka, "exception classes" do
 				exception = err
 			end
 
-			exception.request.should == req
+			expect( exception.request ).to eq( req )
 		end
 
 	end

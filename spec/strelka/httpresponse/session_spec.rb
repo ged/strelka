@@ -1,19 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/app/sessions'
@@ -51,34 +41,34 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 
 
 	it "has a session_namespace attribute" do
-		@res.should respond_to( :session_namespace )
+		expect( @res ).to respond_to( :session_namespace )
 	end
 
 	it "sets its request's session when its session is set" do
 		@res.session = Strelka::Session.create( :default )
 		pending "not sure if it should do this or not" do
-			@req.session.should be( @res.session )
+			expect( @req.session ).to be( @res.session )
 		end
 	end
 
 	context "for a request with no session ID" do
 
 		it "knows that it doesn't have a session" do
-			@res.should_not have_session()
+			expect( @res ).to_not have_session()
 		end
 
 		it "doesn't load the session when the session namespace is set" do
 			@res.session_namespace = 'an_appid'
-			@res.should_not have_session()
+			expect( @res ).to_not have_session()
 		end
 
 		it "creates a new session as soon as it's accessed" do
-			@res.session.should be_a( Strelka::Session::Default )
+			expect( @res.session ).to be_a( Strelka::Session::Default )
 		end
 
 		it "sets its session's namespace when it loads if the session_namespace is set" do
 			@res.session_namespace = 'an_appid'
-			@res.session.namespace.should == :an_appid
+			expect( @res.session.namespace ).to eq( :an_appid )
 		end
 
 
@@ -90,16 +80,16 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 			end
 
 			it "knows that it has a session" do
-				@res.should have_session()
+				expect( @res ).to have_session()
 			end
 
 			it "copies the session from its request when accessed" do
-				@res.session.should be( @session )
+				expect( @res.session ).to be( @session )
 			end
 
 			it "sets the session's namespace when its session_namespace is set" do
 				@res.session_namespace = 'the_appid'
-				@res.session.namespace.should == :the_appid
+				expect( @res.session.namespace ).to eq( :the_appid )
 			end
 
 		end
@@ -116,7 +106,7 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 		end
 
 		it "knows that it doesn't have a session unless the ID exists" do
-			@res.should_not have_session()
+			expect( @res ).to_not have_session()
 		end
 
 
@@ -127,49 +117,49 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 			end
 
 			it "knows that it has a session" do
-				@res.should have_session()
+				expect( @res ).to have_session()
 			end
 
 			it "knows that its session has been loaded if it has one" do
 				@res.session
-				@res.session_loaded?.should be_true()
+				expect( @res.session_loaded? ).to be_true()
 			end
 
 			it "knows that its session has been loaded if its request has one" do
 				@res.request.session
-				@res.session_loaded?.should be_true()
+				expect( @res.session_loaded? ).to be_true()
 			end
 
 			it "knows that its session hasn't been loaded if neither its request not itself has one" do
-				@res.session_loaded?.should be_false()
+				expect( @res.session_loaded? ).to be_false()
 			end
 
 			it "saves the session via itself if it was loaded" do
-				@res.cookies.should_not include( @cookie_name )
+				expect( @res.cookies ).to_not include( @cookie_name )
 				@res.session
 				@res.save_session
-				@res.cookies[ @cookie_name ].value.should == @sess_id
+				expect( @res.cookies[ @cookie_name ].value ).to eq( @sess_id )
 			end
 
 			it "doesn't save the session via itself if it wasn't loaded" do
-				@res.cookies.should_not include( @cookie_name )
+				expect( @res.cookies ).to_not include( @cookie_name )
 				@res.save_session
-				@res.cookies.should be_empty()
+				expect( @res.cookies ).to be_empty()
 			end
 
 			it "destroys the session via itself if it was loaded" do
-				@res.cookies.should_not include( @cookie_name )
+				expect( @res.cookies ).to_not include( @cookie_name )
 				@res.session
 				@res.destroy_session
-				@res.cookies[ @cookie_name ].value.should == @sess_id
-				@res.cookies[ @cookie_name ].expires.should < Time.now
+				expect( @res.cookies[ @cookie_name ].value ).to eq( @sess_id )
+				expect( @res.cookies[ @cookie_name ].expires ).to be < Time.now
 			end
 
 			it "destroys the session via itself even if it wasn't loaded" do
-				@res.cookies.should_not include( @cookie_name )
+				expect( @res.cookies ).to_not include( @cookie_name )
 				@res.destroy_session
-				@res.cookies[ @cookie_name ].value.should == @sess_id
-				@res.cookies[ @cookie_name ].expires.should < Time.now
+				expect( @res.cookies[ @cookie_name ].value ).to eq( @sess_id )
+				expect( @res.cookies[ @cookie_name ].expires ).to be < Time.now
 			end
 
 		end

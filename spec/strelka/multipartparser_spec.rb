@@ -1,16 +1,10 @@
 #!/usr/bin/env ruby
 #encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'date'
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/multipartparser'
@@ -83,9 +77,9 @@ describe Strelka::MultipartParser do
 
 		params = parser.parse
 
-		params.should have( 5 ).keys
-		params.keys.should include( 'x-livejournal-entry' )
-		params['velour-fog'].should =~ /Sweet, sweet canday/i
+		expect( params ).to have( 5 ).keys
+		expect( params.keys ).to include( 'x-livejournal-entry' )
+		expect( params['velour-fog'] ).to match( /Sweet, sweet canday/i )
 	end
 
 
@@ -96,13 +90,13 @@ describe Strelka::MultipartParser do
 
 		file = params['upload']
 
-		file.should be_a( Tempfile )
-		file.filename.should == 'testfile.rtf'
-		file.content_length.should == 480
-		file.content_type.should == 'application/rtf'
+		expect( file ).to be_a( Tempfile )
+		expect( file.filename ).to eq( 'testfile.rtf' )
+		expect( file.content_length ).to eq( 480 )
+		expect( file.content_type ).to eq( 'application/rtf' )
 
 		file.open
-		file.read.should =~ /screaming.+anguish.+sirens/
+		expect( file.read ).to match( /screaming.+anguish.+sirens/ )
 	end
 
 	it "strips full paths from upload filenames (e.g., from MSIE)" do
@@ -112,13 +106,13 @@ describe Strelka::MultipartParser do
 
 		file = params['upload']
 
-		file.should be_a( Tempfile )
-		file.filename.should == 'testfile.rtf'
-		file.content_length.should == 480
-		file.content_type.should == 'application/rtf'
+		expect( file ).to be_a( Tempfile )
+		expect( file.filename ).to eq( 'testfile.rtf' )
+		expect( file.content_length ).to eq( 480 )
+		expect( file.content_type ).to eq( 'application/rtf' )
 
 		file.open
-		file.read.should =~ /screaming.+anguish.+sirens/
+		expect( file.read ).to match( /screaming.+anguish.+sirens/ )
 	end
 
 	it "parses a mix of uploaded files and form data" do
@@ -126,23 +120,23 @@ describe Strelka::MultipartParser do
 		parser = described_class.new( socket, BOUNDARY )
 		params = parser.parse
 
-		params['pork'].should be_an_instance_of( Array )
-		params['pork'].should have( 2 ).members
-		params['pork'].should include( 'zoot' )
-		params['pork'].should include( 'fornk' )
+		expect( params['pork'] ).to be_an_instance_of( Array )
+		expect( params['pork'] ).to have( 2 ).members
+		expect( params['pork'] ).to include( 'zoot' )
+		expect( params['pork'] ).to include( 'fornk' )
 
-		params['namespace'].should == 'testing'
-		params['rating'].should == '5'
+		expect( params['namespace'] ).to eq( 'testing' )
+		expect( params['rating'] ).to eq( '5' )
 
 		file = params['upload']
 
-		file.should be_an_instance_of( Tempfile )
-		file.filename.should == 'testfile.rtf'
-		file.content_length.should == 480
-		file.content_type.should == 'application/rtf'
+		expect( file ).to be_an_instance_of( Tempfile )
+		expect( file.filename ).to eq( 'testfile.rtf' )
+		expect( file.content_length ).to eq( 480 )
+		expect( file.content_type ).to eq( 'application/rtf' )
 
 		file.open
-		file.read.should =~ /screaming.+anguish.+sirens/
+		expect( file.read ).to match( /screaming.+anguish.+sirens/ )
 	end
 
 
@@ -155,14 +149,14 @@ describe Strelka::MultipartParser do
 
 		file1, file2 = params['thingfish-upload']
 
-		file1.filename.should == 'Photo 3.jpg'
-		file2.filename.should == 'grass2.jpg'
+		expect( file1.filename ).to eq( 'Photo 3.jpg' )
+		expect( file2.filename ).to eq( 'grass2.jpg' )
 
-		file1.content_type.should == 'image/jpeg'
-		file2.content_type.should == 'image/jpeg'
+		expect( file1.content_type ).to eq( 'image/jpeg' )
+		expect( file2.content_type ).to eq( 'image/jpeg' )
 
-		file1.content_length.should == 82143
-		file2.content_length.should == 439257
+		expect( file1.content_length ).to eq( 82143 )
+		expect( file2.content_length ).to eq( 439257 )
 	end
 
 end

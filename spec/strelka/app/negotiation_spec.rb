@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -70,22 +64,22 @@ describe Strelka::App::Negotiation do
 		it "gets requests that have been extended with content-negotiation" do
 			req = @request_factory.get( '/service/user/estark' )
 			@app.new.handle( req )
-			req.singleton_class.included_modules.
-				should include( Strelka::HTTPRequest::Negotiation )
+			expect( req.singleton_class.included_modules ).
+				to include( Strelka::HTTPRequest::Negotiation )
 		end
 
 		it "gets responses that have been extended with content-negotiation" do
 			req = @request_factory.get( '/service/user/estark' )
 			res = @app.new.handle( req )
-			res.singleton_class.included_modules.
-				should include( Strelka::HTTPResponse::Negotiation )
+			expect( res.singleton_class.included_modules ).
+				to include( Strelka::HTTPResponse::Negotiation )
 		end
 
 		it "adds custom content-type transforms to outgoing responses" do
 			req = @request_factory.get( '/service/user/astark', :accept => 'text/x-tnetstring' )
 			res = @app.new.handle( req )
-			res.content_type.should == 'text/x-tnetstring'
-			res.body.read.should == '28:2:an,19:5:array,8:of stuff,}]'
+			expect( res.content_type ).to eq( 'text/x-tnetstring' )
+			expect( res.body.read ).to eq( '28:2:an,19:5:array,8:of stuff,}]' )
 		end
 
 	end

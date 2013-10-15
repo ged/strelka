@@ -2,15 +2,9 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -64,8 +58,8 @@ describe Strelka::App::RestResources do
 
 
 		it "keeps track of what resources are mounted where" do
-			@app.resource_verbs.should be_a( Hash )
-			@app.resource_verbs.should be_empty()
+			expect( @app.resource_verbs ).to be_a( Hash )
+			expect( @app.resource_verbs ).to be_empty()
 		end
 
 
@@ -80,8 +74,8 @@ describe Strelka::App::RestResources do
 			end
 
 			it "keeps track of what resources are mounted where" do
-				@app.resource_verbs.should have( 1 ).member
-				@app.resource_verbs.should include( 'servers' )
+				expect( @app.resource_verbs ).to have( 1 ).member
+				expect( @app.resource_verbs ).to include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
 			end
@@ -117,8 +111,8 @@ describe Strelka::App::RestResources do
 			end
 
 			it "keeps track of what resources are mounted where" do
-				@app.resource_verbs.should have( 1 ).member
-				@app.resource_verbs.should include( 'servers' )
+				expect( @app.resource_verbs ).to have( 1 ).member
+				expect( @app.resource_verbs ).to include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD )
 				@app.resource_verbs[ 'servers' ].
@@ -182,8 +176,8 @@ describe Strelka::App::RestResources do
 					req = @request_factory.options( '/api/v1/servers' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
-					res.headers.allowed.split( /\s*,\s*/ ).should include(*%w[GET HEAD POST PUT DELETE])
+					expect( res.status ).to eq( HTTP::OK )
+					expect( res.headers.allowed.split( /\s*,\s*/ ) ).to include(*%w[GET HEAD POST PUT DELETE])
 				end
 
 			end # OPTIONS routes
@@ -194,11 +188,11 @@ describe Strelka::App::RestResources do
 					req = @request_factory.get( '/api/v1/servers', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.content_type.should == 'application/json'
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should have( 2 ).members
-					body.map {|record| record['uuid'] }.should include( 'test-server', 'step-server' )
+					expect( body ).to have( 2 ).members
+					expect( body.map {|record| record['uuid'] } ).to include( 'test-server', 'step-server' )
 				end
 
 				it "supports limiting the result set when fetching the resource collection" do
@@ -206,12 +200,12 @@ describe Strelka::App::RestResources do
 						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
-					res.content_type.should == 'application/json'
+					expect( res.status ).to eq( HTTP::OK )
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should have( 1 ).member
-					body[0]['uuid'].should == 'test-server'
+					expect( body ).to have( 1 ).member
+					expect( body[0]['uuid'] ).to eq( 'test-server' )
 				end
 
 				it "supports paging the result set when fetching the resource collection" do
@@ -219,12 +213,12 @@ describe Strelka::App::RestResources do
 						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
-					res.content_type.should == 'application/json'
+					expect( res.status ).to eq( HTTP::OK )
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should have( 1 ).member
-					body[0]['uuid'].should == 'step-server'
+					expect( body ).to have( 1 ).member
+					expect( body[0]['uuid'] ).to eq( 'step-server' )
 				end
 
 				it "supports ordering the result by a single column" do
@@ -232,12 +226,12 @@ describe Strelka::App::RestResources do
 						'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
-					res.content_type.should == 'application/json'
+					expect( res.status ).to eq( HTTP::OK )
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should have( 2 ).members
-					body[0]['name'].should == 'Step'
+					expect( body ).to have( 2 ).members
+					expect( body[0]['name'] ).to eq( 'Step' )
 				end
 
 				it "supports ordering the result by multiple columns" do
@@ -245,41 +239,41 @@ describe Strelka::App::RestResources do
 						 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
-					res.content_type.should == 'application/json'
+					expect( res.status ).to eq( HTTP::OK )
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should have( 2 ).members
-					body[0]['name'].should == 'Test'
+					expect( body ).to have( 2 ).members
+					expect( body[0]['name'] ).to eq( 'Test' )
 				end
 
 				it "has a GET route to fetch a single resource by its ID" do
 					req = @request_factory.get( '/api/v1/servers/1', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.content_type.should == 'application/json'
+					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					body.should be_a( Hash )
-					body['uuid'].should == 'test-server'
+					expect( body ).to be_a( Hash )
+					expect( body['uuid'] ).to eq( 'test-server' )
 				end
 
 				it "returns a NOT FOUND response when fetching a non-existant resource" do
 					req = @request_factory.get( '/api/v1/servers/411', 'Accept' => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::NOT_FOUND
+					expect( res.status ).to eq( HTTP::NOT_FOUND )
 					res.body.rewind
-					res.body.read.should =~ /no such server/i
+					expect( res.body.read ).to match( /no such server/i )
 				end
 
 				it "returns a NOT FOUND response when fetching a resource with an invalid ID" do
 					req = @request_factory.get( '/api/v1/servers/ape-tastic' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::NOT_FOUND
+					expect( res.status ).to eq( HTTP::NOT_FOUND )
 					res.body.rewind
-					res.body.read.should =~ /requested resource was not found/i
+					expect( res.body.read ).to match( /requested resource was not found/i )
 				end
 
 				it "has a GET route for fetching the resource via one of its dataset methods" do
@@ -287,13 +281,13 @@ describe Strelka::App::RestResources do
 						 :accept => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
+					expect( res.status ).to eq( HTTP::OK )
 					body = Yajl.load( res.body )
 
-					body.should be_an( Array )
-					body.should have( 1 ).member
-					body.first.should be_a( Hash )
-					body.first['uuid'].should == 'test-server'
+					expect( body ).to be_an( Array )
+					expect( body ).to have( 1 ).member
+					expect( body.first ).to be_a( Hash )
+					expect( body.first['uuid'] ).to eq( 'test-server' )
 				end
 
 				it "has a GET route for fetching the resource via a subset" do
@@ -301,13 +295,13 @@ describe Strelka::App::RestResources do
 						:accept => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
+					expect( res.status ).to eq( HTTP::OK )
 					body = Yajl.load( res.body )
 
-					body.should be_an( Array )
-					body.should have( 1 ).member
-					body.first.should be_a( Hash )
-					body.first['port'].should > 1024
+					expect( body ).to be_an( Array )
+					expect( body ).to have( 1 ).member
+					expect( body.first ).to be_a( Hash )
+					expect( body.first['port'] ).to be > 1024
 				end
 
 				it "has a GET route for methods declared in a named dataset module" do
@@ -315,13 +309,13 @@ describe Strelka::App::RestResources do
 						 :accept => 'application/json' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
+					expect( res.status ).to eq( HTTP::OK )
 					body = Yajl.load( res.body )
 
-					body.should be_an( Array )
-					body.should have( 1 ).member
-					body.first.should be_a( Hash )
-					body.first['name'].should == 'Step'
+					expect( body ).to be_an( Array )
+					expect( body ).to have( 1 ).member
+					expect( body.first ).to be_a( Hash )
+					expect( body.first['name'] ).to eq( 'Step' )
 				end
 
 
@@ -329,28 +323,28 @@ describe Strelka::App::RestResources do
 					req = @request_factory.get( '/api/v1/servers/1/hosts' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
+					expect( res.status ).to eq( HTTP::OK )
 					body = Yajl.load( res.body )
 
-					body.should be_an( Array )
-					body.should have( 4 ).members
-					body.first.should be_a( Hash )
-					body.first['server_id'].should == 1
-					body.first['id'].should == 1
+					expect( body ).to be_an( Array )
+					expect( body ).to have( 4 ).members
+					expect( body.first ).to be_a( Hash )
+					expect( body.first['server_id'] ).to eq( 1 )
+					expect( body.first['id'] ).to eq( 1 )
 				end
 
 				it "supports offset and limits for composite GET routes" do
 					req = @request_factory.get( '/api/v1/servers/1/hosts?offset=2;limit=2' )
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::OK
+					expect( res.status ).to eq( HTTP::OK )
 					body = Yajl.load( res.body )
 
-					body.should be_an( Array )
-					body.should have( 2 ).members
-					body.first.should be_a( Hash )
-					body.first['server_id'].should == 1
-					body.first['id'].should == 3
+					expect( body ).to be_an( Array )
+					expect( body ).to have( 2 ).members
+					expect( body.first ).to be_a( Hash )
+					expect( body.first['server_id'] ).to eq( 1 )
+					expect( body.first['id'] ).to eq( 3 )
 				end
 
 			end # GET routes
@@ -384,22 +378,24 @@ describe Strelka::App::RestResources do
 
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::CREATED
-					res.headers.location.should == 'http://localhost:8080/api/v1/servers/3'
+					expect( res.status ).to eq( HTTP::CREATED )
+					expect( res.headers.location ).to eq( 'http://localhost:8080/api/v1/servers/3' )
 
 					new_server = Mongrel2::Config::Server[ 3 ]
 
-					new_server.uuid.should         == "test-server"
-					new_server.access_log.should   == "/logs/admin-access.log"
-					new_server.error_log.should    == "/logs/admin-error.log"
-					new_server.chroot.should       == "/var/www"
-					new_server.pid_file.should     == "/var/run/test.pid"
-					new_server.default_host.should == "localhost"
-					new_server.name.should         == "Testing Server"
-					new_server.bind_addr.should    == "127.0.0.1"
-					new_server.port.should         == 7337
-					new_server.use_ssl.should      == 0
+					expect( new_server.uuid ).to         eq( "test-server" )
+					expect( new_server.access_log ).to   eq( "/logs/admin-access.log" )
+					expect( new_server.error_log ).to    eq( "/logs/admin-error.log" )
+					expect( new_server.chroot ).to       eq( "/var/www" )
+					expect( new_server.pid_file ).to     eq( "/var/run/test.pid" )
+					expect( new_server.default_host ).to eq( "localhost" )
+					expect( new_server.name ).to         eq( "Testing Server" )
+					expect( new_server.bind_addr ).to    eq( "127.0.0.1" )
+					expect( new_server.port ).to         eq( 7337 )
+					expect( new_server.use_ssl ).to      eq( 0 )
 				end
+
+				it "has a POST route to update instances"
 
 			end # POST routes
 
@@ -413,7 +409,7 @@ describe Strelka::App::RestResources do
 					}
 				end
 
-				it "has a PUT route to update instances in the resource collection" do
+				it "has a PUT route to replace instances in the resource collection" do
 					req = @request_factory.put( '/api/v1/servers/1' )
 					req.content_type = 'application/json'
 					req.headers.accept = 'application/json'
@@ -421,22 +417,24 @@ describe Strelka::App::RestResources do
 
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::NO_CONTENT
+					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-					Mongrel2::Config::Server[ 1 ].name.should == 'Not A Testing Server'
-					Mongrel2::Config::Server[ 1 ].bind_addr.should == '0.0.0.0'
+					expect( Mongrel2::Config::Server[ 1 ].name ).to eq( 'Not A Testing Server' )
+					expect( Mongrel2::Config::Server[ 1 ].bind_addr ).to eq( '0.0.0.0' )
 				end
 
-				it "has a PUT route to mass-update all resources in a collection" do
-					req = @request_factory.put( '/api/v1/servers' )
-					req.content_type = 'application/json'
-					req.body = Yajl.dump({ 'bind_addr' => '0.0.0.0' })
+				it "has a PUT route to replace all resources in a collection" do
+					pending "fix the semantics of PUT and POST" do
+						req = @request_factory.put( '/api/v1/servers' )
+						req.content_type = 'application/json'
+						req.body = Yajl.dump({ 'bind_addr' => '0.0.0.0' })
 
-					res = @app.new.handle( req )
+						res = @app.new.handle( req )
 
-					res.status.should == HTTP::NO_CONTENT
+						expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-					Mongrel2::Config::Server.map( :bind_addr ).uniq.should == ['0.0.0.0']
+						expect( Mongrel2::Config::Server.map( :bind_addr ) ).to eq( ['0.0.0.0'] )
+					end
 				end
 
 			end # PUT routes
@@ -449,9 +447,9 @@ describe Strelka::App::RestResources do
 
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::NO_CONTENT
+					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-					Mongrel2::Config::Server.count.should == 1
+					expect( Mongrel2::Config::Server.count ).to eq( 1 )
 				end
 
 				it "has a DELETE route to mass-delete all resources in a collection" do
@@ -459,9 +457,9 @@ describe Strelka::App::RestResources do
 
 					res = @app.new.handle( req )
 
-					res.status.should == HTTP::NO_CONTENT
+					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-					Mongrel2::Config::Server.count.should == 0
+					expect( Mongrel2::Config::Server.count ).to eq( 0 )
 				end
 
 			end # DELETE routes
@@ -478,13 +476,13 @@ describe Strelka::App::RestResources do
 
 
 			it "has its config inherited by subclass" do
-				subject.service_options.should == @app.service_options
-				subject.service_options.should_not be( @app.service_options )
+				expect( subject.service_options ).to eq( @app.service_options )
+				expect( subject.service_options ).to_not be( @app.service_options )
 			end
 
 			it "has its metadata inherited by subclasses" do
-				subject.resource_verbs.should have( 1 ).member
-				subject.resource_verbs.should include( 'servers' )
+				expect( subject.resource_verbs ).to have( 1 ).member
+				expect( subject.resource_verbs ).to include( 'servers' )
 				subject.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
 			end

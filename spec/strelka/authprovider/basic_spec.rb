@@ -1,16 +1,10 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
 require 'ipaddr'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/authprovider/basic'
@@ -28,7 +22,7 @@ describe Strelka::AuthProvider::Basic do
 	end
 
 	before( :each ) do
-		@app = stub( "Strelka::App", :conn => stub("Connection", :app_id => 'test-app') )
+		@app = double( "Strelka::App", :conn => double("Connection", :app_id => 'test-app') )
 		@provider = Strelka::AuthProvider.create( :basic, @app )
 		@config = {
 			:realm => 'Pern',
@@ -66,8 +60,8 @@ describe Strelka::AuthProvider::Basic do
 
 	it "can be configured via the Configurability API" do
 		described_class.configure( @config )
-		described_class.realm.should == @config[:realm]
-		described_class.users.should == @config[:users]
+		expect( described_class.realm ).to eq( @config[:realm] )
+		expect( described_class.users ).to eq( @config[:users] )
 	end
 
 
@@ -171,7 +165,7 @@ describe Strelka::AuthProvider::Basic do
 			req = @request_factory.get( '/admin/console' )
 			req.header.authorization = make_authorization_header( 'lessa', 'ramoth' )
 
-			@provider.authenticate( req ).should be_true()
+			expect( @provider.authenticate(req) ).to be_true()
 		end
 	end
 

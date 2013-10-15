@@ -39,6 +39,11 @@ examples/templates/auth-success.tmpl
 examples/templates/layout.tmpl
 examples/templates/upload-form.tmpl
 examples/templates/upload-success.tmpl
+examples/var/uploads/mongrel2.upload.DZ32Ds
+examples/var/uploads/mongrel2.upload.FjBr1H
+examples/var/uploads/mongrel2.upload.hGj4Gt
+examples/var/uploads/mongrel2.upload.jHDNgQ
+examples/var/uploads/mongrel2.upload.wdL0Cw
 lib/strelka.rb
 lib/strelka/app.rb
 lib/strelka/app/auth.rb
@@ -80,6 +85,7 @@ lib/strelka/session/default.rb
 lib/strelka/testing.rb
 lib/strelka/websocketserver.rb
 lib/strelka/websocketserver/routing.rb
+spec/constants.rb
 spec/data/error.tmpl
 spec/data/forms/2_images.form
 spec/data/forms/singleupload.form
@@ -92,8 +98,7 @@ spec/data/forms/testform_multivalue.form
 spec/data/forms/testform_truncated_metadata.form
 spec/data/layout.tmpl
 spec/data/main.tmpl
-spec/lib/constants.rb
-spec/lib/helpers.rb
+spec/helpers.rb
 spec/strelka/app/auth_spec.rb
 spec/strelka/app/errors_spec.rb
 spec/strelka/app/filters_spec.rb

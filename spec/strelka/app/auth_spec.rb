@@ -1,15 +1,9 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
 require 'rspec/mocks'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/plugins'
@@ -43,8 +37,8 @@ describe Strelka::App::Auth do
 			plugins :auth
 		end
 
-		app.auth_provider.should be_a( Class )
-		app.auth_provider.should < Strelka::AuthProvider
+		expect( app.auth_provider ).to be_a( Class )
+		expect( app.auth_provider ).to be < Strelka::AuthProvider
 	end
 
 	it "adds the Auth mixin to the request class" do
@@ -53,7 +47,7 @@ describe Strelka::App::Auth do
 		end
 		app.install_plugins
 
-		@request_factory.get( '/api/v1/verify' ).should respond_to( :authenticated? )
+		expect( @request_factory.get( '/api/v1/verify' ) ).to respond_to( :authenticated? )
 	end
 
 
@@ -92,46 +86,53 @@ describe Strelka::App::Auth do
 			app = @app.new
 			req = @request_factory.get( '/api/v1' )
 
-			app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-			app.auth_provider.should_receive( :authorize )
+			expect( app.auth_provider ).to receive( :authenticate ).and_return( 'anonymous' )
+			expect( app.auth_provider ).to receive( :authorize )
 
 			res = app.handle( req )
 
-			res.status.should == HTTP::OK
+			expect( res.status ).to eq( HTTP::OK )
 		end
 
 		it "doesn't have any auth criteria by default" do
-			@app.should_not have_auth_criteria()
+			expect( @app ).to_not have_auth_criteria()
 		end
 
 		it "sets the authenticated_user attribute of the request to the credentials of the authenticating user" do
 			app = @app.new
 			req = @request_factory.get( '/api/v1' )
 
-			app.auth_provider.should_receive( :authenticate ).and_return( 'anonymous' )
-			app.auth_provider.should_receive( :authorize ).and_return( true )
+			expect( app.auth_provider ).to receive( :authenticate ).and_return( 'anonymous' )
+			expect( app.auth_provider ).to receive( :authorize ).and_return( true )
 
 			app.handle( req )
-			req.authenticated_user.should == 'anonymous'
+			expect( req.authenticated_user ).to eq( 'anonymous' )
 		end
 
 		it "has its configured auth provider inherited by subclasses" do
 			Strelka::App::Auth.configure( :provider => 'basic' )
 			subclass = Class.new( @app )
-			subclass.auth_provider.should == Strelka::AuthProvider::Basic
+			expect( subclass.auth_provider ).to eq( Strelka::AuthProvider::Basic )
 		end
 
 		it "has its auth config inherited by subclasses" do
 			subclass = Class.new( @app )
 
-			subclass.positive_auth_criteria.should == @app.positive_auth_criteria
-			subclass.positive_auth_criteria.should_not equal( @app.positive_auth_criteria )
-			subclass.negative_auth_criteria.should == @app.negative_auth_criteria
-			subclass.negative_auth_criteria.should_not equal( @app.negative_auth_criteria )
-			subclass.positive_perms_criteria.should == @app.positive_perms_criteria
-			subclass.positive_perms_criteria.should_not equal( @app.positive_perms_criteria )
-			subclass.negative_perms_criteria.should == @app.negative_perms_criteria
-			subclass.negative_perms_criteria.should_not equal( @app.negative_perms_criteria )
+			expect( subclass.positive_auth_criteria ).to eq( @app.positive_auth_criteria )
+			expect( subclass.positive_auth_criteria ).to_not equal( @app.positive_auth_criteria )
+			expect( subclass.negative_auth_criteria ).to eq( @app.negative_auth_criteria )
+			expect( subclass.negative_auth_criteria ).to_not equal( @app.negative_auth_criteria )
+			expect( subclass.positive_perms_criteria ).to eq( @app.positive_perms_criteria )
+			expect( subclass.positive_perms_criteria ).to_not equal( @app.positive_perms_criteria )
+			expect( subclass.negative_perms_criteria ).to eq( @app.negative_perms_criteria )
+			expect( subclass.negative_perms_criteria ).to_not equal( @app.negative_perms_criteria )
+		end
+
+
+		RSpec::Matchers.define( :require_auth_for_request ) do |request|
+			match do |app|
+				app.request_should_auth?( request )
+			end
 		end
 
 
@@ -140,13 +141,14 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app ).to require_auth_for_request( req )
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/strong' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/stri' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/string/long' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 		end
 
 		it "allows auth criteria to be declared with a regexp" do
@@ -154,17 +156,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/stri' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/stro' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/string' ) # not right-bound
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/string/long' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/chatlog' ) # Not left-bound
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 		end
 
 		it "allows auth criteria to be declared with a string and a block" do
@@ -175,15 +177,15 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.post( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.put( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.delete( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.options( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 		end
 
 		it "allows auth criteria to be declared with a regexp and a block" do
@@ -194,11 +196,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/regexp' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/regexp/a_username' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 		end
 
 		it "allows auth criteria to be declared with just a block" do
@@ -216,21 +218,21 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/strong' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/marlon_brando' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.post( '/api/v1/somewhere' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.put( '/api/v1/somewhere' )
 			req.content_type = 'application/x-www-form-urlencoded'
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/marlon_brando/2' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.put( '/api/v1/somewhere' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 
 		end
 
@@ -239,13 +241,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/strong' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/stri' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/string/long' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 		end
 
 		it "allows negative auth criteria to be declared with a regexp" do
@@ -253,17 +255,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/stri' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/stro' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/string' ) # not right-bound
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/string/long' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/chat' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 		end
 
 		it "allows negative auth criteria to be declared with a string and a block" do
@@ -272,17 +274,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 			req = @request_factory.get( '/api/v1/strong' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.post( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.put( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.delete( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.options( '/api/v1/string' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 		end
 
 		it "allows negative auth criteria to be declared with a regexp and a block" do
@@ -293,13 +295,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/regexp' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/regexp/a_username' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/regexp/guest' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 		end
 
 		it "allows negative auth criteria to be declared with just a block" do
@@ -312,11 +314,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/foom' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.post( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
-			app.request_should_auth?( req ).should be_true()
+			expect( app.request_should_auth?(req) ).to be_true()
 			req = @request_factory.get( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
-			app.request_should_auth?( req ).should be_false()
+			expect( app.request_should_auth?(req) ).to be_false()
 
 		end
 
@@ -326,9 +328,9 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.required_perms_for( req ).should == [ :stringperm ]
+			expect( app.required_perms_for(req) ).to eq( [ :stringperm ] )
 			req = @request_factory.get( '/api/v1/strong' )
-			app.required_perms_for( req ).should == []
+			expect( app.required_perms_for(req) ).to eq( [] )
 		end
 
 		it "allows perms criteria to be declared with a regexp" do
@@ -337,13 +339,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/admin' )
-			app.required_perms_for( req ).should == [ :admin ]
+			expect( app.required_perms_for(req) ).to eq( [ :admin ] )
 			req = @request_factory.get( '/api/v1/admin/grant' )
-			app.required_perms_for( req ).should == [ :admin, :grant ]
+			expect( app.required_perms_for(req) ).to eq( [ :admin, :grant ] )
 			req = @request_factory.get( '/api/v1/users' )
-			app.required_perms_for( req ).should == []
+			expect( app.required_perms_for(req) ).to eq( [] )
 			req = @request_factory.get( '/api/v1/users/grant' )
-			app.required_perms_for( req ).should == [ :grant ]
+			expect( app.required_perms_for(req) ).to eq( [ :grant ] )
 		end
 
 		it "allows perms criteria to be declared with a string and a block" do
@@ -354,9 +356,9 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.required_perms_for( req ).should == [ :stringperm, :otherperm ]
+			expect( app.required_perms_for(req) ).to eq( [ :stringperm, :otherperm ] )
 			req = @request_factory.get( '/api/v1/strong' )
-			app.required_perms_for( req ).should == []
+			expect( app.required_perms_for(req) ).to eq( [] )
 		end
 
 		it "allows multiple perms criteria for the same path" do
@@ -367,13 +369,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1' )
-			app.required_perms_for( req ).should == [ :it_assets_webapp ]
+			expect( app.required_perms_for(req) ).to eq( [ :it_assets_webapp ] )
 			req = @request_factory.post( '/api/v1' )
-			app.required_perms_for( req ).should == [ :it_assets_webapp, :@sysadmin ]
+			expect( app.required_perms_for(req) ).to eq( [ :it_assets_webapp, :@sysadmin ] )
 			req = @request_factory.get( '/api/v1/users' )
-			app.required_perms_for( req ).should == [ :it_assets_webapp ]
+			expect( app.required_perms_for(req) ).to eq( [ :it_assets_webapp ] )
 			req = @request_factory.post( '/api/v1/users' )
-			app.required_perms_for( req ).should == [ :it_assets_webapp, :@sysadmin ]
+			expect( app.required_perms_for(req) ).to eq( [ :it_assets_webapp, :@sysadmin ] )
 		end
 
 		it "allows perms criteria to be declared with a regexp and a block" do
@@ -394,11 +396,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/user' )
-			app.required_perms_for( req ).should == [ :admin ]
+			expect( app.required_perms_for(req) ).to eq( [ :admin ] )
 			req = @request_factory.get( '/api/v1/user/jzero' )
-			app.required_perms_for( req ).should == [ :admin ]
+			expect( app.required_perms_for(req) ).to eq( [ :admin ] )
 			req = @request_factory.get( '/api/v1/user/madeline' )
-			app.required_perms_for( req ).should == [ :admin, :superuser ]
+			expect( app.required_perms_for(req) ).to eq( [ :admin, :superuser ] )
 		end
 
 		it "allows perms the same as the appid to be declared with just a block" do
@@ -408,11 +410,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/accounts' )
-			app.required_perms_for( req ).should == []
+			expect( app.required_perms_for(req) ).to eq( [] )
 			req = @request_factory.post( '/api/v1/accounts', '' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 			req = @request_factory.put( '/api/v1/accounts/1', '' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
 		it "allows negative perms criteria to be declared with a string" do
@@ -420,9 +422,9 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/strong' )
-			app.required_perms_for( req ).should == [ :auth_test ] # default == appid
+			expect( app.required_perms_for(req) ).to eq([ :auth_test ]) # default == appid
 		end
 
 		it "allows negative perms criteria to be declared with a regexp" do
@@ -430,11 +432,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/signup' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/signup/reapply' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/index' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
 		it "allows negative perms criteria to be declared with a string and a block" do
@@ -444,11 +446,12 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.post( '/api/v1' )
-			app.required_perms_for( req ).should == [ :auth_test ] # default == appid
+			expect( app.required_perms_for(req) ).to eq([ :auth_test ]) # default == appid
 			req = @request_factory.get( '/api/v1/users' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
 		it "allows negative perms criteria to be declared with a regexp and a block" do
@@ -460,15 +463,15 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/collection' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 			req = @request_factory.get( '/api/v1/collection/degasse' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/collection/ione' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/collection/champhion' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/collection/calindra' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
 		it "allows negative perms criteria to be declared with just a block" do
@@ -479,9 +482,9 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/collection', x_forwarded_for: '10.0.1.68' )
-			app.required_perms_for( req ).should be_empty()
+			expect( app.required_perms_for(req) ).to be_empty()
 			req = @request_factory.get( '/api/v1/collection', x_forwarded_for: '192.0.43.10' )
-			app.required_perms_for( req ).should == [ :auth_test ]
+			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
 
@@ -503,8 +506,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -513,8 +516,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -523,8 +526,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -533,8 +536,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -552,8 +555,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -562,8 +565,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -572,8 +575,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -582,8 +585,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -611,8 +614,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -621,8 +624,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -631,8 +634,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -641,8 +644,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -660,8 +663,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -670,8 +673,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -680,8 +683,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					app.auth_provider.should_not_receive( :authenticate )
-					app.auth_provider.should_not_receive( :authorize )
+					expect( app.auth_provider ).to_not receive( :authenticate )
+					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
 				end
@@ -690,8 +693,8 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					app.auth_provider.should_receive( :authenticate )
-					app.auth_provider.should_receive( :authorize )
+					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
 				end
@@ -712,8 +715,8 @@ describe Strelka::App::Auth do
 				req = @request_factory.get( '/api/v1/admin/upload' )
 
 				app = @app.new
-				app.auth_provider.stub!( :authenticate ).and_return( :credentials )
-				app.auth_provider.should_receive( :authorize ).with( :credentials, req, [:admin, :upload] )
+				allow( app.auth_provider ).to receive( :authenticate ).and_return( :credentials )
+				expect( app.auth_provider ).to receive( :authorize ).with( :credentials, req, [:admin, :upload] )
 
 				app.handle( req )
 			end

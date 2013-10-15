@@ -1,15 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/session/db'
@@ -54,14 +48,21 @@ describe Strelka::Session::Db do
 	end
 
 
+	RSpec::Matchers.define( :contain_table ) do |tablename|
+		match do |db|
+			db.table_exists?( tablename )
+		end
+	end
+
+
 	it "creates the database if needed" do
-		described_class.db.table_exists?( :sessions ).should be_true()
+		expect( described_class.db ).to contain_table( :sessions )
 	end
 
 
 	it "can change the default table name" do
 		described_class.configure( @default_config.merge(:table_name => :brothy) )
-		described_class.db.table_exists?( :brothy ).should be_true()
+		expect( described_class.db ).to contain_table( :brothy )
 		described_class.db.drop_table( :brothy )
 	end
 
@@ -73,7 +74,7 @@ describe Strelka::Session::Db do
 			:session    => @session_data.to_yaml )
 
 		session = described_class.load( @session_id )
-		session.namespaced_hash.should == @session_data
+		expect( session.namespaced_hash ).to eq( @session_data )
 	end
 
 
@@ -84,7 +85,7 @@ describe Strelka::Session::Db do
 
 		session_cookie = "%s=%s" % [ @cookie_name, @session_id ]
 		req = @request_factory.get( '/frothy/gymkata', :cookie => session_cookie )
-		described_class.should have_session_for( req )
+		expect( described_class ).to have_session_for( req )
 	end
 
 
@@ -95,9 +96,10 @@ describe Strelka::Session::Db do
 		session.save( response )
 
 		row = session.class.dataset.filter( :session_id => @session_id ).first
-		row[ :session_id ].should   == @session_id
-		row[ :session ].should      =~ /hurrrg: true/
-		row[ :created ].to_s.should =~ /\d{4}-\d{2}-\d{2}/
-		response.header_data.should =~ /Set-Cookie: #{@cookie_name}=#{@session_id}/i
+
+		expect( row[ :session_id ] ).to eq( @session_id )
+		expect( row[ :session ] ).to match( /hurrrg: true/ )
+		expect( row[ :created ].to_s ).to match( /\d{4}-\d{2}-\d{2}/ )
+		expect( response.header_data ).to match( /Set-Cookie: #{@cookie_name}=#{@session_id}/i )
 	end
 end

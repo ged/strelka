@@ -2,17 +2,11 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
 require 'zmq'
 require 'mongrel2'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/websocketserver'
@@ -69,37 +63,37 @@ describe Strelka::WebSocketServer do
 		ping = @frame_factory.ping( '/chat' )
 		res = @app.new.handle_websocket( ping )
 
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :pong
-		res.socket_id.should == ping.socket_id
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :pong )
+		expect( res.socket_id ).to eq( ping.socket_id )
 	end
 
 	it "ignores PONG frames" do
 		pong = @frame_factory.pong( '/chat' )
 		res = @app.new.handle_websocket( pong )
 
-		res.should be_nil()
+		expect( res ).to be_nil()
 	end
 
 	it "closes the connection on CLOSE frames" do
 		app = @app.new
 		close = @frame_factory.close( '/chat' )
 
-		app.conn.should_receive( :reply_close ).with( close )
+		expect( app.conn ).to receive( :reply_close ).with( close )
 
 		res = app.handle_websocket( close )
-		res.should be_nil()
+		expect( res ).to be_nil()
 	end
 
 	it "closes the connection with an appropriate error for reserved control opcodes" do
 		reserved = @frame_factory.create( '/chat', '', 0xB )
 		res = @app.new.handle_websocket( reserved )
 
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :close
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :close )
 		res.payload.rewind
-		res.payload.read.should =~ /Unhandled data type/i
-		res.socket_id.should == reserved.socket_id
+		expect( res.payload.read ).to match( /Unhandled data type/i )
+		expect( res.socket_id ).to eq( reserved.socket_id )
 	end
 
 	#
@@ -111,10 +105,10 @@ describe Strelka::WebSocketServer do
 		frame = @frame_factory.text( '/chat' )
 
 		res = app.handle_websocket( frame )
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :close
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :close )
 		res.payload.rewind
-		res.payload.read.should =~ /Unhandled data type/i
+		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
 
 	it "replies with a close frame with a bad data type error for BINARY frames" do
@@ -122,10 +116,10 @@ describe Strelka::WebSocketServer do
 		frame = @frame_factory.binary( '/chat' )
 
 		res = app.handle_websocket( frame )
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :close
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :close )
 		res.payload.rewind
-		res.payload.read.should =~ /Unhandled data type/i
+		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
 
 	it "replies with a close frame with a bad data type error for CONTINUATION frames" do
@@ -133,21 +127,21 @@ describe Strelka::WebSocketServer do
 		frame = @frame_factory.continuation( '/chat' )
 
 		res = app.handle_websocket( frame )
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :close
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :close )
 		res.payload.rewind
-		res.payload.read.should =~ /Unhandled data type/i
+		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
 
 	it "closes the connection with an appropriate error for reserved content opcodes" do
 		reserved = @frame_factory.create( '/chat', '', 0x3 )
 		res = @app.new.handle_websocket( reserved )
 
-		res.should be_a( Mongrel2::WebSocket::Frame )
-		res.opcode.should == :close
+		expect( res ).to be_a( Mongrel2::WebSocket::Frame )
+		expect( res.opcode ).to eq( :close )
 		res.payload.rewind
-		res.payload.read.should =~ /Unhandled data type/i
-		res.socket_id.should == reserved.socket_id
+		expect( res.payload.read ).to match( /Unhandled data type/i )
+		expect( res.socket_id ).to eq( reserved.socket_id )
 	end
 
 

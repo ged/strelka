@@ -211,6 +211,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		when 'application/json', 'text/javascript'
 			return Yajl.load( self.body )
 		when 'text/x-yaml', 'application/x-yaml'
+			return nil if self.body.eof?
 			return YAML.load( self.body, safe: true )
 		when 'multipart/form-data'
 			boundary = self.content_type[ /\bboundary=(\S+)/, 1 ] or

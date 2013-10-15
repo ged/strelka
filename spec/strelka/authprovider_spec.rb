@@ -1,15 +1,9 @@
 # -*- rspec -*-
 # vim: set nosta noet ts=4 sw=4:
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-}
+require_relative '../helpers'
 
 require 'rspec'
-
-require 'spec/lib/helpers'
 
 require 'strelka'
 require 'strelka/authprovider'
@@ -32,7 +26,7 @@ describe Strelka::AuthProvider do
 
 
 	it "looks for plugins under strelka/authprovider" do
-		described_class.plugin_prefixes.should include( 'strelka/authprovider' )
+		expect( described_class.plugin_prefixes ).to include( 'strelka/authprovider' )
 	end
 
 
@@ -64,7 +58,7 @@ describe Strelka::AuthProvider do
 
 			it "returns 'anonymous' as credentials if asked to authenticate" do
 				req = @request_factory.get( '/admin/console' )
-				@provider.authenticate( req ).should == 'anonymous'
+				expect( @provider.authenticate(req) ).to eq( 'anonymous' )
 			end
 
 			it "has a callback for adding authentication information to the request" do
