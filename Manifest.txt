@@ -39,11 +39,6 @@ examples/templates/auth-success.tmpl
 examples/templates/layout.tmpl
 examples/templates/upload-form.tmpl
 examples/templates/upload-success.tmpl
-examples/var/uploads/mongrel2.upload.DZ32Ds
-examples/var/uploads/mongrel2.upload.FjBr1H
-examples/var/uploads/mongrel2.upload.hGj4Gt
-examples/var/uploads/mongrel2.upload.jHDNgQ
-examples/var/uploads/mongrel2.upload.wdL0Cw
 lib/strelka.rb
 lib/strelka/app.rb
 lib/strelka/app/auth.rb
