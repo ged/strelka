@@ -1,7 +1,7 @@
 = Strelka (Стрелка)
 
 home :: http://deveiate.org/projects/Strelka
-code :: http://repo.deveiate.org/Strelka
+code :: http://bitbucket.org/ged/Strelka
 github :: https://github.com/ged/strelka
 docs :: http://deveiate.org/code/strelka
 
@@ -182,7 +182,7 @@ Support for sending partial responses via the Chunked encoding.
 == Contributing
 
 You can check out the current development source with Mercurial via its
-{project page}[http://repo.deveiate.org/Strelka]. Or if you prefer Git, via 
+{project page}[http://bitbucket.org/ged/Strelka]. Or if you prefer Git, via 
 {its Github mirror}[https://github.com/ged/strelka].
 
 After checking out the source, run:
@@ -195,7 +195,7 @@ and generate the API documentation.
 
 == License
 
-Copyright (c) 2011-2012, Michael Granger
+Copyright (c) 2011-2013, Michael Granger and Mahlon E. Smith
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
