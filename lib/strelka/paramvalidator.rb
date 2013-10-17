@@ -753,7 +753,7 @@ class Strelka::ParamValidator
 	### the given +value+, and add the field to the appropriate field list based on the
 	### result.
 	def apply_constraint( constraint, value )
-		if !value.nil?
+		if !( value.nil? || value == '' )
 			result = constraint.apply( value, self.untaint_all? )
 
 			if !result.nil?

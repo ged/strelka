@@ -58,7 +58,7 @@ describe Strelka::ParamValidator do
 			expect( @validator[ :blorp ] ).to be_true
 		end
 
-		it "ignores identical duplicate constraints to be added twice" do
+		it "ignores identical duplicate constraints" do
 			@validator.add( :a_field, :string )
 			@validator.add( :a_field, :string )
 			expect( @validator.param_names ).to include( 'a_field' )
@@ -162,6 +162,19 @@ describe Strelka::ParamValidator do
 			expect( @validator.missing ).to eq( ['id'] )
 		end
 
+		it "knows the names of fields that were required but empty" do
+			@validator.add( :id, :integer, :required )
+			@validator.validate( 'id' => '' )
+
+			expect( @validator ).to have_errors()
+			expect( @validator ).to_not be_okay()
+
+			expect( @validator.invalid ).to be_empty
+
+			expect( @validator.missing ).to have(1).members
+			expect( @validator.missing ).to eq( ['id'] )
+		end
+
 		it "knows the names of fields that did not meet their constraints" do
 			@validator.add( :number, :integer, :required )
 			@validator.validate( 'number' => 'rhinoceros' )
@@ -171,6 +184,16 @@ describe Strelka::ParamValidator do
 
 			expect( @validator.invalid ).to have(1).keys
 			expect( @validator.invalid.keys ).to eq( ['number'] )
+		end
+
+		it "doesn't apply constraints for optional fields if the value is empty" do
+			@validator.add( :number, :integer, :optional )
+			@validator.validate( 'number' => '' )
+
+			expect( @validator ).to_not have_errors()
+			expect( @validator ).to be_okay()
+
+			expect( @validator.invalid ).to be_empty
 		end
 
 		it "can return a combined list of missing and invalid fields" do
