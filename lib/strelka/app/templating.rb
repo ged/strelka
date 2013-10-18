@@ -74,6 +74,10 @@ require 'strelka/plugins'
 #
 # It will be loaded, set as the response body, and the above common objects added to it.
 #
+# :TODO: Explain how returning things other than responses doesn't work well with
+#        :filters and maybe other plugins that run inside :templating.
+#
+#
 # === Layouts
 #
 # Very often, you'll want all or most of the views in your app to share a common page
