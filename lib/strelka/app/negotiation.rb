@@ -29,8 +29,8 @@ module Strelka::App::Negotiation
 	include Strelka::Constants
 	extend Strelka::Plugin
 
-	run_before :routing
-	run_after  :filters, :templating, :parameters
+	run_outside :routing, :filters
+	run_inside  :templating, :parameters
 
 
 	# Class methods to add to classes with content-negotiation.

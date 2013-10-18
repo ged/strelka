@@ -57,7 +57,7 @@ module Strelka
 			name = object.plugin_name
 			if (( deps = pluggable.loaded_plugins[name] ))
 				self.log.debug "  installing deferred deps for %p" % [ name ]
-				object.run_after( *deps )
+				object.run_inside( *deps )
 			end
 
 			self.log.debug "  adding %p (%p) to the plugin registry for %p" %
@@ -87,28 +87,30 @@ module Strelka
 
 		### Register the receiver as needing to be run before +other_plugins+ for requests, and
 		### *after* them for responses.
-		def run_before( *other_plugins )
+		def run_outside( *other_plugins )
 			name = self.plugin_name
 			other_plugins.each do |other_name|
 				self.pluggable.loaded_plugins[ other_name ] ||= []
 				mod = self.pluggable.loaded_plugins[ other_name ]
 
-				if mod.respond_to?( :run_after )
-					mod.run_after( name )
+				if mod.respond_to?( :run_inside )
+					mod.run_inside( name )
 				else
 					self.log.debug "%p plugin not yet loaded; setting up pending deps" % [ other_name ]
 					mod << name
 				end
 			end
 		end
+		alias_method :run_before, :run_outside
 
 
 		### Register the receiver as needing to be run after +other_plugins+ for requests, and
 		### *before* them for responses.
-		def run_after( *other_plugins )
+		def run_inside( *other_plugins )
 			self.log.debug "  %p will run after %p" % [ self, other_plugins ]
 			self.successors.merge( other_plugins )
 		end
+		alias_method :run_after, :run_inside
 
 	end # module Plugin
 
@@ -244,7 +246,7 @@ module Strelka
 
 
 		### Install the mixin part of the plugin, in the order determined by
-		### the plugin registry based on the run_before and run_after specifications
+		### the plugin registry based on the run_outside and run_inside specifications
 		### of the plugins themselves.
 		def install_plugins
 			if self.plugins_installed?

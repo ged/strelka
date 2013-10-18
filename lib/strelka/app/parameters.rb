@@ -73,8 +73,7 @@ require 'strelka/paramvalidator'
 module Strelka::App::Parameters
 	extend Strelka::Plugin
 
-	run_before :routing
-	run_after :filters
+	run_outside :routing, :filters
 
 
 	# Class methods to add to classes with routing.

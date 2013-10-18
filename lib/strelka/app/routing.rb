@@ -106,7 +106,7 @@ module Strelka::App::Routing
 	log_to :strelka
 
 	# Plugins API -- set up load order
-	run_after :templating, :filters, :parameters
+	run_inside :templating, :filters, :parameters
 
 
 	# Class methods to add to classes with routing.

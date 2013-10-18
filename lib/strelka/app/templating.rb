@@ -116,8 +116,7 @@ module Strelka::App::Templating
 	log_to :strelka
 
 	# Run order
-	run_before :routing, :negotiation, :errors
-	run_after :filters
+	run_outside :routing, :negotiation, :errors, :filters
 
 
 	### Return an Array of Pathnames to all directories named 'templates' under the

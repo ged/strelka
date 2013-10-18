@@ -10,7 +10,8 @@ require 'strelka/app' unless defined?( Strelka::App )
 module Strelka::App::Filters
 	extend Strelka::Plugin
 
-	run_before :routing, :templating
+	run_inside  :templating
+	run_outside :routing
 
 
 	# Class methods to add to classes with routing.

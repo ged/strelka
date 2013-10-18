@@ -94,9 +94,9 @@ module Strelka::App::Sessions
 	# Configurability API -- specify which section of the config this class gets
 	config_key :sessions
 
-	# Plugins API -- Specify load order; run as late as possible so other plugins
+	# Plugins API -- Specify load order; run as early as possible so other plugins
 	# can use the session
-	run_after :templating, :filters, :parameters
+	run_outside :templating, :filters, :parameters
 
 
 	# Class methods and instance variables to add to classes with sessions.

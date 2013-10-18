@@ -58,8 +58,8 @@ applications can use it like so:
 == Load Order
 
 The request is passed through plugins sequentually.  You can control where in
-the chain your plugin belongs, by using the <tt>run_before</tt> and
-<tt>run_after</tt> methods.  Both methods accept a comma separated list of other
+the chain your plugin belongs, by using the <tt>run_outside</tt> and
+<tt>run_inside</tt> methods.  Both methods accept a comma separated list of other
 plugin names.
 
 In this example case, we want the logger to log the request before the other
@@ -71,7 +71,7 @@ core plugins run, so any errors still make it out to the log.
     module Strelka::App::DBLogger
         extend Strelka::Plugin
 
-        run_before :auth,
+        run_outside :auth,
             :filters,
             :negotiation,
             :parameters,
@@ -125,7 +125,7 @@ Here's the complete plugin.
     module Strelka::App::DBLogger
         extend Strelka::Plugin
 
-        run_before :auth,
+        run_outside :auth,
             :filters,
             :negotiation,
             :parameters,

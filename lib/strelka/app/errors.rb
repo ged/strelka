@@ -86,7 +86,7 @@ module Strelka::App::Errors
 
 
 	# Plugin load order
-	run_before :routing
+	run_outside :routing
 
 
 	# Class-level functionality

@@ -85,7 +85,7 @@ describe "Strelka plugin system" do
 				@before_mod = Module.new do
 					def self::name; "Strelka::Pluggable::BeforeTestPlugin"; end
 					extend Strelka::Plugin
-					run_before( modname )
+					run_outside( modname )
 				end
 			end
 
@@ -104,7 +104,7 @@ describe "Strelka plugin system" do
 				@after_mod = Module.new do
 					def self::name; "Strelka::Pluggable::AfterTestPlugin"; end
 					extend Strelka::Plugin
-					run_after( modname )
+					run_inside( modname )
 				end
 			end
 
@@ -204,7 +204,7 @@ describe "Strelka plugin system" do
 			@templating_plugin = Module.new do
 				def self::name; "Strelka::Pluggable::Templating"; end
 				extend Strelka::Plugin
-				run_before :routing
+				run_outside :routing
 			end
 		end
 
