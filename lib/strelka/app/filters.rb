@@ -69,7 +69,7 @@ module Strelka::App::Filters
 
 		self.apply_request_filters( request )
 		response = super
-		self.apply_response_filters( response )
+		self.apply_response_filters( request.response )
 
 		return response
 	end

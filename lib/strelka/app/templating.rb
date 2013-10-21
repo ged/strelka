@@ -285,6 +285,7 @@ module Strelka::App::Templating
 		# Not templated; returned as-is
 		else
 			self.log.debug "  response isn't templated; returning nil"
+			# :TODO: Return the response instead of nil
 			return nil
 		end
 	end

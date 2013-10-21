@@ -32,7 +32,7 @@ describe Strelka::App::Filters do
 	it_should_behave_like( "A Strelka Plugin" )
 
 
-	describe "an including App" do
+	context "an including App" do
 
 		before( :each ) do
 			@app = Class.new( Strelka::App ) do
@@ -61,7 +61,7 @@ describe Strelka::App::Filters do
 		end
 
 
-		describe "that doesn't declare any filters" do
+		context "that doesn't declare any filters" do
 
 			it "doesn't have any request filters" do
 				expect( @app.request_filters ).to be_empty()
@@ -74,16 +74,14 @@ describe Strelka::App::Filters do
 		end
 
 
-		describe "that declares a filter without a phase" do
+		context "that declares a filter without a phase" do
 
 			before( :each ) do
-				@app.class_eval do
-					filter do |reqres|
-						if reqres.is_a?( Strelka::HTTPRequest )
-							reqres.notes[:saw][:request] = true
-						else
-							reqres.notes[:saw][:response] = true
-						end
+				@app.filter do |reqres|
+					if reqres.is_a?( Strelka::HTTPRequest )
+						reqres.notes[:saw][:request] = true
+					else
+						reqres.notes[:saw][:response] = true
 					end
 				end
 			end
@@ -114,16 +112,14 @@ describe Strelka::App::Filters do
 
 		end
 
-		describe "that declares a request filter" do
+		context "that declares a request filter" do
 
 			before( :each ) do
-				@app.class_eval do
-					filter( :request ) do |reqres|
-						if reqres.is_a?( Strelka::HTTPRequest )
-							reqres.notes[:saw][:request] = true
-						else
-							reqres.notes[:saw][:response] = true
-						end
+				@app.filter( :request ) do |reqres|
+					if reqres.is_a?( Strelka::HTTPRequest )
+						reqres.notes[:saw][:request] = true
+					else
+						reqres.notes[:saw][:response] = true
 					end
 				end
 			end
@@ -154,16 +150,14 @@ describe Strelka::App::Filters do
 
 		end
 
-		describe "that declares a response filter" do
+		context "that declares a response filter" do
 
 			before( :each ) do
-				@app.class_eval do
-					filter( :response ) do |reqres|
-						if reqres.is_a?( Strelka::HTTPRequest )
-							reqres.notes[:saw][:request] = true
-						else
-							reqres.notes[:saw][:response] = true
-						end
+				@app.filter( :response ) do |reqres|
+					if reqres.is_a?( Strelka::HTTPRequest )
+						reqres.notes[:saw][:request] = true
+					else
+						reqres.notes[:saw][:response] = true
 					end
 				end
 			end
@@ -192,6 +186,31 @@ describe Strelka::App::Filters do
 				expect( res.notes[:saw][:response] ).to be_true()
 			end
 
+		end
+
+
+		context "that returns something other than an HTTPResponse from its handler" do
+
+			before( :each ) do
+				@app.class_eval do
+					plugin :templating
+					templates :main => 'spec/data/main.tmpl'
+					def handle_request( req )
+						super { :main }
+					end
+				end
+			end
+
+			it "still gives the response filter an HTTPResponse" do
+				@app.filter( :response ) do |res|
+					expect( res ).to be_a( Strelka::HTTPResponse )
+				end
+
+				req = @request_factory.get( '/account/118811' )
+				res = @app.new.handle( req )
+
+				expect( res.status_line ).to match( /200 ok/i )
+			end
 		end
 
 	end
