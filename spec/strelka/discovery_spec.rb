@@ -106,6 +106,7 @@ describe Strelka::Discovery do
 		expect( Dir ).to receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
 			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
 
+		expect( described_class ).to receive( :gem ).with( 'blood-orgy' )
 		expect( Kernel ).to receive( :load ).
 			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ).
 			and_return do
@@ -129,6 +130,7 @@ describe Strelka::Discovery do
 		expect( Dir ).to receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
 			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
 
+		expect( described_class ).to receive( :gem ).with( 'blood-orgy' )
 		expect( Kernel ).to receive( :load ).
 			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ).
 			and_raise( SyntaxError.new("kurzweil:1: syntax error, unexpected coffeeshop philosopher") )
