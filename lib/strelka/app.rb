@@ -30,19 +30,9 @@ class Strelka::App < Mongrel2::Handler
 	config_key :app
 
 
-	# Glob for matching Strelka apps relative to a gem's data directory
-	APP_GLOB_PATTERN = '{apps,handlers}/**/*'
-	APP_GLOB_PATTERN.freeze
-
-	# The glob for matching data directories relative to the PWD
-	LOCAL_DATA_DIRS = 'data/*'
-	LOCAL_DATA_DIRS.freeze
-
 	# Default config
 	CONFIG_DEFAULTS = {
 		devmode: false,
-		app_glob_pattern: APP_GLOB_PATTERN,
-		local_data_dirs: LOCAL_DATA_DIRS,
 	}.freeze
 
 
@@ -51,8 +41,6 @@ class Strelka::App < Mongrel2::Handler
 	@default_type     = nil
 	@loading_file     = nil
 	@subclasses       = Hash.new {|h,k| h[k] = [] }
-	@app_glob_pattern = APP_GLOB_PATTERN
-	@local_data_dirs  = LOCAL_DATA_DIRS
 
 
 	##
@@ -63,15 +51,6 @@ class Strelka::App < Mongrel2::Handler
 	##
 	# 'Developer mode' flag.
 	singleton_attr_writer :devmode
-
-	##
-	# The glob(3) pattern for matching Apps during discovery
-	singleton_attr_accessor :app_glob_pattern
-
-	##
-	# The glob(3) pattern for matching local data directories during discovery. Local
-	# data directories are evaluated relative to the CWD.
-	singleton_attr_accessor :local_data_dirs
 
 
 	### Returns +true+ if the application has been configured to run in 'developer mode'.
