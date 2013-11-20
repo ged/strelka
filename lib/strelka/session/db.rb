@@ -122,6 +122,7 @@ class Strelka::Session::Db < Strelka::Session::Default
 		return !self.dataset.filter( :session_id => id ).empty?
 	end
 
+
 	### Configure the session class with the given +options+, which should be a
 	### Hash or an object that has a Hash-like interface.
 	###

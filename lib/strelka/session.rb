@@ -20,6 +20,7 @@ require 'strelka/mixins'
 #
 # * self.configure
 # * self.get_session_id
+# * self.get_existing_session_id
 # * self.load_session_data
 # * self.save_session_data
 # * self.delete_session_data

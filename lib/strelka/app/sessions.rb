@@ -58,7 +58,8 @@ require 'strelka/httpresponse/session'
 # == Configuration
 #
 # To specify which Session class to use with your application, add a
-# ':sessions' section with at least the 'type' key to your config.yml:
+# ':sessions' section with at least the 'session_class' key to your
+# config.yml:
 #
 #   # Use the default session class, but change the name of the cookie
 #   # it uses
@@ -77,9 +78,10 @@ require 'strelka/httpresponse/session'
 #       connect: "postgres://pg.example.com/db01"
 #       table_name: sessions
 #
-# The +type+ value will be used to look up the class (see Strelka::Session
-# for more information about how this works), and the +options+ section
-# is passed to the session class's ::configure method (if it has one).
+# The +session_class+ value will be used to look up the class (see
+# Strelka::Session for more information about how this works), and the
+# +options+ section is passed to the session class's ::configure method
+# (if it has one).
 #
 module Strelka::App::Sessions
 	extend Strelka::Plugin,
