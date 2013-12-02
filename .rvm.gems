@@ -6,7 +6,6 @@ highline -v1.6.15
 hoe-deveiate -v0.2.0
 inversion -v0.12.3
 loggability -v0.6.1
-sequel -v3.44.0
 mongrel2 -v0.40.0
 pluggability -v0.3.0
 simplecov -v0.7.1
