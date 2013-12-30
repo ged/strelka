@@ -50,9 +50,10 @@ describe Strelka::Cookie do
 		expect( result[:a].value ).to be_nil()
 	end
 
-	it "doesn't raise an error if asked to parse an invalid cookie header" do
-		result = Strelka::Cookie.parse( "{a}=foo" )
-		expect( result ).to eq( {} )
+	it "raises an error if asked to parse an invalid cookie header" do
+		expect {
+			Strelka::Cookie.parse( "{a}=foo" )
+		}.to raise_error( Strelka::ParseError, /malformed/i )
 	end
 
 	it "guards against a nil options hash" do

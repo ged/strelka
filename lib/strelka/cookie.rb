@@ -75,7 +75,8 @@ class Strelka::Cookie
 		# cookie-string = cookie-pair *( ";" SP cookie-pair )
 		header.split( /;\x20/ ).each do |cookie_pair|
 			# self.log.debug "  parsing cookie-pair: %p" % [ cookie_pair ]
-			next unless match = cookie_pair.match( COOKIE_PAIR )
+			match = cookie_pair.match( COOKIE_PAIR ) or
+				raise Strelka::ParseError, "malformed cookie pair: %p" % [ cookie_pair ]
 
 			# self.log.debug "  matched cookie: %p" % [ match ]
 			name = match[:cookie_name].untaint
