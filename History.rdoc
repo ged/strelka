@@ -1,3 +1,15 @@
+== v0.8.0 [2014-01-01] Michael Granger <ged@FaerieMUD.org>
+
+Make malformed headers and data consistently error with 400 status rather than
+ignored by default.
+
+- Fix PUT/POST routes in restresources to be more REST-y; i.e., POST
+  for non-idempotent methods, PUT for idempotent ones.
+- Make Strelka::Cookie raise on malformed cookies
+- Fix some API docs for sessions
+- Remove config keys that moved to Discovery
+
+
 == v0.7.0 [2013-10-21] Michael Granger <ged@FaerieMUD.org>
 
 - Make response filters always receive a response even if the handler
