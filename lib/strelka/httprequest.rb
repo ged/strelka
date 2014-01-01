@@ -144,11 +144,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 			when :GET, :HEAD
 				value = self.parse_query_args
 			when :POST, :PUT
-				value = self.parse_form_data
+				value = self.parse_body
 			when :TRACE
 				self.log.debug "No parameters for a TRACE request."
 			else
-				value = self.parse_form_data if self.content_type
+				value = self.parse_body if self.content_type
 			end
 
 			value = Hash.new( value ) unless value.is_a?( Hash )
@@ -156,6 +156,45 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		end
 
 		return @params
+	rescue => err
+		self.log.error "%p while parsing the request body: %s" % [ err.class, err.message ]
+		self.log.debug "  %s" % [ err.backtrace.join("\n  ") ]
+
+		finish_with( HTTP::BAD_REQUEST, "Malformed request body or missing content type." )
+	end
+
+
+	# multipart/form-data: http://tools.ietf.org/html/rfc2388
+	# Content-disposition header: http://tools.ietf.org/html/rfc2183
+
+	### Parse the request body if it's a representation of a complex data
+	### structure.
+	def parse_body
+		mimetype = self.content_type or
+			raise ArgumentError, "Malformed request (no content type?)"
+
+		self.body.rewind
+
+		case mimetype.split( ';' ).first
+		when 'application/x-www-form-urlencoded'
+			return merge_query_args( URI.decode_www_form(self.body.read) )
+		when 'application/json', 'text/javascript'
+			return Yajl.load( self.body )
+		when 'text/x-yaml', 'application/x-yaml'
+			return nil if self.body.eof?
+			return YAML.load( self.body, safe: true )
+		when 'multipart/form-data'
+			boundary = self.content_type[ /\bboundary=(\S+)/, 1 ] or
+				raise Strelka::ParseError, "no boundary found for form data: %p" %
+				[ self.content_type ]
+			boundary = dequote( boundary )
+
+			parser = Strelka::MultipartParser.new( self.body, boundary )
+			return parser.parse
+		else
+			self.log.debug "don't know how to parse a %p request" % [ self.content_type ]
+			return {}
+		end
 	end
 
 
@@ -164,6 +203,11 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	def cookies
 		@cookies = Strelka::CookieSet.parse( self ) unless @cookies
 		return @cookies
+	rescue => err
+		self.log.error "%p while parsing cookies: %s" % [ err.class, err.message ]
+		self.log.debug "  %s" % [ err.backtrace.join("\n  ") ]
+
+		finish_with( HTTP::BAD_REQUEST, "Malformed cookie header." )
 	end
 
 
@@ -182,49 +226,9 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
 	def parse_query_args
 		return {} if self.uri.query.nil?
-		query_args = begin
-			URI.decode_www_form( self.uri.query )
-		rescue => err
-			self.log.error "%p while parsing query %p: %s" %
-				[ err.class, self.uri.query, err.message ]
-			{}
-		end
 
+		query_args = URI.decode_www_form( self.uri.query )
 		return merge_query_args( query_args )
-	end
-
-
-	# multipart/form-data: http://tools.ietf.org/html/rfc2388
-	# Content-disposition header: http://tools.ietf.org/html/rfc2183
-
-	### Return a Hash of request form data.
-	def parse_form_data
-		unless self.content_type
-			finish_with( HTTP::BAD_REQUEST, "Malformed request (no content type?)" )
-		end
-
-		self.body.rewind
-
-		case self.content_type.split( ';' ).first
-		when 'application/x-www-form-urlencoded'
-			return merge_query_args( URI.decode_www_form(self.body.read) )
-		when 'application/json', 'text/javascript'
-			return Yajl.load( self.body )
-		when 'text/x-yaml', 'application/x-yaml'
-			return nil if self.body.eof?
-			return YAML.load( self.body, safe: true )
-		when 'multipart/form-data'
-			boundary = self.content_type[ /\bboundary=(\S+)/, 1 ] or
-				raise Strelka::ParseError, "no boundary found for form data: %p" %
-				[ self.content_type ]
-			boundary = dequote( boundary )
-
-			parser = Strelka::MultipartParser.new( self.body, boundary )
-			return parser.parse
-		else
-			self.log.debug "no form data in a %p request" % [ self.content_type ]
-			return {}
-		end
 	end
 
 

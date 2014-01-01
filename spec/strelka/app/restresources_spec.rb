@@ -87,6 +87,7 @@ describe Strelka::App::RestResources do
 
 			# Writer regular routes
 			it { should have_route(:POST,    'servers') }
+			it { should have_route(:POST,    'servers/:id') }
 			it { should have_route(:PUT,     'servers') }
 			it { should have_route(:PUT,     'servers/:id') }
 			it { should have_route(:DELETE,  'servers') }
@@ -126,6 +127,7 @@ describe Strelka::App::RestResources do
 
 			# Writer regular routes
 			it { should_not have_route(:POST,    'servers') }
+			it { should_not have_route(:POST,    'servers/:id') }
 			it { should_not have_route(:PUT,     'servers') }
 			it { should_not have_route(:PUT,     'servers/:id') }
 			it { should_not have_route(:DELETE,  'servers') }
@@ -350,7 +352,7 @@ describe Strelka::App::RestResources do
 			end # GET routes
 
 
-			context "POST route" do
+			context "POST routes" do
 
 				before( :each ) do
 					@server_values = {
@@ -395,52 +397,83 @@ describe Strelka::App::RestResources do
 					expect( new_server.use_ssl ).to      eq( 0 )
 				end
 
-				it "has a POST route to update instances"
+				it "has a POST route to update a single resource" do
+					server = Mongrel2::Config::Server.create( @server_values )
+
+					req = @request_factory.post( "/api/v1/servers/#{server.id}" )
+					req.content_type = 'application/json'
+					req.body = Yajl.dump({ 'name' => 'Staging Server' })
+
+					res = @app.new.handle( req )
+					server.refresh
+
+					expect( res.status ).to eq( HTTP::NO_CONTENT )
+					expect( server.name ).to eq( 'Staging Server' )
+					expect( server.uuid ).to eq( @server_values['uuid'] )
+				end
+
+				it "ignores attributes that aren't in the allowed columns list"
 
 			end # POST routes
 
 
-			context "PUT route" do
-
-				before( :each ) do
-					@posted_values = {
-						'name'      => 'Not A Testing Server',
-						'bind_addr' => '0.0.0.0',
-					}
-				end
+			context "PUT routes" do
 
 				it "has a PUT route to replace instances in the resource collection" do
 					req = @request_factory.put( '/api/v1/servers/1' )
 					req.content_type = 'application/json'
 					req.headers.accept = 'application/json'
-					req.body = Yajl.dump( @posted_values )
+					req.body = Yajl.dump({
+							'name'         => 'Staging',
+							'uuid'         => 'staging',
+							'access_log'   => "/logs/staging-access.log",
+							'error_log'    => "/logs/staging-error.log",
+							'chroot'       => "",
+							'pid_file'     => "/var/run/staging.pid",
+							'default_host' => "staging.local",
+							'port'         => '6455',
+						})
 
 					res = @app.new.handle( req )
 
 					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-					expect( Mongrel2::Config::Server[ 1 ].name ).to eq( 'Not A Testing Server' )
-					expect( Mongrel2::Config::Server[ 1 ].bind_addr ).to eq( '0.0.0.0' )
+					server = Mongrel2::Config::Server[1]
+					expect( server.name ).to eq( 'Staging' )
+					expect( server.bind_addr ).to eq( '0.0.0.0' )
+					expect( server.uuid ).to eq( 'staging' )
 				end
 
 				it "has a PUT route to replace all resources in a collection" do
-					pending "fix the semantics of PUT and POST" do
-						req = @request_factory.put( '/api/v1/servers' )
-						req.content_type = 'application/json'
-						req.body = Yajl.dump({ 'bind_addr' => '0.0.0.0' })
+					req = @request_factory.put( '/api/v1/servers' )
+					req.content_type = 'application/json'
+					req.body = Yajl.dump([
+						{
+							'name'         => 'Staging Server',
+							'uuid'         => 'staging',
+							'access_log'   => "/logs/staging-access.log",
+							'error_log'    => "/logs/staging-error.log",
+							'chroot'       => "",
+							'pid_file'     => "/var/run/staging.pid",
+							'default_host' => "staging.local",
+							'port'         => '6455',
+						}
+					])
 
-						res = @app.new.handle( req )
+					res = @app.new.handle( req )
 
-						expect( res.status ).to eq( HTTP::NO_CONTENT )
+					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
-						expect( Mongrel2::Config::Server.map( :bind_addr ) ).to eq( ['0.0.0.0'] )
-					end
+					expect( Mongrel2::Config::Server.count ).to eq( 1 )
+					server = Mongrel2::Config::Server.first
+					expect( server.name ).to eq( 'Staging Server' )
+					expect( server.uuid ).to eq( 'staging' )
 				end
 
 			end # PUT routes
 
 
-			context "DELETE route" do
+			context "DELETE routes" do
 
 				it "has a DELETE route to delete single instances in the resource collection" do
 					req = @request_factory.delete( '/api/v1/servers/1' )
@@ -449,6 +482,7 @@ describe Strelka::App::RestResources do
 
 					expect( res.status ).to eq( HTTP::NO_CONTENT )
 
+					expect( Mongrel2::Config::Server[1] ).to be_nil
 					expect( Mongrel2::Config::Server.count ).to eq( 1 )
 				end
 

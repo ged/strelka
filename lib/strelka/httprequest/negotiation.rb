@@ -98,6 +98,10 @@ module Strelka::HTTPRequest::Negotiation
 		return self.parse_negotiation_header( :accept, Strelka::HTTPRequest::MediaType ) do
 			Strelka::HTTPRequest::MediaType.new( '*', '*' )
 		end
+	rescue => err
+		self.log.error "%p while parsing the Accept header: %s" % [ err.class, err.message ]
+		self.log.debug "  %s" % [ err.backtrace.join("\n  ") ]
+		finish_with HTTP::BAD_REQUEST, "Malformed Accept header"
 	end
 
 

@@ -87,6 +87,12 @@ describe Strelka::HTTPRequest::Negotiation do
 			expect( @req.explicitly_accepts?( 'application/x-yaml' ) ).to be_false()
 		end
 
+		it "finishes with a BAD REQUEST response if the Accept header is malformed" do
+			@req.headers.accept = 'text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2'
+
+			expect { @req.accepted_types }.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
+		end
+
 	end
 
 

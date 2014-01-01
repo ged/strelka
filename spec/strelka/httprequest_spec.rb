@@ -192,9 +192,11 @@ describe Strelka::HTTPRequest do
 				})
 			end
 
-			it "treats a malformed query string as the lack of a query" do
+			it "responds with a 400 (BAD_REQUEST) for a malformed query string" do
 				req = @request_factory.get( '/directory/path?foo' )
-				expect( req.params ).to eq({})
+				expect {
+					req.params
+				}.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
 			end
 		end
 
@@ -247,7 +249,7 @@ describe Strelka::HTTPRequest do
 
 				expect {
 					@req.params
-				}.to finish_with( HTTP::BAD_REQUEST, /no content type/i )
+				}.to finish_with( HTTP::BAD_REQUEST, /content type/i )
 			end
 		end
 
@@ -302,6 +304,14 @@ describe Strelka::HTTPRequest do
 					'mirror' => 'sequel',
 				})
 			end
+
+			it "responds with a 400 (BAD_REQUEST) for malformed parameters" do
+				@req.body = '<? skrip_kiddie_stuff ?>'
+				expect {
+					@req.params
+				}.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
+			end
+
 		end
 
 		context "a POST request with a 'multipart/form-data' body" do
@@ -348,6 +358,13 @@ describe Strelka::HTTPRequest do
 				data = %w[an array of stuff]
 				@req.body = Yajl.dump( data )
 				expect( @req.params[:foo] ).to eq( data )
+			end
+
+			it "responds with a 400 (BAD_REQUEST) for malformed JSON body" do
+				@req.body = '<? skrip_kiddie_stuff ?>'
+				expect {
+					@req.params
+				}.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
 			end
 
 		end
@@ -403,6 +420,13 @@ describe Strelka::HTTPRequest do
 				expect( @req.params ).to eq( {} )
 			end
 
+			it "responds with a 400 (BAD_REQUEST) for malformed YAML body" do
+				@req.body = "---\npork:\nwoo\nhooooooooo\n\n"
+				expect {
+					@req.params
+				}.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
+			end
+
 		end
 
 	end
@@ -427,6 +451,14 @@ describe Strelka::HTTPRequest do
 			expect( @req.cookies ).to have( 2 ).members
 			expect( @req.cookies['foom'].value ).to eq( 'chuckUfarly' )
 			expect( @req.cookies['glarn'].value ).to eq( 'hotchinfalcheck' )
+		end
+
+		it "responds with a 400 (BAD_REQUEST) response for malformed cookies" do
+			@req.header.cookie = 'pork'
+
+			expect {
+				@req.cookies
+			}.to finish_with( HTTP::BAD_REQUEST, /malformed/i )
 		end
 
 	end

@@ -33,6 +33,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #     get 'customers'
 #     get 'customers/:id'
 #     post 'customers'
+#     post 'customers/:id'
 #     put 'customers'
 #     put 'customers/:id'
 #     delete 'customers'
@@ -176,9 +177,10 @@ module Strelka::App::RestResources
 			else
 				self.add_collection_create_handler( route, rsrcobj, options )
 				self.add_update_handler( route, rsrcobj, options )
-				self.add_collection_update_handler( route, rsrcobj, options )
-				self.add_delete_handler( route, rsrcobj, options )
+				self.add_collection_replace_handler( route, rsrcobj, options )
+				self.add_replace_handler( route, rsrcobj, options )
 				self.add_collection_deletion_handler( route, rsrcobj, options )
+				self.add_delete_handler( route, rsrcobj, options )
 			end
 
 			# Add any composite resources based on the +rsrcobj+'s associations
@@ -302,13 +304,13 @@ module Strelka::App::RestResources
 				[ rsrcobj, route ]
 
 			self.add_route( :POST, route, options ) do |req|
-				add_resource_params( req, rsrcobj )
+				add_resource_params( req.params, rsrcobj )
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
 
 				resource = rsrcobj.new( req.params.valid )
 
-				# Save it in a transaction, erroring if any of 'em fail validations
+				# Save it in a transaction, erroring if any validations fail
 				begin
 					resource.save
 				rescue Sequel::ValidationFailed => err
@@ -333,15 +335,15 @@ module Strelka::App::RestResources
 
 
 		### Add a handler method for updating an instance of +rsrcobj+.
-		### PUT /resources/{id}
+		### POST /resources/{id}
 		def add_update_handler( route_prefix, rsrcobj, options )
 			pkey = rsrcobj.primary_key
 			route = "#{route_prefix}/:#{pkey}"
 
-			self.log.debug "Creating handler for creating %p resources: POST %s" %
+			self.log.debug "Creating handler for updating a single %p resource: POST %s" %
 				[ rsrcobj, route ]
-			self.add_route( :PUT, route, options ) do |req|
-				add_resource_params( req, rsrcobj )
+			self.add_route( :POST, route, options ) do |req|
+				add_resource_params( req.params, rsrcobj )
 				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
 					req.params.okay?
 
@@ -365,31 +367,81 @@ module Strelka::App::RestResources
 				return res
 			end
 
+			self.resource_verbs[ route_prefix ] << :POST
+		end
+
+
+		### Add a handler method for replacing an instance of +rsrcobj+.
+		### PUT /resources/{id}
+		def add_replace_handler( route_prefix, rsrcobj, options )
+			pkey = rsrcobj.primary_key
+			route = "#{route_prefix}/:#{pkey}"
+
+			self.log.debug "Creating handler for replacing %p a resource: PUT %s" %
+				[ rsrcobj, route ]
+			self.add_route( :PUT, route, options ) do |req|
+				add_resource_params( req.params, rsrcobj )
+				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
+					req.params.okay?
+
+				id = req.params[ pkey ]
+				resource = rsrcobj[ id ] or
+					finish_with( HTTP::NOT_FOUND, "no such %s [%p]" % [ rsrcobj.name, id ] )
+
+				newvals = req.params.valid
+				self.log.debug "Replacing %p: %p" % [ resource, newvals ]
+
+				begin
+					resource.values.clear
+					resource[ pkey ] = newvals.delete( pkey.to_sym )
+					resource.set( newvals )
+					resource.save
+				rescue Sequel::Error => err
+					finish_with( HTTP::BAD_REQUEST, err.message )
+				end
+
+				res = req.response
+				res.status = HTTP::NO_CONTENT
+
+				return res
+			end
+
 			self.resource_verbs[ route_prefix ] << :PUT
 		end
 
 
 		### Add a handler method for replacing all instances of +rsrcobj+ collection.
 		### PUT /resources
-		def add_collection_update_handler( route, rsrcobj, options )
+		def add_collection_replace_handler( route, rsrcobj, options )
 			pkey = rsrcobj.primary_key
-			self.log.debug "Creating handler for updating every %p resources: PUT %s" %
+			self.log.debug "Creating handler for replacing all %p resources: PUT %s" %
 				[ rsrcobj, route ]
 
 			self.add_route( :PUT, route, options ) do |req|
-				add_resource_params( req, rsrcobj )
-				finish_with( HTTP::BAD_REQUEST, req.params.error_messages.join(", ") ) unless
-					req.params.okay?
 
-				newvals = req.params.valid
-				newvals.delete( pkey.to_s )
-				self.log.debug "Updating %p with new values: %p" % [ rsrcobj, newvals ]
+				# Make a validator that can be reused to validate each resource's attributes
+				validator = self.class.paramvalidator.dup
+				add_resource_params( validator, rsrcobj )
+				body = req.parse_body
+				body = [ body ] unless body.is_a?( Array )
+
+				# Create resource objects out of the incoming data
+				new_resources = []
+				body.each do |attributes|
+					validator.validate( attributes )
+					finish_with( HTTP::BAD_REQUEST, validator.error_messages.join(", ") ) unless
+						validator.okay?
+
+					new_resources << rsrcobj.new( validator.valid )
+				end
+				self.log.debug "Replacing %p collection with new values: %p" %
+					[ rsrcobj, new_resources ]
 
 				# Save it in a transaction, erroring if any of 'em fail validations
 				begin
 					rsrcobj.db.transaction do
 						rsrcobj.truncate
-						rsrcobj.create( newvals )
+						new_resources.each( &:save )
 					end
 				rescue Sequel::ValidationFailed => err
 					finish_with( HTTP::BAD_REQUEST, err.message )
@@ -632,14 +684,14 @@ module Strelka::App::RestResources
 	#######
 
 	### Add parameter validations for the given +columns+ of the specified resource object +rsrcobj+
-	### to the specified +req+uest.
-	def add_resource_params( req, rsrcobj, *columns )
+	### to the specified parameter +validator+.
+	def add_resource_params( validator, rsrcobj, *columns )
 		columns = rsrcobj.allowed_columns || rsrcobj.columns if columns.empty?
 
 		columns.each do |col|
 			config = rsrcobj.db_schema[ col ] or
 				raise ArgumentError, "no such column %p for %p" % [ col, rsrcobj ]
-			req.params.add( col, config[:type] ) unless req.params.param_names.include?( col.to_s )
+			validator.add( col, config[:type] ) unless validator.param_names.include?( col.to_s )
 		end
 
 	end

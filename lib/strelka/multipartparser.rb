@@ -126,9 +126,7 @@ class Strelka::MultipartParser
 			raise Strelka::ParseError, "No initial boundary"
 
 		# Now scan until we see the ending boundary (the one with the trailing '--')
-		begin
-			key, val = self.scan_part
-		end until @buffer.start_with?( '--' )
+		self.scan_part until @buffer.start_with?( '--' )
 
 		self.log.debug "Finished parse. %d fields" % [ self.fields.length ]
 		return self.fields
