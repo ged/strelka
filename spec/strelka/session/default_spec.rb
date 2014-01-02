@@ -90,7 +90,7 @@ describe Strelka::Session::Default do
 
 		session.save( response )
 
-		expect( described_class.sessions ).to eq( { session_id => session_data } )
+		expect( described_class.sessions ).to include( { session_id => session_data } )
 		expect( response.header_data ).to match( /Set-Cookie: #{@cookie_name}=#{session_id}/i )
 	end
 

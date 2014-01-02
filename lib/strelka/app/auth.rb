@@ -235,7 +235,7 @@ module Strelka::App::Auth
 
 	# Plugins API -- Set up load order
 	run_outside :routing, :restresources
-	run_inside  :templating, :errors, :sessions
+	run_inside  :templating, :errors, :sessions, :parameters
 
 
 	# The name of the default plugin to use for authentication
