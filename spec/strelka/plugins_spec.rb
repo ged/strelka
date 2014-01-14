@@ -264,7 +264,7 @@ describe "Strelka plugin system" do
 				route_some_stuff
 			end
 
-			expect( subclass.routed ).to be_true()
+			expect( subclass.routed ).to be_truthy()
 		end
 
 	end

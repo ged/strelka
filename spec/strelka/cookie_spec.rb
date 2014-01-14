@@ -35,7 +35,7 @@ describe Strelka::Cookie do
 		result = Strelka::Cookie.parse( 'a=b' )
 
 		expect( result ).to be_a( Hash )
-		expect( result ).to have(1).member
+		expect( result.size ).to eq( 1 )
 		expect( result[:a] ).to be_a( Strelka::Cookie )
 		expect( result[:a].name ).to eq( 'a' )
 		expect( result[:a].value ).to eq( 'b' )
@@ -44,7 +44,7 @@ describe Strelka::Cookie do
 	it "parses a cookie header field with an empty value as a cookie with a nil value" do
 		result = Strelka::Cookie.parse( 'a=' )
 
-		expect( result ).to have( 1 ).member
+		expect( result.size ).to eq(  1  )
 		expect( result[:a] ).to be_a( Strelka::Cookie )
 		expect( result[:a].name ).to eq( 'a' )
 		expect( result[:a].value ).to be_nil()

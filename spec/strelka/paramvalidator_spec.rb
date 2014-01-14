@@ -55,7 +55,7 @@ describe Strelka::ParamValidator do
 			@validator.validate( 'blorp' => 'true' )
 			expect( @validator[ :blorp ] ).to be_nil
 			@validator.add( :blorp, :boolean )
-			expect( @validator[ :blorp ] ).to be_true
+			expect( @validator[ :blorp ] ).to be_truthy
 		end
 
 		it "ignores identical duplicate constraints" do
@@ -148,7 +148,7 @@ describe Strelka::ParamValidator do
 			@validator.validate( 'number' => tainted_one )
 
 			expect( @validator[:number] ).to eq( "1" )
-			expect( @validator[:number].tainted? ).to be_false()
+			expect( @validator[:number].tainted? ).to be_falsey()
 		end
 
 		it "knows the names of fields that were required but missing from the parameters" do
@@ -158,7 +158,7 @@ describe Strelka::ParamValidator do
 			expect( @validator ).to have_errors()
 			expect( @validator ).to_not be_okay()
 
-			expect( @validator.missing ).to have(1).members
+			expect( @validator.missing.size ).to eq( 1 )
 			expect( @validator.missing ).to eq( ['id'] )
 		end
 
@@ -171,7 +171,7 @@ describe Strelka::ParamValidator do
 
 			expect( @validator.invalid ).to be_empty
 
-			expect( @validator.missing ).to have(1).members
+			expect( @validator.missing.size ).to eq( 1 )
 			expect( @validator.missing ).to eq( ['id'] )
 		end
 
@@ -182,7 +182,7 @@ describe Strelka::ParamValidator do
 			expect( @validator ).to have_errors()
 			expect( @validator ).to_not be_okay()
 
-			expect( @validator.invalid ).to have(1).keys
+			expect( @validator.invalid.size ).to eq( 1 )
 			expect( @validator.invalid.keys ).to eq( ['number'] )
 		end
 
@@ -205,7 +205,7 @@ describe Strelka::ParamValidator do
 			expect( @validator ).to have_errors()
 			expect( @validator ).to_not be_okay()
 
-			expect( @validator.error_fields ).to have(2).members
+			expect( @validator.error_fields.size ).to eq( 2 )
 			expect( @validator.error_fields ).to include('number')
 			expect( @validator.error_fields ).to include('id')
 		end
@@ -250,7 +250,7 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			expect( @validator.error_messages ).to have(2).members
+			expect( @validator.error_messages.size ).to eq( 2 )
 			expect( @validator.error_messages ).to include("Missing value for 'Id'")
 			expect( @validator.error_messages ).to include("Invalid value for 'Number'")
 		end
@@ -260,7 +260,7 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			expect( @validator.error_messages(true) ).to have(3).members
+			expect( @validator.error_messages(true).size ).to eq( 3 )
 			expect( @validator.error_messages(true) ).to include("Missing value for 'Id'")
 			expect( @validator.error_messages(true) ).to include("Invalid value for 'Number'")
 			expect( @validator.error_messages(true) ).to include("Unknown parameter 'Unknown'")
@@ -271,7 +271,7 @@ describe Strelka::ParamValidator do
 			@validator.add( :id, /^(\w{20})$/, "Test Name", :required )
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			expect( @validator.error_messages ).to have(2).members
+			expect( @validator.error_messages.size ).to eq( 2 )
 			expect( @validator.error_messages ).to include("Missing value for 'Test Name'")
 			expect( @validator.error_messages ).to include("Invalid value for 'Numeral'")
 		end
@@ -286,8 +286,8 @@ describe Strelka::ParamValidator do
 			}
 			@validator.validate( 'number' => 'rhinoceros', 'unknown' => "1" )
 
-			expect( @validator.descriptions ).to have( 2 ).members
-			expect( @validator.error_messages ).to have( 2 ).members
+			expect( @validator.descriptions.size ).to eq(  2  )
+			expect( @validator.error_messages.size ).to eq(  2  )
 			expect( @validator.error_messages ).to include("Missing value for 'Test Name'")
 			expect( @validator.error_messages ).to include("Invalid value for 'Numeral'")
 		end
@@ -486,7 +486,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_true()
+				expect( @validator[:enabled] ).to be_truthy()
 			end
 
 			it "accepts the value 't'" do
@@ -495,7 +495,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_true()
+				expect( @validator[:enabled] ).to be_truthy()
 			end
 
 			it "accepts the value 'yes'" do
@@ -504,7 +504,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_true()
+				expect( @validator[:enabled] ).to be_truthy()
 			end
 
 			it "accepts the value 'y'" do
@@ -513,7 +513,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_true()
+				expect( @validator[:enabled] ).to be_truthy()
 			end
 
 			it "accepts the value '1'" do
@@ -522,7 +522,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_true()
+				expect( @validator[:enabled] ).to be_truthy()
 			end
 
 			it "accepts the string 'false'" do
@@ -531,7 +531,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "accepts the literal false value" do
@@ -540,7 +540,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "accepts the value 'f'" do
@@ -549,7 +549,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "accepts the value 'no'" do
@@ -558,7 +558,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "accepts the value 'n'" do
@@ -567,7 +567,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "accepts the value '0'" do
@@ -576,7 +576,7 @@ describe Strelka::ParamValidator do
 				expect( @validator ).to be_okay()
 				expect( @validator ).to_not have_errors()
 
-				expect( @validator[:enabled] ).to be_false()
+				expect( @validator[:enabled] ).to be_falsey()
 			end
 
 			it "rejects non-boolean parameters" do

@@ -142,13 +142,13 @@ describe Strelka::App::Auth do
 
 			req = @request_factory.get( '/api/v1/string' )
 			expect( app ).to require_auth_for_request( req )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/strong' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/stri' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/string/long' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 		end
 
 		it "allows auth criteria to be declared with a regexp" do
@@ -156,17 +156,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/stri' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/stro' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/string' ) # not right-bound
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/string/long' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/chatlog' ) # Not left-bound
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 		end
 
 		it "allows auth criteria to be declared with a string and a block" do
@@ -177,15 +177,15 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.post( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.put( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.delete( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.options( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 		end
 
 		it "allows auth criteria to be declared with a regexp and a block" do
@@ -196,11 +196,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/regexp' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/regexp/a_username' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 		end
 
 		it "allows auth criteria to be declared with just a block" do
@@ -218,21 +218,21 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/strong' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/marlon_brando' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.post( '/api/v1/somewhere' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.put( '/api/v1/somewhere' )
 			req.content_type = 'application/x-www-form-urlencoded'
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 
 			req = @request_factory.get( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/marlon_brando/2' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.put( '/api/v1/somewhere' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 
 		end
 
@@ -241,13 +241,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/strong' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/stri' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/string/long' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 		end
 
 		it "allows negative auth criteria to be declared with a regexp" do
@@ -255,17 +255,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/stri' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/stro' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/string' ) # not right-bound
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/string/long' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/other/string/long' ) # Not left-bound
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/chat' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 		end
 
 		it "allows negative auth criteria to be declared with a string and a block" do
@@ -274,17 +274,17 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 			req = @request_factory.get( '/api/v1/strong' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.post( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.put( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.delete( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.options( '/api/v1/string' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 		end
 
 		it "allows negative auth criteria to be declared with a regexp and a block" do
@@ -295,13 +295,13 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/regexp' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/regexp/a_username' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/regexp/%20not+a+username' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/regexp/guest' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 		end
 
 		it "allows negative auth criteria to be declared with just a block" do
@@ -314,11 +314,11 @@ describe Strelka::App::Auth do
 			app = @app.new
 
 			req = @request_factory.get( '/api/v1/foom' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.post( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
-			expect( app.request_should_auth?(req) ).to be_true()
+			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
-			expect( app.request_should_auth?(req) ).to be_false()
+			expect( app.request_should_auth?(req) ).to be_falsey()
 
 		end
 

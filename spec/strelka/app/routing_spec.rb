@@ -214,7 +214,7 @@ describe Strelka::App::Routing do
 				get( '/origami' ) {}
 			end
 
-			expect( subclass.routes ).to have( 3 ).members
+			expect( subclass.routes.size ).to eq(  3  )
 
 			subclass.routes.
 				should include([ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ])

@@ -136,12 +136,12 @@ describe Strelka::HTTPRequest, "accept params" do
 			specific_param = Strelka::HTTPRequest::MediaType.parse( 'text/html' )
 			subtype_wildcard_param = Strelka::HTTPRequest::MediaType.parse( 'image/*' )
 
-			expect( ( specific_param =~ 'text/html' ) ).to be_true()
-			expect( ( specific_param =~ 'image/png' ) ).to be_false()
+			expect( ( specific_param =~ 'text/html' ) ).to be_truthy()
+			expect( ( specific_param =~ 'image/png' ) ).to be_falsey()
 
-			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_true()
-			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_true()
-			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_false()
+			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_truthy()
+			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_truthy()
+			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_falsey()
 		end
 	end
 
@@ -217,17 +217,17 @@ describe Strelka::HTTPRequest, "accept params" do
 		it "can be compared against strings" do
 			specific_param = Strelka::HTTPRequest::Charset.parse( 'us-ascii' )
 
-			expect( ( specific_param =~ 'us-ascii' ) ).to be_true()
-			expect( ( specific_param =~ 'ansi_x3.4-1968' ) ).to be_true()
-			expect( ( specific_param =~ 'utf-8' ) ).to be_false()
+			expect( ( specific_param =~ 'us-ascii' ) ).to be_truthy()
+			expect( ( specific_param =~ 'ansi_x3.4-1968' ) ).to be_truthy()
+			expect( ( specific_param =~ 'utf-8' ) ).to be_falsey()
 		end
 
 		it "can be compared against Encoding objects" do
 			specific_param = Strelka::HTTPRequest::Charset.parse( 'utf-8' )
 
-			expect( ( specific_param =~ Encoding::UTF_8 ) ).to be_true()
-			expect( ( specific_param =~ Encoding::CP65001 ) ).to be_true()
-			expect( ( specific_param =~ Encoding::MacThai ) ).to be_false()
+			expect( ( specific_param =~ Encoding::UTF_8 ) ).to be_truthy()
+			expect( ( specific_param =~ Encoding::CP65001 ) ).to be_truthy()
+			expect( ( specific_param =~ Encoding::MacThai ) ).to be_falsey()
 		end
 	end
 
@@ -260,12 +260,12 @@ describe Strelka::HTTPRequest, "accept params" do
 			specific_param = Strelka::HTTPRequest::MediaType.parse( 'text/html' )
 			subtype_wildcard_param = Strelka::HTTPRequest::MediaType.parse( 'image/*' )
 
-			expect( ( specific_param =~ 'text/html' ) ).to be_true()
-			expect( ( specific_param =~ 'image/png' ) ).to be_false()
+			expect( ( specific_param =~ 'text/html' ) ).to be_truthy()
+			expect( ( specific_param =~ 'image/png' ) ).to be_falsey()
 
-			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_true()
-			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_true()
-			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_false()
+			expect( ( subtype_wildcard_param =~ 'image/png' ) ).to be_truthy()
+			expect( ( subtype_wildcard_param =~ 'image/jpeg' ) ).to be_truthy()
+			expect( ( subtype_wildcard_param =~ 'text/plain' ) ).to be_falsey()
 		end
 	end
 

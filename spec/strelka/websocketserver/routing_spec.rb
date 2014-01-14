@@ -64,7 +64,7 @@ describe Strelka::WebSocketServer::Routing do
 			@app.class_eval do
 				on_nick() {}
 			end
-			expect( @app.op_callbacks ).to have( 1 ).member
+			expect( @app.op_callbacks.size ).to eq(  1  )
 			expect( @app.op_callbacks[ :nick ] ).to be_a( UnboundMethod )
 		end
 

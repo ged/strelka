@@ -69,7 +69,7 @@ describe Strelka::App::Templating do
 
 			template_dirs = described_class.discover_template_dirs
 
-			expect( template_dirs ).to have( 3 ).pathnames
+			expect( template_dirs.size ).to eq(  3  )
 			expect( template_dirs ).to include(
 				Pathname("data/foom/templates"),
 				Pathname("#{javelin_path}/data/javelin/templates"),

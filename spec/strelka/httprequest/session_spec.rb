@@ -107,12 +107,12 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 			end
 
 			it "knows when its session hasn't been loaded" do
-				expect( @req.session_loaded? ).to be_false()
+				expect( @req.session_loaded? ).to be_falsey()
 			end
 
 			it "knows when its session has been loaded" do
 				@req.session # Load it
-				expect( @req.session_loaded? ).to be_true()
+				expect( @req.session_loaded? ).to be_truthy()
 			end
 
 		end

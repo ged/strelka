@@ -165,7 +165,7 @@ describe Strelka::AuthProvider::Basic do
 			req = @request_factory.get( '/admin/console' )
 			req.header.authorization = make_authorization_header( 'lessa', 'ramoth' )
 
-			expect( @provider.authenticate(req) ).to be_true()
+			expect( @provider.authenticate(req) ).to be_truthy()
 		end
 	end
 

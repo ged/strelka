@@ -74,7 +74,7 @@ describe Strelka::App::RestResources do
 			end
 
 			it "keeps track of what resources are mounted where" do
-				expect( @app.resource_verbs ).to have( 1 ).member
+				expect( @app.resource_verbs.size ).to eq(  1  )
 				expect( @app.resource_verbs ).to include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
@@ -112,7 +112,7 @@ describe Strelka::App::RestResources do
 			end
 
 			it "keeps track of what resources are mounted where" do
-				expect( @app.resource_verbs ).to have( 1 ).member
+				expect( @app.resource_verbs.size ).to eq(  1  )
 				expect( @app.resource_verbs ).to include( 'servers' )
 				@app.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD )
@@ -193,7 +193,7 @@ describe Strelka::App::RestResources do
 					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					expect( body ).to have( 2 ).members
+					expect( body.size ).to eq(  2  )
 					expect( body.map {|record| record['uuid'] } ).to include( 'test-server', 'step-server' )
 				end
 
@@ -206,7 +206,7 @@ describe Strelka::App::RestResources do
 					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					expect( body ).to have( 1 ).member
+					expect( body.size ).to eq(  1  )
 					expect( body[0]['uuid'] ).to eq( 'test-server' )
 				end
 
@@ -219,7 +219,7 @@ describe Strelka::App::RestResources do
 					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					expect( body ).to have( 1 ).member
+					expect( body.size ).to eq(  1  )
 					expect( body[0]['uuid'] ).to eq( 'step-server' )
 				end
 
@@ -232,7 +232,7 @@ describe Strelka::App::RestResources do
 					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					expect( body ).to have( 2 ).members
+					expect( body.size ).to eq(  2  )
 					expect( body[0]['name'] ).to eq( 'Step' )
 				end
 
@@ -245,7 +245,7 @@ describe Strelka::App::RestResources do
 					expect( res.content_type ).to eq( 'application/json' )
 					body = Yajl.load( res.body )
 
-					expect( body ).to have( 2 ).members
+					expect( body.size ).to eq(  2  )
 					expect( body[0]['name'] ).to eq( 'Test' )
 				end
 
@@ -287,7 +287,7 @@ describe Strelka::App::RestResources do
 					body = Yajl.load( res.body )
 
 					expect( body ).to be_an( Array )
-					expect( body ).to have( 1 ).member
+					expect( body.size ).to eq(  1  )
 					expect( body.first ).to be_a( Hash )
 					expect( body.first['uuid'] ).to eq( 'test-server' )
 				end
@@ -301,7 +301,7 @@ describe Strelka::App::RestResources do
 					body = Yajl.load( res.body )
 
 					expect( body ).to be_an( Array )
-					expect( body ).to have( 1 ).member
+					expect( body.size ).to eq(  1  )
 					expect( body.first ).to be_a( Hash )
 					expect( body.first['port'] ).to be > 1024
 				end
@@ -315,7 +315,7 @@ describe Strelka::App::RestResources do
 					body = Yajl.load( res.body )
 
 					expect( body ).to be_an( Array )
-					expect( body ).to have( 1 ).member
+					expect( body.size ).to eq(  1  )
 					expect( body.first ).to be_a( Hash )
 					expect( body.first['name'] ).to eq( 'Step' )
 				end
@@ -329,7 +329,7 @@ describe Strelka::App::RestResources do
 					body = Yajl.load( res.body )
 
 					expect( body ).to be_an( Array )
-					expect( body ).to have( 4 ).members
+					expect( body.size ).to eq(  4  )
 					expect( body.first ).to be_a( Hash )
 					expect( body.first['server_id'] ).to eq( 1 )
 					expect( body.first['id'] ).to eq( 1 )
@@ -343,7 +343,7 @@ describe Strelka::App::RestResources do
 					body = Yajl.load( res.body )
 
 					expect( body ).to be_an( Array )
-					expect( body ).to have( 2 ).members
+					expect( body.size ).to eq(  2  )
 					expect( body.first ).to be_a( Hash )
 					expect( body.first['server_id'] ).to eq( 1 )
 					expect( body.first['id'] ).to eq( 3 )
@@ -515,7 +515,7 @@ describe Strelka::App::RestResources do
 			end
 
 			it "has its metadata inherited by subclasses" do
-				expect( subject.resource_verbs ).to have( 1 ).member
+				expect( subject.resource_verbs.size ).to eq(  1  )
 				expect( subject.resource_verbs ).to include( 'servers' )
 				subject.resource_verbs[ 'servers' ].
 					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )

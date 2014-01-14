@@ -139,7 +139,7 @@ describe Strelka::App::Parameters do
 					untaint_all_constraints true
 				end
 
-				expect( @app.untaint_all_constraints ).to be_true()
+				expect( @app.untaint_all_constraints ).to be_truthy()
 				req = @request_factory.get( '/user/search?username=shereshnaheth'.taint )
 				@app.new.handle( req )
 

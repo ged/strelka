@@ -26,7 +26,7 @@ describe Strelka::CookieSet do
 
 		expect( @cookieset ).to be_empty()
 		expect( @cookieset.length ).to eq( 0 )
-		expect( @cookieset.member?( cookie ) ).to be_false()
+		expect( @cookieset.member?( cookie ) ).to be_falsey()
 	end
 
 	it "is able to enummerate over each cookie in the set" do

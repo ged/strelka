@@ -87,7 +87,7 @@ describe Strelka::Discovery do
 
 		app_paths = described_class.discover_paths
 
-		expect( app_paths ).to have( 4 ).members
+		expect( app_paths.size ).to eq(  4  )
 		expect( app_paths ).to include(
 			'donkey'  => [Pathname("#{donkey_path}/data/donkey/apps/app.rb")],
 			'rabbit'  => [Pathname("#{rabbit_path}/data/rabbit/apps/subdir/app1.rb"),
@@ -115,7 +115,7 @@ describe Strelka::Discovery do
 			end
 
 		app_classes = described_class.discover
-		expect( app_classes ).to have( 1 ).member
+		expect( app_classes.size ).to eq(  1  )
 		expect( app_classes.first ).to be_a( Class )
 		expect( app_classes.first ).to be < discoverable_class
 	end

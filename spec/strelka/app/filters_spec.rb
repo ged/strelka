@@ -94,11 +94,11 @@ describe Strelka::App::Filters do
 
 
 			it "has a single request filter" do
-				expect( @app.request_filters ).to have(1).member
+				expect( @app.request_filters.size ).to eq( 1 )
 			end
 
 			it "has a single response filter" do
-				expect( @app.response_filters ).to have(1).member
+				expect( @app.response_filters.size ).to eq( 1 )
 			end
 
 			it "passes both the request and the response through it" do
@@ -106,8 +106,8 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				expect( req.notes[:saw][:request] ).to be_true()
-				expect( res.notes[:saw][:response] ).to be_true()
+				expect( req.notes[:saw][:request] ).to be_truthy()
+				expect( res.notes[:saw][:response] ).to be_truthy()
 			end
 
 		end
@@ -132,7 +132,7 @@ describe Strelka::App::Filters do
 
 
 			it "has a single request filter" do
-				expect( @app.request_filters ).to have(1).member
+				expect( @app.request_filters.size ).to eq( 1 )
 			end
 
 			it "has no response filters" do
@@ -144,7 +144,7 @@ describe Strelka::App::Filters do
 
 				res = @app.new.handle( req )
 
-				expect( req.notes[:saw][:request] ).to be_true()
+				expect( req.notes[:saw][:request] ).to be_truthy()
 				expect( res.notes[:saw][:response] ).to be_nil()
 			end
 
@@ -174,7 +174,7 @@ describe Strelka::App::Filters do
 			end
 
 			it "has no response filters" do
-				expect( @app.response_filters ).to have(1).member
+				expect( @app.response_filters.size ).to eq( 1 )
 			end
 
 			it "passes just the response through it" do
@@ -183,7 +183,7 @@ describe Strelka::App::Filters do
 				res = @app.new.handle( req )
 
 				expect( req.notes[:saw][:request] ).to be_nil()
-				expect( res.notes[:saw][:response] ).to be_true()
+				expect( res.notes[:saw][:response] ).to be_truthy()
 			end
 
 		end

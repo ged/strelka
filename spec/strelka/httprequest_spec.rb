@@ -377,7 +377,7 @@ describe Strelka::HTTPRequest do
 
 			it "returns a params hash in which all values are nil for an empty body" do
 				@req.body = ''
-				expect( @req.params[:profile] ).to be_false
+				expect( @req.params[:profile] ).to be_falsey
 			end
 
 			it "has the YAML data as the params if it has a body with YAML in it" do
@@ -441,14 +441,14 @@ describe Strelka::HTTPRequest do
 
 		it "parses a single cookie into a cookieset with the cookie in it" do
 			@req.header.cookie = 'foom=chuckUfarly'
-			expect( @req.cookies ).to have( 1 ).member
+			expect( @req.cookies.size ).to eq(  1  )
 			expect( @req.cookies['foom'].value ).to eq( 'chuckUfarly' )
 		end
 
 		it "parses multiple cookies into a cookieset with multiple cookies in it" do
 			@req.header.cookie = 'foom=chuckUfarly; glarn=hotchinfalcheck'
 
-			expect( @req.cookies ).to have( 2 ).members
+			expect( @req.cookies.size ).to eq(  2  )
 			expect( @req.cookies['foom'].value ).to eq( 'chuckUfarly' )
 			expect( @req.cookies['glarn'].value ).to eq( 'hotchinfalcheck' )
 		end

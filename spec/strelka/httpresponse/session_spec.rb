@@ -122,16 +122,16 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 
 			it "knows that its session has been loaded if it has one" do
 				@res.session
-				expect( @res.session_loaded? ).to be_true()
+				expect( @res.session_loaded? ).to be_truthy()
 			end
 
 			it "knows that its session has been loaded if its request has one" do
 				@res.request.session
-				expect( @res.session_loaded? ).to be_true()
+				expect( @res.session_loaded? ).to be_truthy()
 			end
 
 			it "knows that its session hasn't been loaded if neither its request not itself has one" do
-				expect( @res.session_loaded? ).to be_false()
+				expect( @res.session_loaded? ).to be_falsey()
 			end
 
 			it "saves the session via itself if it was loaded" do

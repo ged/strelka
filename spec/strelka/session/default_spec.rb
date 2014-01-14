@@ -139,8 +139,8 @@ describe Strelka::Session::Default do
 			subject.testkey = true
 			subject.namespace = nil
 
-			expect( subject.meat[ :testkey ] ).to be_true
-			expect( subject.greet[ :testkey ] ).to be_true
+			expect( subject.meat[ :testkey ] ).to be_truthy
+			expect( subject.greet[ :testkey ] ).to be_truthy
 			expect( subject.pork[ :testkey ] ).to be_nil
 		end
 	end
@@ -170,7 +170,7 @@ describe Strelka::Session::Default do
 		it "accesses values via a struct-like interface" do
 			subject.testkey = true
 
-			expect( subject.testkey ).to be_true
+			expect( subject.testkey ).to be_truthy
 			expect( subject.i_do_not_exist ).to be_nil
 		end
 	end

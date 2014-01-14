@@ -77,7 +77,7 @@ describe Strelka::MultipartParser do
 
 		params = parser.parse
 
-		expect( params ).to have( 5 ).keys
+		expect( params.size ).to eq(  5  )
 		expect( params.keys ).to include( 'x-livejournal-entry' )
 		expect( params['velour-fog'] ).to match( /Sweet, sweet canday/i )
 	end
@@ -121,7 +121,7 @@ describe Strelka::MultipartParser do
 		params = parser.parse
 
 		expect( params['pork'] ).to be_an_instance_of( Array )
-		expect( params['pork'] ).to have( 2 ).members
+		expect( params['pork'].size ).to eq(  2  )
 		expect( params['pork'] ).to include( 'zoot' )
 		expect( params['pork'] ).to include( 'fornk' )
 
