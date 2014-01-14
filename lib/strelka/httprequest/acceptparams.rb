@@ -50,9 +50,9 @@ class Strelka::HTTPRequest
 	# * Mahlon E. Smith <mahlon@martini.nu>
 	#
 	class AcceptParam
-		extend Loggability
-		include Comparable,
-		        Strelka::AbstractClass
+		extend Loggability,
+		       Strelka::AbstractClass
+		include Comparable
 
 
 		# Loggability API -- set up logging under the 'strelka' log host

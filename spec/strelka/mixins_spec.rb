@@ -19,8 +19,8 @@ describe Strelka, "mixins" do
 	describe Strelka::AbstractClass do
 
 		context "mixed into a class" do
-			it "will cause the including class to hide its ::new method" do
-				testclass = Class.new { include Strelka::AbstractClass }
+			it "will cause the extended class to hide its ::new method" do
+				testclass = Class.new { extend Strelka::AbstractClass }
 
 				expect {
 					testclass.new
@@ -34,7 +34,7 @@ describe Strelka, "mixins" do
 
 			before(:each) do
 				testclass = Class.new {
-					include Strelka::AbstractClass
+					extend Strelka::AbstractClass
 					pure_virtual :test_method
 				}
 				subclass = Class.new( testclass )

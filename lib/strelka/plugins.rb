@@ -228,7 +228,6 @@ module Strelka
 
 					self.log.debug "  copying class instance variable %s (%p)" % [ ivar, copy ]
 
-					# Don't duplicate modules/classes or immediates
 					instance_variable_set( ivar, copy )
 					self.log.debug "  instance variable %p set to %p in %p" %
 						[ ivar, self.instance_variable_get(ivar), self ]
@@ -268,7 +267,7 @@ module Strelka
 					next
 				end
 
-				self.log.info "  including %p." % [ mod ]
+				self.log.info "  including %p in %p." % [ mod, self ]
 				include( mod )
 			end
 

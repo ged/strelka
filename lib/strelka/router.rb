@@ -25,8 +25,8 @@ require 'strelka/mixins'
 # #add_route and #route_request methods.
 class Strelka::Router
 	extend Loggability,
-	       Pluggability
-	include Strelka::AbstractClass
+	       Pluggability,
+	       Strelka::AbstractClass
 
 	# Loggability API -- set up logging under the 'strelka' log host
 	log_to :strelka

@@ -2,6 +2,7 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+
 require 'tempfile'
 
 require 'strelka' unless defined?( Strelka )
@@ -16,7 +17,7 @@ module Strelka
 	#
 	#   # AbstractClass
 	#   class MyBaseClass
-	#       include Strelka::AbstractClass
+	#       extend Strelka::AbstractClass
 	#
 	#       # Define a method that will raise a NotImplementedError if called
 	#       pure_virtual :api_method
@@ -24,40 +25,38 @@ module Strelka
 	#
 	module AbstractClass
 
-		### Methods to be added to including classes
-		module ClassMethods
-
-			### Define one or more "virtual" methods which will raise
-			### NotImplementedErrors when called via a concrete subclass.
-			def pure_virtual( *syms )
-				syms.each do |sym|
-					define_method( sym ) do |*args|
-						raise ::NotImplementedError,
-							"%p does not provide an implementation of #%s" % [ self.class, sym ],
-							caller(1)
-					end
-				end
-			end
-
-
-			### Turn subclasses' new methods back to public.
-			def inherited( subclass )
-				subclass.module_eval { public_class_method :new }
-				super
-			end
-
-		end # module ClassMethods
-
-
-		### Inclusion callback
-		def self::included( mod )
+		### Extension callback -- mark the extended object's .new as private
+		def self::extended( mod )
 			super
-			if mod.respond_to?( :new )
-				mod.extend( ClassMethods )
-				mod.module_eval { private_class_method :new }
+			mod.class_eval { private_class_method :new }
+		end
+
+
+		### Inclusion callback -- support backward-compatible inclusion.
+		def self::included( mod )
+			mod.extend( self )
+			super
+		end
+
+
+		### Define one or more "virtual" methods which will raise
+		### NotImplementedErrors when called via a concrete subclass.
+		def pure_virtual( *syms )
+			syms.each do |sym|
+				define_method( sym ) do |*args|
+					raise ::NotImplementedError,
+					"%p does not provide an implementation of #%s" % [ self.class, sym ],
+					caller(1)
+				end
 			end
 		end
 
+
+		### Inheritance callback -- Turn subclasses' .new methods back to public.
+		def inherited( subclass )
+			subclass.module_eval { public_class_method :new }
+			super
+		end
 
 	end # module AbstractClass
 

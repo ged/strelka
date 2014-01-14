@@ -45,8 +45,8 @@ require 'strelka/mixins'
 #
 class Strelka::Session
 	extend Loggability,
-	       Pluggability
-	include Strelka::AbstractClass
+	       Pluggability,
+	       Strelka::AbstractClass
 
 
 	# Loggability API -- set up logging under the 'strelka' log host

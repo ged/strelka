@@ -30,9 +30,9 @@ require 'strelka/mixins'
 class Strelka::AuthProvider
 	extend Loggability,
 	       Pluggability,
+	       Strelka::AbstractClass,
 	       Strelka::Delegation
 	include Strelka::Constants,
-	        Strelka::AbstractClass,
 	        Strelka::ResponseHelpers
 
 	# Loggability API -- set up logging under the 'strelka' log host
