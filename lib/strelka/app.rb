@@ -100,6 +100,14 @@ class Strelka::App < Mongrel2::Handler
 	end
 
 
+	### Return an instance of the App configured for the handler in the currently-loaded
+	### Mongrel2 config that corresponds to the #default_appid.
+	def self::default_app_instance
+		appid = self.default_appid
+		return self.app_instance_for( appid )
+	end
+
+
 	#
 	# :section: Application declarative methods
 	#
