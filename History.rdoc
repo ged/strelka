@@ -1,4 +1,4 @@
-== v0.8.0 [2014-01-01] Michael Granger <ged@FaerieMUD.org>
+== v0.8.0 [2014-02-05] Michael Granger <ged@FaerieMUD.org>
 
 Make malformed headers and data consistently error with 400 status rather than
 ignored by default.
@@ -8,6 +8,13 @@ ignored by default.
 - Make Strelka::Cookie raise on malformed cookies
 - Fix some API docs for sessions
 - Remove config keys that moved to Discovery
+- Restore access to request parameters from the authentication plugin.
+- Merge improvements to the AbstractClass mixin from elsewhere.
+- Fix use of deprecated RSpec syntax.
+- Don't modify the original request URI object when calling
+  HttpRequest#base_uri.
+- Add a convenience method for fetching a default app instance to
+  Strelka::App
 
 
 == v0.7.0 [2013-10-21] Michael Granger <ged@FaerieMUD.org>
