@@ -621,8 +621,18 @@ module Strelka::App::Auth
 
 		self.log.debug "  positive perm criteria: %p" % [ self.class.positive_perms_criteria ]
 		self.class.positive_perms_criteria.each do |pattern, block, newperms|
-			next unless self.request_matches_criteria( request, pattern, &block )
+			criteria = self.request_matches_criteria( request, pattern, &block )
+			next unless criteria
+
 			newperms = Array( newperms )
+
+			if criteria.is_a?( Symbol )
+				newperms << criteria
+
+			elsif criteria.respond_to?( :first ) && criteria.first.is_a?( Symbol )
+				newperms += criteria
+			end
+
 			newperms << self.default_permission if newperms.empty?
 
 			raise TypeError, "Permissions must be Symbols; got: %p" % [newperms] unless

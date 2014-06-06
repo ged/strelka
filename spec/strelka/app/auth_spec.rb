@@ -418,6 +418,55 @@ describe Strelka::App::Auth do
 			expect( app.required_perms_for(req) ).to eq( [ :auth_test ] )
 		end
 
+		it "allows specific required permissions to be returned by the block" do
+			@app.require_perms_for( %r{.*} ) do |req|
+				:write_access if req.verb != :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to eq( [] )
+			req = @request_factory.put( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to eq( [ :write_access ] )
+		end
+
+		it "adds specific required permissions returned by the block to argument permissions" do
+			@app.require_perms_for( %r{.*}, :basic_access ) do |req|
+				:write_access if req.verb != :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to eq( [] )
+			req = @request_factory.put( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to include( :basic_access, :write_access )
+		end
+
+		it "allows specific, multiple required permissions to be returned by the block" do
+			@app.require_perms_for( %r{.*} ) do |req|
+				[ :write_access, :is_handsome ] if req.verb != :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to eq( [] )
+			req = @request_factory.put( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to include( :is_handsome, :write_access )
+		end
+
+		it "adds specific, multiple required permissions returned by the block to argument permissions" do
+			@app.require_perms_for( %r{.*}, :basic_access ) do |req|
+				[ :write_access, :is_handsome ] if req.verb != :GET
+			end
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to eq( [] )
+			req = @request_factory.put( '/api/v1/accounts' )
+			expect( app.required_perms_for(req) ).to include( :basic_access, :write_access, :is_handsome )
+		end
+
+
 		it "allows negative perms criteria to be declared with a string" do
 			@app.no_perms_for( '/string' )
 			app = @app.new
