@@ -47,7 +47,7 @@ describe Strelka::App::Auth do
 		end
 		app.install_plugins
 
-		expect( @request_factory.get( '/api/v1/verify' ) ).to respond_to( :authenticated? )
+		expect( @request_factory.get('/api/v1/verify') ).to respond_to( :authenticated? )
 	end
 
 
@@ -58,7 +58,7 @@ describe Strelka::App::Auth do
 				plugins :auth
 
 				# Stand in for a real AuthProvider
-				@auth_provider = RSpec::Mocks::Mock
+				@auth_provider = RSpec::Mocks::Double
 
 				def initialize( appid='auth-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
@@ -98,7 +98,8 @@ describe Strelka::App::Auth do
 			expect( @app ).to_not have_auth_criteria()
 		end
 
-		it "sets the authenticated_user attribute of the request to the credentials of the authenticating user" do
+		it "sets the authenticated_user attribute of the request to the credentials " +
+		   "of the authenticating user" do
 			app = @app.new
 			req = @request_factory.get( '/api/v1' )
 
@@ -561,7 +562,7 @@ describe Strelka::App::Auth do
 					app.handle( req )
 				end
 
-				it "authenticates and authorizes a request that only matches the auth criteria"do
+				it "authenticates and authorizes a request that only matches the auth criteria" do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
@@ -716,7 +717,8 @@ describe Strelka::App::Auth do
 
 				app = @app.new
 				allow( app.auth_provider ).to receive( :authenticate ).and_return( :credentials )
-				expect( app.auth_provider ).to receive( :authorize ).with( :credentials, req, [:admin, :upload] )
+				expect( app.auth_provider ).to receive( :authorize ).
+					with( :credentials, req, [:admin, :upload] )
 
 				app.handle( req )
 			end

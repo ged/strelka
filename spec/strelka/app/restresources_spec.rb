@@ -76,27 +76,27 @@ describe Strelka::App::RestResources do
 			it "keeps track of what resources are mounted where" do
 				expect( @app.resource_verbs.size ).to eq(  1  )
 				expect( @app.resource_verbs ).to include( 'servers' )
-				@app.resource_verbs[ 'servers' ].
-					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
+				expect(@app.resource_verbs[ 'servers' ]).
+					to include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
 			end
 
 			# Reader regular routes
-			it { should have_route(:OPTIONS, 'servers') }
-			it { should have_route(:GET,     'servers') }
-			it { should have_route(:GET,     'servers/:id') }
+			it { is_expected.to have_route(:OPTIONS, 'servers') }
+			it { is_expected.to have_route(:GET,     'servers') }
+			it { is_expected.to have_route(:GET,     'servers/:id') }
 
 			# Writer regular routes
-			it { should have_route(:POST,    'servers') }
-			it { should have_route(:POST,    'servers/:id') }
-			it { should have_route(:PUT,     'servers') }
-			it { should have_route(:PUT,     'servers/:id') }
-			it { should have_route(:DELETE,  'servers') }
-			it { should have_route(:DELETE,  'servers/:id') }
+			it { is_expected.to have_route(:POST,    'servers') }
+			it { is_expected.to have_route(:POST,    'servers/:id') }
+			it { is_expected.to have_route(:PUT,     'servers') }
+			it { is_expected.to have_route(:PUT,     'servers/:id') }
+			it { is_expected.to have_route(:DELETE,  'servers') }
+			it { is_expected.to have_route(:DELETE,  'servers/:id') }
 
 			# Reader composite routes
-			it { should have_route(:GET,     'servers/by_uuid/:uuid') }
-			it { should have_route(:GET,     'servers/:id/hosts') }
-			it { should have_route(:GET,     'servers/:id/filters') }
+			it { is_expected.to have_route(:GET,     'servers/by_uuid/:uuid') }
+			it { is_expected.to have_route(:GET,     'servers/:id/hosts') }
+			it { is_expected.to have_route(:GET,     'servers/:id/filters') }
 
 		end
 
@@ -114,29 +114,29 @@ describe Strelka::App::RestResources do
 			it "keeps track of what resources are mounted where" do
 				expect( @app.resource_verbs.size ).to eq(  1  )
 				expect( @app.resource_verbs ).to include( 'servers' )
-				@app.resource_verbs[ 'servers' ].
-					should include( :OPTIONS, :GET, :HEAD )
-				@app.resource_verbs[ 'servers' ].
-					should_not include( :POST, :PUT, :DELETE )
+				expect(@app.resource_verbs[ 'servers' ]).
+					to include( :OPTIONS, :GET, :HEAD )
+				expect(@app.resource_verbs[ 'servers' ]).
+					not_to include( :POST, :PUT, :DELETE )
 			end
 
 			# Reader regular routes
-			it { should have_route(:OPTIONS, 'servers') }
-			it { should have_route(:GET,     'servers') }
-			it { should have_route(:GET,     'servers/:id') }
+			it { is_expected.to have_route(:OPTIONS, 'servers') }
+			it { is_expected.to have_route(:GET,     'servers') }
+			it { is_expected.to have_route(:GET,     'servers/:id') }
 
 			# Writer regular routes
-			it { should_not have_route(:POST,    'servers') }
-			it { should_not have_route(:POST,    'servers/:id') }
-			it { should_not have_route(:PUT,     'servers') }
-			it { should_not have_route(:PUT,     'servers/:id') }
-			it { should_not have_route(:DELETE,  'servers') }
-			it { should_not have_route(:DELETE,  'servers/:id') }
+			it { is_expected.not_to have_route(:POST,    'servers') }
+			it { is_expected.not_to have_route(:POST,    'servers/:id') }
+			it { is_expected.not_to have_route(:PUT,     'servers') }
+			it { is_expected.not_to have_route(:PUT,     'servers/:id') }
+			it { is_expected.not_to have_route(:DELETE,  'servers') }
+			it { is_expected.not_to have_route(:DELETE,  'servers/:id') }
 
 			# Reader composite routes
-			it { should have_route(:GET,     'servers/by_uuid/:uuid') }
-			it { should have_route(:GET,     'servers/:id/hosts') }
-			it { should have_route(:GET,     'servers/:id/filters') }
+			it { is_expected.to have_route(:GET,     'servers/by_uuid/:uuid') }
+			it { is_expected.to have_route(:GET,     'servers/:id/hosts') }
+			it { is_expected.to have_route(:GET,     'servers/:id/filters') }
 
 		end
 
@@ -517,8 +517,8 @@ describe Strelka::App::RestResources do
 			it "has its metadata inherited by subclasses" do
 				expect( subject.resource_verbs.size ).to eq(  1  )
 				expect( subject.resource_verbs ).to include( 'servers' )
-				subject.resource_verbs[ 'servers' ].
-					should include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
+				expect(subject.resource_verbs[ 'servers' ]).
+					to include( :OPTIONS, :GET, :HEAD, :POST, :PUT, :DELETE )
 			end
 
 		end # supports inheritance

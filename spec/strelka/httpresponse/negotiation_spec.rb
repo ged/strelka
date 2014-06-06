@@ -140,15 +140,14 @@ describe Strelka::HTTPResponse::Negotiation do
 		end
 
 		it "transcodes File entity bodies if the charset is not acceptable" do
-			pending "implementation of IO transcoding" do
-				@req.headers.accept_charset = 'koi8-r, koi8-u;q=0.9, utf-8;q=0.8'
+			pending "implementation of IO transcoding"
+			@req.headers.accept_charset = 'koi8-r, koi8-u;q=0.9, utf-8;q=0.8'
 
-				@res.body = File.open( __FILE__, 'r:iso-8859-5' )
-				@res.content_type = 'text/plain'
+			@res.body = File.open( __FILE__, 'r:iso-8859-5' )
+			@res.content_type = 'text/plain'
 
-				expect( @res.negotiated_body.read.encoding ).to eq( Encoding::KOI8_R )
-				expect( @res.header_data ).to match( /accept-charset(?!-)/i )
-			end
+			expect( @res.negotiated_body.read.encoding ).to eq( Encoding::KOI8_R )
+			expect( @res.header_data ).to match( /accept-charset(?!-)/i )
 		end
 
 	end

@@ -216,10 +216,10 @@ describe Strelka::App::Routing do
 
 			expect( subclass.routes.size ).to eq(  3  )
 
-			subclass.routes.
-				should include([ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ])
-			subclass.routes.
-				should include([ :GET, ['about'], {action: @app.instance_method(:GET_about), options: {}} ])
+			expect(subclass.routes).
+				to include([ :GET, ['info'], {action: @app.instance_method(:GET_info), options: {}} ])
+			expect(subclass.routes).
+				to include([ :GET, ['about'], {action: @app.instance_method(:GET_about), options: {}} ])
 			expect( subclass.routes ).to include(
 				[ :GET, ['origami'], {action: subclass.instance_method(:GET_origami), options: {}} ]
 			)

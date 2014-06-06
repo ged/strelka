@@ -35,8 +35,7 @@ describe Strelka do
 			and_return([ Pathname('data/mox/apps/moxthefox') ])
 
 		expect( Kernel ).to receive( :load ).
-			with( File.expand_path 'data/mox/apps/moxthefox' ).
-			and_return { mox_app = Class.new(Strelka::App) }
+			with( File.expand_path 'data/mox/apps/moxthefox' ) { mox_app = Class.new(Strelka::App) }
 
 		expect( described_class::App('moxthefox') ).to be( mox_app )
 	end

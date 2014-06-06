@@ -46,9 +46,8 @@ describe Strelka::HTTPResponse::Session, "-extended response" do
 
 	it "sets its request's session when its session is set" do
 		@res.session = Strelka::Session.create( :default )
-		pending "not sure if it should do this or not" do
-			expect( @req.session ).to be( @res.session )
-		end
+		pending "not sure if it should do this or not"
+		expect( @req.session ).to be( @res.session )
 	end
 
 	context "for a request with no session ID" do

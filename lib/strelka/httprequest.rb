@@ -216,6 +216,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 		code = perm ? HTTP::MOVED_PERMANENTLY : HTTP::MOVED_TEMPORARILY
 		finish_with( code, "redirect from #{self.uri.path} to #{uri}", :location => uri )
 	end
+	alias_method :redirect_to, :redirect
 
 
 	#########

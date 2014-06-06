@@ -61,6 +61,12 @@ module Strelka::Testing
 		attr_reader :expected_status, :expected_message, :expected_headers
 
 
+		### Matcher API -- return true to enable the use of block expectations.
+		def supports_block_expectations?
+			return true
+		end
+
+
 		### Also expect a header with the given +name+ and +value+ from the response.
 		def and_header( name, value=nil )
 			if name.is_a?( Hash )
@@ -160,13 +166,13 @@ module Strelka::Testing
 
 
 		### Return a message suitable for describing when the matcher fails when it should succeed.
-		def failure_message_for_should
+		def failure_message
 			return "expected response to finish_with %s" % [ @failure ]
 		end
 
 
 		### Return a message suitable for describing when the matcher succeeds when it should fail.
-		def failure_message_for_should_not
+		def failure_message_when_negated
 			return "expected response not to finish_with %s" % [ @failure ]
 		end
 

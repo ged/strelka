@@ -91,8 +91,8 @@ describe "Strelka plugin system" do
 
 
 			it "sorts before it in the plugin registry" do
-				Strelka::Pluggable.loaded_plugins.tsort.
-					should order( @plugin.plugin_name ).after( @before_mod.plugin_name )
+				expect(Strelka::Pluggable.loaded_plugins.tsort).
+					to order( @plugin.plugin_name ).after( @before_mod.plugin_name )
 			end
 
 		end
@@ -110,8 +110,8 @@ describe "Strelka plugin system" do
 
 
 			it "sorts after it in the plugin registry" do
-				Strelka::Pluggable.loaded_plugins.tsort.
-					should order( @plugin.plugin_name ).before( @after_mod.plugin_name )
+				expect(Strelka::Pluggable.loaded_plugins.tsort).
+					to order( @plugin.plugin_name ).before( @after_mod.plugin_name )
 			end
 
 		end
@@ -123,8 +123,7 @@ describe "Strelka plugin system" do
 
 		it "requires plugins from a directory based on the name of the loader" do
 			expect( Strelka::Pluggable ).to receive( :require ).
-				with( 'strelka/pluggable/scheduler' ).
-				and_return do
+				with( 'strelka/pluggable/scheduler' ) do
 					Module.new do
 						def self::name; "Strelka::Pluggable::Scheduler"; end
 						extend Strelka::Plugin

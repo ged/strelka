@@ -49,7 +49,7 @@ describe Strelka::Discovery do
 		app_path = Pathname( app_file ).expand_path
 		app_class = nil
 
-		expect( Kernel ).to receive( :load ).with( app_path.to_s ).and_return do
+		expect( Kernel ).to receive( :load ).with( app_path.to_s ) do
 			app_class = Class.new( discoverable_class )
 		end
 		expect( described_class.load(app_file) ).to eq( [ app_class ] )
@@ -108,8 +108,7 @@ describe Strelka::Discovery do
 
 		expect( described_class ).to receive( :gem ).with( 'blood-orgy' )
 		expect( Kernel ).to receive( :load ).
-			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ).
-			and_return do
+			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ) do
 				Class.new( discoverable_class )
 				true
 			end
