@@ -8,10 +8,11 @@ rescue LoadError
 	abort "This Rakefile requires 'hoe' (gem install hoe)"
 end
 
+GEMSPEC = 'strelka.gemspec'
+
 Hoe.plugin :mercurial
 Hoe.plugin :signing
 Hoe.plugin :deveiate
-Hoe.plugin :bundler
 
 Hoe.plugins.delete :rubyforge
 
@@ -19,6 +20,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = FileList[ '*.rdoc' ]
+	self.license "BSD"
 
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
@@ -41,35 +43,16 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'simplecov',               '~> 0.7',  :developer
 	self.dependency 'rdoc-generator-fivefish', '~> 0.2',  :developer
 
-	self.license "BSD"
-	self.spec_extras[:rdoc_options] = [
-		'-t', 'Strelka Web Application Toolkit',
-		'-w', '4',
-	]
-
-	# Use the Fivefish formatter if run in development
-	self.spec_extras[:rdoc_options] += [ '-f', 'fivefish' ] if File.directory?( '.hg' )
-
-	self.require_ruby_version( '>=1.9.3' )
+	self.require_ruby_version( '>=2.0.0' )
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	self.check_history_on_release = true if self.respond_to?( :check_history_on_release= )
-
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
-
-
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in
-task 'hg:precheckin' => [ :check_history, :check_manifest, :spec ]
-
-
-desc "Build a coverage report"
-task :coverage do
-	ENV["COVERAGE"] = 'yes'
-	Rake::Task[:spec].invoke
-end
+task 'hg:precheckin' => [:check_history, :check_manifest, :spec]
 
 if Rake::Task.task_defined?( '.gemtest' )
 	Rake::Task['.gemtest'].clear
@@ -78,8 +61,37 @@ if Rake::Task.task_defined?( '.gemtest' )
 	end
 end
 
+desc "Build a coverage report"
+task :coverage do
+	ENV["COVERAGE"] = 'yes'
+	Rake::Task[:spec].invoke
+end
 
-# Add admin app testing directories to the clobber list
-CLOBBER.include( 'static', 'run', 'log', 'strelka.sqlite' )
 
+# Use the fivefish formatter for docs generated from development checkout
+if File.directory?( '.hg' )
+	require 'rdoc/task'
 
+	Rake::Task[ 'docs' ].clear
+	RDoc::Task.new( 'docs' ) do |rdoc|
+	rdoc.main = "README.rdoc"
+	rdoc.rdoc_files.include( "*.rdoc", "ChangeLog", "lib/**/*.rb" )
+	rdoc.generator = :fivefish
+	rdoc.title = "Strelka: A Ruby Web Framework"
+	rdoc.rdoc_dir = 'doc'
+	end
+end
+
+task :gemspec => GEMSPEC
+file GEMSPEC => __FILE__
+task GEMSPEC do |task|
+	spec = $hoespec.spec
+	spec.files.delete( '.gemtest' )
+	spec.version = "#{spec.version.bump}.0.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
+	File.open( task.name, 'w' ) do |fh|
+		fh.write( spec.to_ruby )
+	end
+end
+
+CLOBBER.include( GEMSPEC.to_s )
+task :default => :gemspec
