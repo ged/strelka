@@ -29,6 +29,7 @@ module Strelka
 	# Version-control revision constant
 	REVISION = %q$Revision$
 
+	require 'strelka/mixins'
 	require 'strelka/constants'
 	require 'strelka/exceptions'
 	include Strelka::Constants

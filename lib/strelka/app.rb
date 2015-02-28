@@ -23,6 +23,7 @@ class Strelka::App < Mongrel2::Handler
 	include Strelka::Constants,
 	        Strelka::ResponseHelpers
 
+
 	# Loggability API -- set up logging
 	log_to :strelka
 
