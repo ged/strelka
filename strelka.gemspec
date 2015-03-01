@@ -1,14 +1,14 @@
 # -*- encoding: utf-8 -*-
-# stub: strelka 0.10.0.pre20150227205852 ruby lib
+# stub: strelka 0.10.0.pre20150301093032 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "strelka"
-  s.version = "0.10.0.pre20150227205852"
+  s.version = "0.10.0.pre20150301093032"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Mahlon E. Smith", "Michael Granger"]
-  s.date = "2015-02-28"
+  s.date = "2015-03-01"
   s.description = "Strelka is a framework for creating and deploying\nMongrel2[http://mongrel2.org/] web applications in Ruby.\n\nIt's named after a lesser known {Russian\ncosmonaut}[http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka] who was\none of the first canine space travelers to orbit the Earth and return alive.\nHer name means \"little arrow\"."
   s.email = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
   s.executables = ["strelka"]
@@ -44,7 +44,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<hoe-bundler>, ["~> 1.2"])
       s.add_development_dependency(%q<rspec>, ["~> 3.0"])
       s.add_development_dependency(%q<simplecov>, ["~> 0.7"])
-      s.add_development_dependency(%q<rdoc-generator-fivefish>, ["~> 0.2"])
+      s.add_development_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
       s.add_development_dependency(%q<hoe>, ["~> 3.13"])
     else
       s.add_dependency(%q<configurability>, ["~> 2.1"])
@@ -65,7 +65,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<hoe-bundler>, ["~> 1.2"])
       s.add_dependency(%q<rspec>, ["~> 3.0"])
       s.add_dependency(%q<simplecov>, ["~> 0.7"])
-      s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.2"])
+      s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
       s.add_dependency(%q<hoe>, ["~> 3.13"])
     end
   else
@@ -87,7 +87,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<hoe-bundler>, ["~> 1.2"])
     s.add_dependency(%q<rspec>, ["~> 3.0"])
     s.add_dependency(%q<simplecov>, ["~> 0.7"])
-    s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.2"])
+    s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
     s.add_dependency(%q<hoe>, ["~> 3.13"])
   end
 end
