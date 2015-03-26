@@ -850,7 +850,7 @@ describe Strelka::ParamValidator do
 			VALID_URIS = %w{
 				http://127.0.0.1
 				http://127.0.0.1/
-				http://[127.0.0.1]/
+				http://[::1]/
 				http://ruby-lang.org/
 				http://www.rocketboom.com/vlog/rb_08_feb_01
 				http://del.icio.us/search/?fr=del_icio_us&p=ruby+arrow&type=all
@@ -884,8 +884,6 @@ describe Strelka::ParamValidator do
 				glark:
 
 				http:
-				http://
-				http://_com/vlog/rb_08_feb_01
 				http://del.icio.us/search/\x20\x14\x18
 				http://FEDC:BA98:7654:3210:FEDC:BA98:7654:3210/index.html
 				http://1080:0:0:0:8:800:200C:417A/index.html
@@ -896,12 +894,10 @@ describe Strelka::ParamValidator do
 				http://2010:836B:4179::836B:4179
 
 				https:
-				https://user:pass@/
 				https://r4.com:nonnumericport/
 
 				ftp:
 				ftp:ruby-0.49.tar.gz
-				ftp://crashoverride:god@/root/.workspace/.garbage.
 
 				ldap:
 				ldap:/o=University\x20of\x20Michigan,c=US
