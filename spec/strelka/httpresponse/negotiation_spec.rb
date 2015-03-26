@@ -17,12 +17,7 @@ require 'strelka/httpresponse/negotiation'
 describe Strelka::HTTPResponse::Negotiation do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/service/user' )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

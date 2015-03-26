@@ -19,7 +19,6 @@ require 'strelka/app'
 describe Strelka::App do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@initial_registry = Strelka::App.loaded_plugins.dup
 		@request_factory = Mongrel2::RequestFactory.new( route: '/mail' )
 		Mongrel2::Config.db = Mongrel2::Config.in_memory_db
@@ -52,7 +51,6 @@ describe Strelka::App do
 
 	after( :all ) do
 		Strelka::App.loaded_plugins = @initial_registry
-		reset_logging()
 	end
 
 

@@ -20,12 +20,7 @@ require 'strelka/behavior/plugin'
 describe Strelka::App::Auth do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/api/v1' )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

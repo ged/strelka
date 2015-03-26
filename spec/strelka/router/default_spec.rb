@@ -17,16 +17,11 @@ require 'strelka/router/default'
 describe Strelka::Router::Default do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )
 	end
 
 	before( :each ) do
 		@router = Strelka::Router.create( 'default' )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

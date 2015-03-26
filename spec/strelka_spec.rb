@@ -7,15 +7,6 @@ require 'strelka'
 
 describe Strelka do
 
-	before( :all ) do
-		setup_logging()
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
-
 	describe "version methods" do
 		it "returns a version string if asked" do
 			expect( described_class.version_string ).to match( /\w+ [\d.]+/ )

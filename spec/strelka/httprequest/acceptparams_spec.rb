@@ -16,14 +16,6 @@ require 'strelka/httprequest/acceptparams'
 
 describe Strelka::HTTPRequest, "accept params" do
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
 
 	describe Strelka::HTTPRequest::MediaType do
 

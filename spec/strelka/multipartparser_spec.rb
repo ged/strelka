@@ -28,12 +28,10 @@ describe Strelka::MultipartParser do
 
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@tmpdir = make_tempdir()
 	end
 
 	after( :all ) do
-		reset_logging()
 		FileUtils.rm_rf( @tmpdir )
 	end
 

@@ -17,13 +17,9 @@ require 'strelka/cookie'
 describe Strelka::HTTPRequest do
 
 	before( :all ) do
-		setup_logging()
 		@request_factory = Mongrel2::RequestFactory.new( route: '/directory' )
 	end
 
-	after( :all ) do
-		reset_logging()
-	end
 
 	context "instance" do
 

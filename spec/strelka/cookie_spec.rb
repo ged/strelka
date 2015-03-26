@@ -15,14 +15,6 @@ require 'strelka/cookie'
 
 describe Strelka::Cookie do
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
 	it "parses a 'nil' Cookie header field as an empty Hash" do
 		expect( Strelka::Cookie.parse( nil ) ).to eq( {} )
 	end

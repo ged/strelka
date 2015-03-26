@@ -18,7 +18,6 @@ require 'strelka/session/default'
 describe Strelka::HTTPRequest::Session, "-extended request" do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/service/user' )
 		Strelka::App::Sessions.configure( session_class: 'default' )
 	end
@@ -30,10 +29,6 @@ describe Strelka::HTTPRequest::Session, "-extended request" do
 
 	after( :each ) do
 		Strelka::Session::Default.sessions.clear
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

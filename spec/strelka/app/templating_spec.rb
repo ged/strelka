@@ -21,14 +21,12 @@ require 'strelka/behavior/plugin'
 describe Strelka::App::Templating do
 
 	before( :all ) do
-		setup_logging()
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )
 		@original_template_paths = Inversion::Template.template_paths.dup
 	end
 
 	after( :all ) do
 		Inversion::Template.template_paths.replace( @original_template_paths )
-		reset_logging()
 	end
 
 

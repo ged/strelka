@@ -19,7 +19,6 @@ require 'strelka/websocketserver'
 describe Strelka::WebSocketServer do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@initial_registry = described_class.loaded_plugins.dup
 		@frame_factory = Mongrel2::WebSocketFrameFactory.new( route: '/chat' )
 		Mongrel2::Config.db = Mongrel2::Config.in_memory_db
@@ -51,7 +50,6 @@ describe Strelka::WebSocketServer do
 
 	after( :all ) do
 		described_class.loaded_plugins = @initial_registry
-		reset_logging()
 	end
 
 

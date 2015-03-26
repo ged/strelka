@@ -15,14 +15,6 @@ require 'strelka/paramvalidator'
 #####################################################################
 describe Strelka::ParamValidator do
 
-	before( :all ) do
-		setup_logging( :fatal )
-	end
-
-	after( :all ) do
-		reset_logging()
-	end
-
 
 	before(:each) do
 		@validator = Strelka::ParamValidator.new

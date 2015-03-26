@@ -20,12 +20,7 @@ require 'strelka/behavior/plugin'
 describe Strelka::WebSocketServer::Routing do
 
 	before( :all ) do
-		setup_logging()
 		@frame_factory = Mongrel2::WebSocketFrameFactory.new( route: '/chat' )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

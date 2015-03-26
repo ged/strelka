@@ -22,7 +22,6 @@ end
 describe "Strelka plugin system" do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@original_registry = Strelka::Pluggable.loaded_plugins.dup
 	end
 
@@ -32,7 +31,6 @@ describe "Strelka plugin system" do
 
 	after( :all ) do
 		Strelka::Pluggable.loaded_plugins = @original_registry
-		reset_logging()
 	end
 
 

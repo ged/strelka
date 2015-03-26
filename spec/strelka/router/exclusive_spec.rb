@@ -17,16 +17,11 @@ require 'strelka/router/exclusive'
 describe Strelka::Router::Exclusive do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )
 	end
 
 	before( :each ) do
 		@router = Strelka::Router::Exclusive.new
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 	context "a router with routes for 'foo', 'foo/bar'" do

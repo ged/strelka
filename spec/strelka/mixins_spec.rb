@@ -61,13 +61,6 @@ describe Strelka, "mixins" do
 
 	describe Strelka::Delegation do
 
-		before( :all ) do
-			setup_logging( :fatal )
-		end
-		after( :all ) do
-			reset_logging()
-		end
-
 		describe "method delegation" do
 			before( :all ) do
 				@testclass = Class.new do

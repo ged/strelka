@@ -14,17 +14,12 @@ require 'strelka/httpresponse'
 describe Strelka::HTTPResponse do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '/glossary' )
 	end
 
 	before( :each ) do
 		@req = @request_factory.get( '/glossary/reduct' )
 		@res = @req.response
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

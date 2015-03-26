@@ -17,7 +17,6 @@ describe Strelka::Session::Default do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/hungry' )
-		setup_logging( :fatal )
 	end
 
 	before( :each ) do
@@ -27,10 +26,6 @@ describe Strelka::Session::Default do
 
 	after( :each ) do
 		described_class.sessions.clear
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 	it "has distinct duplicates" do

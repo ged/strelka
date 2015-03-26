@@ -17,7 +17,6 @@ describe Strelka::Session::Db do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/frothy' )
-		setup_logging( :fatal )
 
 		@session_id   = 'f9df9436f02f9b6d099a3dc95614fdb4'
 		@session_data = {
@@ -41,10 +40,6 @@ describe Strelka::Session::Db do
 	after( :each ) do
 		described_class.db.drop_table( :sessions ) if
 			described_class.db.table_exists?( :sessions )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

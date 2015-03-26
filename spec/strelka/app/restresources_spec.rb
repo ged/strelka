@@ -22,7 +22,6 @@ describe Strelka::App::RestResources do
 	include Mongrel2::Config::DSL
 
 	before( :all ) do
-		setup_logging()
 		setup_config_db()
 
 		@request_factory = Mongrel2::RequestFactory.new( route: '/api/v1' )
@@ -35,10 +34,6 @@ describe Strelka::App::RestResources do
 		end
 		Mongrel2::Config::Server.subset( :with_ephemeral_ports ) { port > 1024 }
 		Mongrel2::Config::Server.dataset_module( name_selection )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

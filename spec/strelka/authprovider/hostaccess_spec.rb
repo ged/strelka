@@ -18,16 +18,11 @@ describe Strelka::AuthProvider::HostAccess do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/admin' )
-		setup_logging( :fatal )
 	end
 
 	before( :each ) do
 		@app = double( "Strelka::App" )
 		@provider = Strelka::AuthProvider.create( :hostaccess, @app )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

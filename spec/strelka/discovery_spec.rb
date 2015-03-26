@@ -19,7 +19,6 @@ require 'strelka/discovery'
 describe Strelka::Discovery do
 
 	before( :all ) do
-		setup_logging()
 		Mongrel2::Config.db = Mongrel2::Config.in_memory_db
 		Mongrel2::Config.init_database
 
@@ -29,10 +28,6 @@ describe Strelka::Discovery do
 		loaded_specs = Gem.instance_variable_get( :@loaded_specs )
 		loaded_specs['strelka'] = strelkaspec
 
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

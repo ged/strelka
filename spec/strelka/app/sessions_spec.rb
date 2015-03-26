@@ -18,12 +18,7 @@ require 'strelka/behavior/plugin'
 describe Strelka::App::Sessions do
 
 	before( :all ) do
-		setup_logging( :fatal )
 		@request_factory = Mongrel2::RequestFactory.new( route: '' )
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 

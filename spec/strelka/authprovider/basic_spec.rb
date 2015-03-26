@@ -18,7 +18,6 @@ describe Strelka::AuthProvider::Basic do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/admin' )
-		setup_logging( :fatal )
 	end
 
 	before( :each ) do
@@ -36,10 +35,6 @@ describe Strelka::AuthProvider::Basic do
 	after( :each ) do
 		described_class.users = {}
 		described_class.realm = nil
-	end
-
-	after( :all ) do
-		reset_logging()
 	end
 
 
