@@ -142,7 +142,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 			case self.verb
 			when :GET, :HEAD
-				value = self.parse_query_args
+				value = decode_www_form( self.uri.query )
 			when :POST, :PUT
 				value = self.parse_body
 			when :TRACE
@@ -177,7 +177,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 
 		case mimetype.split( ';' ).first
 		when 'application/x-www-form-urlencoded'
-			return merge_query_args( URI.decode_www_form(self.body.read) )
+			return decode_www_form( self.body.read )
 		when 'application/json', 'text/javascript'
 			return Yajl.load( self.body )
 		when 'text/x-yaml', 'application/x-yaml'
@@ -219,23 +219,25 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	alias_method :redirect_to, :redirect
 
 
-	#########
-	protected
-	#########
-
-	### Return a Hash of request query arguments.
-	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
-	def parse_query_args
-		return {} if self.uri.query.nil?
-
-		query_args = URI.decode_www_form( self.uri.query )
-		return merge_query_args( query_args )
-	end
-
-
 	#######
 	private
 	#######
+
+	### Return a Hash of parameters decoded from a application/x-www-form-urlencoded
+	### +query_string+, combining multiple values for the same key into an Array
+	### value in the order they occurred.
+	def decode_www_form( query_string )
+		return {} if query_string.nil?
+
+		query_args = query_string.split( /[&;]/ ).each_with_object([]) do |pair, accum|
+			pair = pair.split( '=', 2 )
+			raise "malformed parameter pair %p: no '='" % [ pair ] unless pair.length == 2
+			accum << pair.map {|part| URI.decode_www_form_component(part) }
+		end
+
+		return merge_query_args( query_args )
+	end
+
 
 	### Strip surrounding double quotes from a copy of the specified string
 	### and return it.
