@@ -6,11 +6,11 @@ highline -v1.6.15
 hoe-deveiate -v0.4.0
 inversion -v0.12.3
 loggability -v0.9.0
-mongrel2 -v0.41.0
+mongrel2 -v0.43.1
 pluggability -v0.4.0
 simplecov -v0.8.2
 sysexits -v1.1.0
 trollop -v2.0
 uuidtools -v2.1.4
-safe_yaml -v1.0.3
+safe_yaml -v "~> 1.0"
 hoe -v3.8.1

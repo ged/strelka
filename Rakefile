@@ -30,7 +30,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'highline',        '~> 1.6'
 	self.dependency 'inversion',       '~> 0.12'
 	self.dependency 'loggability',     '~> 0.9'
-	self.dependency 'mongrel2',        '~> 0.41'
+	self.dependency 'mongrel2',        ['~> 0.43', '>= 0.43.1']
 	self.dependency 'pluggability',    '~> 0.4'
 	self.dependency 'sysexits',        '~> 1.1'
 	self.dependency 'trollop',         '~> 2.0'
@@ -38,7 +38,6 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'safe_yaml',       '~> 1.0'
 
 	self.dependency 'hoe-deveiate',            '~> 0.3',  :developer
-	self.dependency 'hoe-bundler',             '~> 1.2',  :developer
 	self.dependency 'rspec',                   '~> 3.0',  :developer
 	self.dependency 'simplecov',               '~> 0.7',  :developer
 	self.dependency 'rdoc-generator-fivefish', '~> 0.1',  :developer
