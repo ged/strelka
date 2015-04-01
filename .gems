@@ -3,7 +3,7 @@ rspec -v3.0.0
 configurability -v2.2.1
 foreman -v0.71.0
 highline -v1.6.15
-hoe-deveiate -v0.4.0
+hoe-deveiate -v0.6.0
 inversion -v0.12.3
 loggability -v0.9.0
 mongrel2 -v0.43.1

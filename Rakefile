@@ -37,7 +37,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'uuidtools',       '~> 2.1'
 	self.dependency 'safe_yaml',       '~> 1.0'
 
-	self.dependency 'hoe-deveiate',            '~> 0.3',  :developer
+	self.dependency 'hoe-deveiate',            '~> 0.6',  :developer
 	self.dependency 'rspec',                   '~> 3.0',  :developer
 	self.dependency 'simplecov',               '~> 0.7',  :developer
 	self.dependency 'rdoc-generator-fivefish', '~> 0.1',  :developer
