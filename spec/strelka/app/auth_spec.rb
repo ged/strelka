@@ -425,6 +425,19 @@ describe Strelka::App::Auth do
 			expect( app.required_perms_for(req) ).to eq( [ :write_access ] )
 		end
 
+		it "ensures required permissions are not retained between requests" do
+			@app.require_perms_for( %r{.*} ){|req| :basic_access }
+			app = @app.new
+
+			req = @request_factory.get( '/api/v1/accounts' )
+
+			expect {
+				app.required_perms_for( req )
+			}.to_not change {
+				@app.positive_perms_criteria.first[ 2 ]
+			}
+		end
+
 		it "adds specific required permissions returned by the block to argument permissions" do
 			@app.require_perms_for( %r{.*}, :basic_access ) do |req|
 				:write_access if req.verb != :GET
@@ -460,7 +473,6 @@ describe Strelka::App::Auth do
 			req = @request_factory.put( '/api/v1/accounts' )
 			expect( app.required_perms_for(req) ).to include( :basic_access, :write_access, :is_handsome )
 		end
-
 
 		it "allows negative perms criteria to be declared with a string" do
 			@app.no_perms_for( '/string' )

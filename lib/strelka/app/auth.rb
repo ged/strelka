@@ -421,7 +421,7 @@ module Strelka::App::Auth
 
 			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
 			self.log.debug "  adding require_perms (%p) for %p" % [ perms, pattern ]
-			self.positive_perms_criteria << [ pattern, block, perms ]
+			self.positive_perms_criteria << [ pattern, block, perms.freeze ]
 		end
 
 
@@ -624,7 +624,7 @@ module Strelka::App::Auth
 			criteria = self.request_matches_criteria( request, pattern, &block )
 			next unless criteria
 
-			newperms = Array( newperms )
+			newperms = Array( newperms ).dup
 
 			if criteria.is_a?( Symbol )
 				newperms << criteria
