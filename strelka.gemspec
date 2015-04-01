@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
-# stub: strelka 0.10.0.pre20150325175929 ruby lib
+# stub: strelka 0.10.0.pre20150401134119 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "strelka"
-  s.version = "0.10.0.pre20150325175929"
+  s.version = "0.10.0.pre20150401134119"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Mahlon E. Smith", "Michael Granger"]
-  s.cert_chain = ["/Users/ged/.gem/gem-public_cert.pem"]
-  s.date = "2015-03-26"
+  s.cert_chain = ["certs/mahlon.pem", "certs/ged.pem"]
+  s.date = "2015-04-01"
   s.description = "Strelka is a framework for creating and deploying\nMongrel2[http://mongrel2.org/] web applications in Ruby.\n\nIt's named after a lesser known {Russian\ncosmonaut}[http://en.wikipedia.org/wiki/Strelka_(dog)#Belka_and_Strelka] who was\none of the first canine space travelers to orbit the Earth and return alive.\nHer name means \"little arrow\"."
   s.email = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
   s.executables = ["strelka"]
@@ -20,7 +20,6 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--main", "README.rdoc"]
   s.required_ruby_version = Gem::Requirement.new(">= 2.0.0")
   s.rubygems_version = "2.4.6"
-  s.signing_key = "/Volumes/Keys/ged-private_gem_key.pem"
   s.summary = "Strelka is a framework for creating and deploying Mongrel2[http://mongrel2.org/] web applications in Ruby"
 
   if s.respond_to? :specification_version then
@@ -39,9 +38,9 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<uuidtools>, ["~> 2.1"])
       s.add_runtime_dependency(%q<safe_yaml>, ["~> 1.0"])
       s.add_development_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-      s.add_development_dependency(%q<hoe-deveiate>, ["~> 0.6"])
       s.add_development_dependency(%q<hoe-highline>, ["~> 0.2"])
       s.add_development_dependency(%q<rdoc>, ["~> 4.0"])
+      s.add_development_dependency(%q<hoe-deveiate>, ["~> 0.3"])
       s.add_development_dependency(%q<rspec>, ["~> 3.0"])
       s.add_development_dependency(%q<simplecov>, ["~> 0.7"])
       s.add_development_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
@@ -59,9 +58,9 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<uuidtools>, ["~> 2.1"])
       s.add_dependency(%q<safe_yaml>, ["~> 1.0"])
       s.add_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-      s.add_dependency(%q<hoe-deveiate>, ["~> 0.6"])
       s.add_dependency(%q<hoe-highline>, ["~> 0.2"])
       s.add_dependency(%q<rdoc>, ["~> 4.0"])
+      s.add_dependency(%q<hoe-deveiate>, ["~> 0.3"])
       s.add_dependency(%q<rspec>, ["~> 3.0"])
       s.add_dependency(%q<simplecov>, ["~> 0.7"])
       s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
@@ -80,9 +79,9 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<uuidtools>, ["~> 2.1"])
     s.add_dependency(%q<safe_yaml>, ["~> 1.0"])
     s.add_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-    s.add_dependency(%q<hoe-deveiate>, ["~> 0.6"])
     s.add_dependency(%q<hoe-highline>, ["~> 0.2"])
     s.add_dependency(%q<rdoc>, ["~> 4.0"])
+    s.add_dependency(%q<hoe-deveiate>, ["~> 0.3"])
     s.add_dependency(%q<rspec>, ["~> 3.0"])
     s.add_dependency(%q<simplecov>, ["~> 0.7"])
     s.add_dependency(%q<rdoc-generator-fivefish>, ["~> 0.1"])
