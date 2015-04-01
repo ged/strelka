@@ -1,3 +1,10 @@
+== v0.9.1 [2015-04-01] Mahlon E. Smith <mahlon@martini.nu>
+
+- Ensure required permissions for the auth plugin are unmodified between requests.
+- Fix urlencoded param parsing
+- Fixes for Ruby 2.2.
+
+
 == v0.9.0 [2014-06-06] Mahlon E. Smith <mahlon@martini.nu>
 
 - Auth plugin: Add the ability to modify permission sets from the
