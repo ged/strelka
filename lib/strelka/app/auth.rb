@@ -570,6 +570,25 @@ module Strelka::App::Auth
 	alias_method :required_perms_for, :perms_required_for
 
 
+	### Normally, the authentication plugin manages authing a user
+	### automatically.  There are cases where we want to perform this
+	### manually, such as a route that provides alternate data for an
+	### authenticated user, but still allows non-authed access.
+	###
+	### Returns the authenticated user object, or nil if unsuccessful.
+	###
+	### This essentially makes authentication optional for a route, instead
+	### of simply "on" or "off".
+	def authenticate( request )
+		acct = nil
+		catch( :finish ) do
+			acct = self.auth_provider.authenticate( request )
+			request.authenticated_user = acct
+		end
+		return acct
+	end
+
+
 	#########
 	protected
 	#########
