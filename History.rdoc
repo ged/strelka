@@ -1,3 +1,8 @@
+== v0.10.0 [2015-10-01] Mahlon E. Smith <mahlon@martini.nu>
+
+- Allow authentication to be optional for a route.
+
+
 == v0.9.1 [2015-04-01] Mahlon E. Smith <mahlon@martini.nu>
 
 - Ensure required permissions for the auth plugin are unmodified between requests.
