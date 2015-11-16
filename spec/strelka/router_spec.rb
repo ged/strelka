@@ -29,7 +29,7 @@ describe Strelka::Router do
 	it "is abstract" do
 		expect {
 			Strelka::Router.new
-		}.to raise_error()
+		}.to raise_error( NoMethodError, /private method `new'/i )
 	end
 
 

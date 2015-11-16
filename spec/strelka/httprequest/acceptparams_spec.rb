@@ -87,7 +87,7 @@ describe Strelka::HTTPRequest, "accept params" do
 		it "rejects invalid Accept header values" do
 			expect {
 				Strelka::HTTPRequest::MediaType.parse( 'porksausage' )
-			}.to raise_error()
+			}.to raise_error( ArgumentError, /no media-range/i )
 		end
 
 
