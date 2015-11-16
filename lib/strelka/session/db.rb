@@ -72,11 +72,9 @@ class Strelka::Session::Db < Strelka::Session::Default
 		else
 			self.log.debug "Creating new sessions table for %p" % [ db ]
 			self.db.create_table( self.table_name.to_sym ) do
-				text :session_id, :index => true
+				text :session_id, :primary_key => true
 				text :session
 				timestamp :created
-
-				primary_key :session_id
 			end
 		end
 
