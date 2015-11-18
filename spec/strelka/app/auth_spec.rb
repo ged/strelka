@@ -62,7 +62,6 @@ describe Strelka::App::Auth do
 				def handle_request( req )
 					super do
 						res = req.response
-						self.authenticate( req ) if req.uri.to_s =~ /\/optional$/
 						res.status = HTTP::OK
 						res.content_type = 'text/plain'
 						res.puts "Ran successfully."
@@ -659,20 +658,6 @@ describe Strelka::App::Auth do
 			before( :each ) do
 				@app.no_auth_for( '/onlyauth' )
 				@app.no_auth_for( '/both' )
-				@app.no_auth_for( '/optional' )
-			end
-
-			context "and optional auth for a route" do
-
-				it "checks auth without throwing HTTP::AUTH_REQUIRED" do
-					req = @request_factory.get( '/api/v1/optional' )
-
-					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
-					expect( app.auth_provider ).to receive( :authorize )
-
-					app.handle( req )
-				end
 			end
 
 			context "and positive perms criteria" do
