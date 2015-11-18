@@ -473,6 +473,7 @@ module Strelka::App::Auth
 	def handle_request( request, &block )
 		self.log.debug "[:auth] Wrapping request in auth with a %p" % [ self.auth_provider ]
 
+		request.auth_provider = self.auth_provider
 		self.authenticate_and_authorize( request )
 
 		super

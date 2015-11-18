@@ -329,7 +329,15 @@ module Strelka
 
 	# A collection of functions for generating responses.
 	module ResponseHelpers
+		extend Loggability
 		include Strelka::Constants
+
+		log_to :strelka
+
+
+		###############
+		module_function
+		###############
 
 		### Abort the current execution and return a response with the specified
 		### http_status code immediately. The specified +message+ will be logged,

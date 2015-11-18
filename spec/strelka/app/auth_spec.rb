@@ -27,6 +27,13 @@ describe Strelka::App::Auth do
 	it_should_behave_like( "A Strelka Plugin" )
 
 
+	RSpec::Matchers.define( :require_auth_for_request ) do |request|
+		match do |app|
+			app.request_should_auth?( request )
+		end
+	end
+
+
 	it "gives including apps a default authprovider" do
 		app = Class.new( Strelka::App ) do
 			plugins :auth
@@ -123,14 +130,6 @@ describe Strelka::App::Auth do
 			expect( subclass.negative_perms_criteria ).to eq( @app.negative_perms_criteria )
 			expect( subclass.negative_perms_criteria ).to_not equal( @app.negative_perms_criteria )
 		end
-
-
-		RSpec::Matchers.define( :require_auth_for_request ) do |request|
-			match do |app|
-				app.request_should_auth?( request )
-			end
-		end
-
 
 		it "allows auth criteria to be declared with a string" do
 			@app.require_auth_for( '/string' )
@@ -317,7 +316,6 @@ describe Strelka::App::Auth do
 			expect( app.request_should_auth?(req) ).to be_falsey()
 
 		end
-
 
 		it "allows perms criteria to be declared with a string" do
 			@app.require_perms_for( '/string', :stringperm )
@@ -780,6 +778,7 @@ describe Strelka::App::Auth do
 			end
 
 		end
+
 
 	end
 

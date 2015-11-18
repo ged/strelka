@@ -87,6 +87,8 @@ module Strelka::Testing
 				nil
 			end
 
+			Loggability[ Strelka ].debug "Test proc called; status info is: %p" % [ status_info ]
+
 			return self.check_finish( status_info ) &&
 			       self.check_status_code( status_info ) &&
 			       self.check_message( status_info ) &&
