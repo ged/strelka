@@ -571,7 +571,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
@@ -581,7 +581,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
@@ -620,7 +620,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyauth' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
@@ -630,7 +630,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/both' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
@@ -669,7 +669,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )
@@ -699,7 +699,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
@@ -718,7 +718,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/onlyperms' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to_not receive( :authorize )
 
 					app.handle( req )
@@ -748,7 +748,7 @@ describe Strelka::App::Auth do
 					req = @request_factory.get( '/api/v1/neither' )
 
 					app = @app.new
-					expect( app.auth_provider ).to receive( :authenticate )
+					expect( app.auth_provider ).to receive( :authenticate ).and_return( true )
 					expect( app.auth_provider ).to receive( :authorize )
 
 					app.handle( req )

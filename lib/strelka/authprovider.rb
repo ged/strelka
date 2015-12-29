@@ -63,8 +63,7 @@ class Strelka::AuthProvider
 
 
 	### You should override this method if you want to authenticate the +request+. It should
-	### return a credentials object if authentication is successful, or throw an auth_required
-	### response if it fails.
+	### return a credentials object if authentication is successful, or a false value if it fails.
 	def authenticate( request )
 		self.log.debug "No authentication provided, returning anonymous credentials."
 		return 'anonymous'

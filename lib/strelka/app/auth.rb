@@ -496,7 +496,8 @@ module Strelka::App::Auth
 	def provide_authentication( request )
 		provider = self.auth_provider
 		self.log.info "Authenticating request using provider: %p" % [ provider ]
-		return provider.authenticate( request )
+		credentials = provider.authenticate( request ) or finish_with( HTTP::AUTH_REQUIRED, "Authentication required." )
+		return credentials
 	end
 
 
