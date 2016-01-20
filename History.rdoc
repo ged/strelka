@@ -1,3 +1,16 @@
+== v0.11.0 [2016-01-20] Mahlon E. Smith <mahlon@martini.nu>
+
+Enhancements:
+
+- Add a mechanism for deferring authentication to request handlers
+- If authentication fails, throw from the request processing path
+  instead of the authprovider API.
+
+Bugfixes:
+
+- Fix Sqlite session table schema
+
+
 == v0.10.0 [2015-10-01] Mahlon E. Smith <mahlon@martini.nu>
 
 - Allow authentication to be optional for a route.
