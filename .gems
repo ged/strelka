@@ -1,17 +1,18 @@
 # .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
 rspec -v3.0.0
 configurability -v2.2.1
-foreman -v0.71.0
+foreman -v0.78.0
 highline -v1.6.15
 hoe-deveiate -v0.6.0
 inversion -v0.12.3
 loggability -v0.9.0
-mongrel2 -v0.43.1
-pluggability -v0.4.0
+mongrel2 -v0.44.0
+pluggability -v0.4.3
 safe_yaml ~v1.0.4
-simplecov -v0.8.2
-sysexits -v1.1.0
-trollop -v2.0
-uuidtools -v2.1.4
+simplecov -v0.11.2
+sysexits -v1.2.0
+trollop -v2.1.2
+uuidtools -v2.1.5
 safe_yaml -v "~> 1.0"
 hoe -v3.8.1
+rdoc -v4.2.2

@@ -19,15 +19,16 @@ require 'strelka/discovery'
 describe Strelka::Discovery do
 
 	before( :all ) do
-		Mongrel2::Config.db = Mongrel2::Config.in_memory_db
-		Mongrel2::Config.init_database
+		@real_discovered_apps = described_class.instance_variable_get( :@discovered_apps )
+	end
 
-		# Skip loading the 'strelka' gem, which probably doesn't exist in the right version
-		# in the dev environment
-		strelkaspec = make_gemspec( 'strelka', Strelka::VERSION, false )
-		loaded_specs = Gem.instance_variable_get( :@loaded_specs )
-		loaded_specs['strelka'] = strelkaspec
+	after( :all ) do
+		described_class.instance_variable_set( :@discovered_apps, @real_discovered_apps )
+	end
 
+	before( :each ) do
+		described_class.instance_variable_set( :@discovered_apps, nil )
+		described_class.configure
 	end
 
 
@@ -38,101 +39,88 @@ describe Strelka::Discovery do
 	# Examples
 	#
 
-	it "has a method for loading app class/es from a file" do
+	it "provides a mechanism for registering apps" do
+		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
+		described_class.register_app( 'bar', 'a/path/to/bar.rb' )
 
-		app_file = 'an_app.rb'
-		app_path = Pathname( app_file ).expand_path
-		app_class = nil
-
-		expect( Kernel ).to receive( :load ).with( app_path.to_s ) do
-			app_class = Class.new( discoverable_class )
-		end
-		expect( described_class.load(app_file) ).to eq( [ app_class ] )
-	end
-
-
-	it "defaults to loading as a file when finding an app"
-
-
-	it "has a method for discovering installed Strelka app files" do
-		specs = {}
-		specs[:donkey]     = make_gemspec( 'donkey',  '1.0.0' )
-		specs[:rabbit_old] = make_gemspec( 'rabbit',  '1.0.0' )
-		specs[:rabbit_new] = make_gemspec( 'rabbit',  '1.0.8' )
-		specs[:bear]       = make_gemspec( 'bear',    '1.0.0', false )
-		specs[:giraffe]    = make_gemspec( 'giraffe', '1.0.0' )
-
-		expect( Gem::Specification ).to receive( :each ).once do |&block|
-			specs.values.each {|val| block.call(val) }
-		end
-
-		donkey_path  = specs[:donkey].full_gem_path
-		rabbit_path  = specs[:rabbit_new].full_gem_path
-		giraffe_path = specs[:giraffe].full_gem_path
-
-		expect( Dir ).to receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
-			and_return( [] )
-		expect( Dir ).to receive( :glob ).with( "#{giraffe_path}/data/giraffe/{apps,handlers}/**/*" ).
-			and_return([ "#{giraffe_path}/data/giraffe/apps/app" ])
-		expect( Dir ).to receive( :glob ).with( "#{rabbit_path}/data/rabbit/{apps,handlers}/**/*" ).
-			and_return([ "#{rabbit_path}/data/rabbit/apps/subdir/app1.rb",
-			             "#{rabbit_path}/data/rabbit/apps/subdir/app2.rb" ])
-		expect( Dir ).to receive( :glob ).with( "#{donkey_path}/data/donkey/{apps,handlers}/**/*" ).
-			and_return([ "#{donkey_path}/data/donkey/apps/app.rb" ])
-
-		app_paths = described_class.discover_paths
-
-		expect( app_paths.size ).to eq(  4  )
-		expect( app_paths ).to include(
-			'donkey'  => [Pathname("#{donkey_path}/data/donkey/apps/app.rb")],
-			'rabbit'  => [Pathname("#{rabbit_path}/data/rabbit/apps/subdir/app1.rb"),
-			              Pathname("#{rabbit_path}/data/rabbit/apps/subdir/app2.rb")],
-			'giraffe' => [Pathname("#{giraffe_path}/data/giraffe/apps/app")]
+		expect( described_class.discovered_apps ).to include(
+			'foo' => 'a/path/to/foo.rb',
+            'bar' => 'a/path/to/bar.rb'
 		)
 	end
 
 
-	it "has a method for loading discovered app classes from installed Strelka app files" do
-		gemspec = make_gemspec( 'blood-orgy', '0.0.3' )
-		expect( Gem::Specification ).to receive( :each ).and_yield( gemspec ).at_least( :once )
-
-		expect( Dir ).to receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
-			and_return( [] )
-		expect( Dir ).to receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
-			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
-
-		expect( described_class ).to receive( :gem ).with( 'blood-orgy' )
-		expect( Kernel ).to receive( :load ).
-			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ) do
-				Class.new( discoverable_class )
-				true
+	it "raises an error if two apps try to register with the same name" do
+		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
+		expect {
+			described_class.register_app( 'foo', 'a/path/to/bar.rb' )
+		}.to raise_error( /can't register a second 'foo' app/i )
 			end
 
-		app_classes = described_class.discover
-		expect( app_classes.size ).to eq(  1  )
-		expect( app_classes.first ).to be_a( Class )
-		expect( app_classes.first ).to be < discoverable_class
+
+	it "uses Rubygems discovery to find apps" do
+		expect( Gem ).to receive( :find_latest_files ).with( 'strelka/apps.rb' ).
+			and_return([
+				'/some/directory/with/strelka/apps.rb',
+				'/some/other/directory/with/strelka/apps.rb'
+			])
+		expect( Kernel ).to receive( :load ).twice do |file|
+			case file
+			when %r{some/directory}
+				described_class.register_app( 'foo', 'a/path/to/foo.rb' )
+			when %r{other/directory}
+				described_class.register_app( 'bar', 'a/path/to/bar.rb' )
+			end
+	end
+
+		expect( described_class.discovered_apps ).to include(
+			'foo' => 'a/path/to/foo.rb',
+            'bar' => 'a/path/to/bar.rb'
+		)
 	end
 
 
-	it "handles exceptions while loading discovered apps" do
-		gemspec = make_gemspec( 'blood-orgy', '0.0.3' )
-		expect( Gem::Specification ).to receive( :each ).and_yield( gemspec ).at_least( :once )
+	it "can be configured to look for a different discovery file" do
+		acme_discovery_files = [
+			'/some/directory/with/acme/apps.rb',
+			'/some/other/directory/with/acme/apps.rb'
+		]
 
-		expect( Dir ).to receive( :glob ).with( 'data/*/{apps,handlers}/**/*' ).
-			and_return( [] )
-		expect( Dir ).to receive( :glob ).with( "#{gemspec.full_gem_path}/data/blood-orgy/{apps,handlers}/**/*" ).
-			and_return([ "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ])
+		expect( Gem ).to receive( :find_latest_files ).with( 'acme/apps.rb' ).
+			and_return( acme_discovery_files )
 
-		expect( described_class ).to receive( :gem ).with( 'blood-orgy' )
-		expect( Kernel ).to receive( :load ).
-			with( "#{gemspec.full_gem_path}/data/blood-orgy/apps/kurzweil" ).
-			and_raise( SyntaxError.new("kurzweil:1: syntax error, unexpected coffeeshop philosopher") )
-
-		app_classes = Strelka::Discovery.discover
-		expect( app_classes ).to be_empty()
+		described_class.configure( app_discovery_file: 'acme/apps.rb' )
+		expect( described_class.app_discovery_files ).to eq( acme_discovery_files )
 	end
 
+
+	it "can return the app class associated with an application name" do
+		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
+
+		app_class = nil
+		expect( Kernel ).to receive( :load ) do |path|
+			expect( path ).to eq( 'a/path/to/foo.rb' )
+
+			app_class = Class.new( discoverable_class )
+		end
+
+		expect( described_class.load('foo') ).to eq( app_class )
+	end
+
+
+	it "only returns the first class even if the file declares two" do
+		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
+
+		app_class = app_class2 = nil
+		expect( Kernel ).to receive( :load ) do |path|
+			expect( path ).to eq( 'a/path/to/foo.rb' )
+
+			app_class = Class.new( discoverable_class )
+			app_class2 = Class.new( discoverable_class )
+		end
+
+		expect( described_class.load('foo') ).to eq( app_class )
+	end
 
 end
 

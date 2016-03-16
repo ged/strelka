@@ -22,7 +22,7 @@ module Strelka::Discovery
 
 	# Default config
 	CONFIG_DEFAULTS = {
-		app_glob_pattern: '{apps,handlers}/**/*',
+		app_discovery_file: 'strelka/apps.rb',
 		local_data_dirs:  'data/*',
 	}.freeze
 
@@ -30,11 +30,11 @@ module Strelka::Discovery
 	##
 	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were
 	# loaded from, or +nil+ if they weren't loaded via ::load.
-	singleton_attr_reader :subclasses
+	singleton_attr_reader :discovered_classes
 
 	##
-	# The glob(3) pattern for matching Apps during discovery
-	singleton_attr_accessor :app_glob_pattern
+	# The glob(3) pattern for matching the discovery hook file.
+	singleton_attr_accessor :app_discovery_file
 
 	##
 	# The glob(3) pattern for matching local data directories during discovery. Local
@@ -46,11 +46,55 @@ module Strelka::Discovery
 	singleton_attr_reader :loading_file
 
 
-	# Module instance variables
-	@subclasses       = Hash.new {|h,k| h[k] = [] }
-	@loading_file     = nil
-	@app_glob_pattern = CONFIG_DEFAULTS[:app_glob_pattern]
+	# Class instance variables
+	@discovered_classes = Hash.new {|h,k| h[k] = [] }
+	@app_discovery_file = CONFIG_DEFAULTS[:app_discovery_file]
 	@local_data_dirs  = CONFIG_DEFAULTS[:local_data_dirs]
+	@discovered_apps    = nil
+
+
+	### Register an app with the specified +name+ that can be loaded from the given
+	### +path+.
+	def self::register_app( name, path )
+		@discovered_apps ||= {}
+
+		if @discovered_apps.key?( name )
+			raise "Can't register a second '%s' app at %s; already have one at %s" %
+				[ name, path, @discovered_apps[name] ]
+		end
+
+		self.log.debug "Registered app at %s as %p" % [ path, name ]
+		@discovered_apps[ name ] = path
+	end
+
+
+	### Register multiple apps by passing +a_hash+ of names and paths.
+	def self::register_apps( a_hash )
+		a_hash.each do |name, path|
+			self.register_app( name, path )
+		end
+	end
+
+
+	### Return a Hash of apps discovered by loading #app_discovery_files.
+	def self::discovered_apps
+		unless @discovered_apps
+			@discovered_apps ||= {}
+			self.app_discovery_files.each do |path|
+				self.log.debug "Loading discovery file %p" % [ path ]
+				Kernel.load( path )
+			end
+		end
+
+		return @discovered_apps
+	end
+
+
+	### Return an Array of app discovery hook files found in the latest installed gems and
+	### the current $LOAD_PATH.
+	def self::app_discovery_files
+		return Gem.find_latest_files( self.app_discovery_file )
+	end
 
 
 	### Configure the App. Override this if you wish to add additional configuration
@@ -59,7 +103,7 @@ module Strelka::Discovery
 	def self::configure( config=nil )
 		config = self.defaults.merge( config || {} )
 
-		self.app_glob_pattern = config[:app_glob_pattern]
+		self.app_discovery_file = config[:app_discovery_file]
 		self.local_data_dirs  = config[:local_data_dirs]
 	end
 
@@ -92,103 +136,36 @@ module Strelka::Discovery
 	end
 
 
-	### Return a Hash of Strelka app files as Pathname objects from installed gems,
-	### keyed by gemspec name .
-	def self::discover_paths
-		appfiles = {}
+	### Attempt to load the file associated with the specified +app_name+ and return
+	### the first Strelka::App class declared in the process.
+	def self::load( app_name )
+		apps = self.discovered_apps or return nil
+		file = apps[ app_name ] or return nil
 
-		self.discover_data_dirs.each do |gemname, dir|
-			pattern = File.join( dir, self.app_glob_pattern )
-			appfiles[ gemname ] = Pathname.glob( pattern )
-		end
-
-		return appfiles
+		return self.load_file( file )
 	end
 
 
-	### Return an Array of Strelka::App classes loaded from the installed Strelka gems.
-	def self::discover
-		discovered_apps = []
-		app_paths = self.discover_paths
-
-		self.log.debug "Loading apps from %d discovered paths" % [ app_paths.length ]
-		app_paths.each do |gemname, paths|
-			self.log.debug "  loading gem %s" % [ gemname ]
-			gem( gemname ) unless gemname == ''
-
-			self.log.debug "  loading apps from %s: %d handlers" % [ gemname, paths.length ]
-			paths.each do |path|
-				classes = begin
-					self.load( path )
-				rescue StandardError, ScriptError => err
-					self.log.error "%p while loading Strelka apps from %s: %s" %
-						[ err.class, path, err.message ]
-					self.log.debug "Backtrace: %s" % [ err.backtrace.join("\n\t") ]
-					[]
-				end
-				self.log.debug "  loaded app classes: %p" % [ classes ]
-
-				discovered_apps += classes
-			end
-		end
-
-		return discovered_apps
-	end
-
-
-	### Find the first app with the given +appname+ and return the path to its file and the name of
-	### the gem it's from. If the optional +gemname+ is given, only consider apps from that gem.
-	### Raises a RuntimeError if no app with the given +appname+ was found.
-	def self::find( appname, gemname=nil )
-		discovered_apps = self.discover_paths
-
-		path = nil
-		if gemname
-			discovered_apps[ gemname ].each do |apppath|
-				self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
-				if apppath.basename('.rb').to_s == appname
-					path = apppath
-					break
-				end
-			end
-		else
-			self.log.debug "No gem name; searching them all:"
-			discovered_apps.each do |disc_gemname, paths|
-				self.log.debug "  %s: %d paths" % [ disc_gemname, paths.length ]
-				path = paths.find do |apppath|
-					self.log.debug "    %s (%s)" % [ apppath, apppath.basename('.rb') ]
-					self.log.debug "    %p vs. %p" % [ apppath.basename('.rb').to_s, appname ]
-					apppath.basename('.rb').to_s == appname
-				end or next
-				gemname = disc_gemname
-				break
-			end
-		end
-
-		unless path
-			msg = "Couldn't find an app named '#{appname}'"
-			msg << " in the #{gemname} gem" if gemname
-			raise( msg )
-		end
-		self.log.debug "  found: %s" % [ path ]
-
-		return path, gemname
-	end
-
-
-	### Load the specified +file+, and return any Strelka::App subclasses that are loaded
-	### as a result.
-	def self::load( file )
+	### Load the specified +file+ and return the first class that extends Strelka::Discovery.
+	def self::load_file( file )
 		self.log.debug "Loading application/s from %p" % [ file ]
-		@loading_file = Pathname( file ).expand_path
-		self.subclasses.delete( @loading_file )
-		Kernel.load( @loading_file.to_s )
-		new_subclasses = self.subclasses[ @loading_file ]
+		Thread.current[ :__loading_file ] = loading_file = file
+		self.discovered_classes.delete( loading_file )
+
+		Kernel.load( loading_file.to_s )
+
+		new_subclasses = self.discovered_classes[ loading_file ]
 		self.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
 
-		return new_subclasses
+		return new_subclasses.first
 	ensure
-		@loading_file = nil
+		Thread.current[ :__loading_file ] = nil
+	end
+
+
+	### Return the Pathname of the file being loaded by the current thread (if there is one)
+	def self::loading_file
+		return Thread.current[ :__loading_file ]
 	end
 
 
@@ -196,7 +173,7 @@ module Strelka::Discovery
 	### with Discovery.
 	def self::add_inherited_class( subclass )
 		self.log.debug "Registering discovered subclass %p" % [ subclass ]
-		self.subclasses[ self.loading_file ] << subclass
+		self.discovered_classes[ self.loading_file ] << subclass
 	end
 
 

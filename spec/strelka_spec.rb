@@ -19,17 +19,5 @@ describe Strelka do
 		end
 	end
 
-	it "provides syntactic sugar for looking up an app class by name" do
-		mox_app = nil
-		expect( Pathname ).to receive( :glob ).
-			with( 'data/*/{apps,handlers}/**/*' ).
-			and_return([ Pathname('data/mox/apps/moxthefox') ])
-
-		expect( Kernel ).to receive( :load ).
-			with( File.expand_path 'data/mox/apps/moxthefox' ) { mox_app = Class.new(Strelka::App) }
-
-		expect( described_class::App('moxthefox') ).to be( mox_app )
-	end
-
 end
 
