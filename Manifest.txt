@@ -54,6 +54,10 @@ lib/strelka/authprovider.rb
 lib/strelka/authprovider/basic.rb
 lib/strelka/authprovider/hostaccess.rb
 lib/strelka/behavior/plugin.rb
+lib/strelka/cli.rb
+lib/strelka/command/config.rb
+lib/strelka/command/discover.rb
+lib/strelka/command/start.rb
 lib/strelka/constants.rb
 lib/strelka/cookie.rb
 lib/strelka/cookieset.rb
@@ -107,6 +111,7 @@ spec/strelka/app_spec.rb
 spec/strelka/authprovider/basic_spec.rb
 spec/strelka/authprovider/hostaccess_spec.rb
 spec/strelka/authprovider_spec.rb
+spec/strelka/cli_spec.rb
 spec/strelka/cookie_spec.rb
 spec/strelka/cookieset_spec.rb
 spec/strelka/discovery_spec.rb
