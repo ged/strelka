@@ -13,6 +13,7 @@ require 'configurability/config'
 # == Author/s
 #
 # * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :title: Strelka Web Application Framework
 # :main: README.rdoc
@@ -24,7 +25,7 @@ module Strelka
 	log_as :strelka
 
 	# Library version constant
-	VERSION = '0.11.0'
+	VERSION = '0.12.0'
 
 	# Version-control revision constant
 	REVISION = %q$Revision$

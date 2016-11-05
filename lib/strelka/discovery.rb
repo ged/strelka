@@ -24,7 +24,7 @@ require 'strelka' unless defined?( Strelka )
 # If you have an app that you wish to be discoverable, create a
 # <tt>lib/strelka/apps.rb</tt> file. This file will be added to those returned
 # by the ::app_discovery_files call, which is the list loaded by
-# ::discovered_apps. 
+# ::discovered_apps.
 #
 # == \App \Discovery Registration
 #

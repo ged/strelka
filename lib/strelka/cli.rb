@@ -292,7 +292,7 @@ module Strelka::CLI
 
 
 		### Return the specified +text+ as a Highline::String for convenient formatting,
-		### color, etc. 
+		### color, etc.
 		def hl( text )
 			return HighLine::String.new( text.to_s )
 		end
