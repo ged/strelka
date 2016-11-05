@@ -20,7 +20,7 @@ Her name means "little arrow".
 == Prerequisites
 
 * Mongrel2[http://mongrel2.org/] 1.8.0 or better
-* Ruby 1.9.3 or better
+* Ruby 2.2 or better
 
 
 == Installation
@@ -142,6 +142,29 @@ you see the text "Hello, World!", congrats!  We'll build off of this in the
 next section, the {Strelka Tutorial}[rdoc-ref:Tutorial.rdoc].
 
 
+=== Packaging
+
+If you want your app to be launchable via the <tt>strelka</tt> command, you can
+do so by registering it with the Strelka::Discovery module. For instance, if
+your app is defined in a file called <tt>lib/acme/store.rb</tt> and you want to
+start it with the command
+
+    strelka start acme-store
+
+then you'd do something like:
+
+    require 'strelka/discovery'
+    Strelka::Discovery.register_app( 'acme-store', 'acme/store.rb' )
+
+If you want the app to be launchable directory from the gem, you can put the
+above discovery code in a file named <code>lib/strelka/apps.rb</code> to your
+gem. The `strelka` command will load all of those files from any installed gems
+before running <tt>start</tt>. You can test to see which apps are discoverable
+this way using the <tt>strelka discover</tt> command.
+
+See Strelka::Discovery for more info.
+
+
 == Further Reading
 
 You'll likely want to start with {the Tutorial}[rdoc-ref:Tutorial.rdoc].
@@ -160,14 +183,6 @@ Here's a tentative list of what kinds of stuff we have planned:
 * CORS -- manage {Cross-Origin Resource Sharing}[http://www.html5rocks.com/en/tutorials/cors/]
   headers, especially for service applications
 * caching -- utilities for easy HTTP caching
-
-=== Deployment/Packaging
-
-You'll be able to package up your applications as Rubygems for easy deployment.
-The Strelka::App class already supports application discovery, but we
-want to hook that up to the 'strelka' command line tool so you can install
-and run them with a minimum of manual monkeying around with directories,
-migrations, etc.
 
 === New Application Styles
 
