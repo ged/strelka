@@ -36,6 +36,7 @@ hoespec = Hoe.spec 'strelka' do
 	self.dependency 'trollop',         '~> 2.0'
 	self.dependency 'uuidtools',       '~> 2.1'
 	self.dependency 'safe_yaml',       '~> 1.0'
+	self.dependency 'gli',             '~> 2.14'
 
 	self.dependency 'hoe-deveiate',            '~> 0.6',  :developer
 	self.dependency 'rspec',                   '~> 3.0',  :developer
