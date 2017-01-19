@@ -8,26 +8,30 @@ require 'strelka/cli' unless defined?( Strelka::CLI )
 module Strelka::CLI::Config
 	extend Strelka::CLI::Subcommand
 
-	desc 'Dump a config file for the specified GEM (or local apps)'
+	desc 'Generate a config file (to STDOUT) for the specified GEM (or local apps)'
 	arg :GEM, :optional
 	command :config do |cmd|
 
 		cmd.action do |globals, options, args|
-			gemname = args.shift
-			discovery_name = gemname || ''
+			require 'strelka/discovery'
 
-			prompt.say( headline_string "Dumping config for %s" % [ gemname || 'local apps' ] )
-			discovered_apps = Strelka::Discovery.discover_apps
+			apps = Array( args )
+			discovered_apps = Strelka::Discovery.discovered_apps
+			raise ArgumentError, "No apps discovered" if discovered_apps.empty?
 
-			raise ArgumentError, "No apps discovered" unless discovered_apps.key?( discovery_name )
+			apps.each do |app_name|
+				app_path = discovered_apps[ app_name ] or
+					raise "No such app: %s" % [ app_name ]
 
-			discovered_apps[ discovery_name ].each do |apppath|
-				prompt.say "  loading %s (%s)" % [ apppath, apppath.basename('.rb') ]
-				Strelka::Discovery.load( apppath )
+				app_path = Pathname( app_path )
+				prompt.say "  loading %s (%s)" % [ app_path, app_path.basename('.rb') ]
+				Strelka::Discovery.load( app_path )
 			end
 
-			prompt.say "  dumping config:"
-			$stdout.puts Configurability.default_config.dump
+			prompt.say "  generating config:"
+			yaml = Configurability.default_config.dump
+			yaml.gsub!( /(?<!^---)\n(\w)/m, "\n\n\\1" )
+			$stdout.puts( yaml )
 		end
 	end
 

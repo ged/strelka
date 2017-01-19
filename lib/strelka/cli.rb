@@ -68,7 +68,7 @@ module Strelka::CLI
 	flag [:c, :config], type: Pathname
 
 	desc "Override the Strelka data directory"
-	flag [:D, :datadir], default_value: '.', type: Pathname
+	flag [:D, :datadir], type: Pathname
 
 	desc 'Enable debugging output'
 	switch [:d, :debug]

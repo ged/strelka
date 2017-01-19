@@ -42,17 +42,14 @@ describe Strelka::App::Templating do
 		it "can discover template directories for loaded gems that depend on Strelka" do
 			specs = {}
 			specs[:gymnastics]  = make_gemspec( 'gymnastics',  '1.0.0' )
-			specs[:cycling_old] = make_gemspec( 'cycling',  '1.0.0' )
-			specs[:cycling_new] = make_gemspec( 'cycling',  '1.0.8' )
+			specs[:cycling]     = make_gemspec( 'cycling',  '1.0.8' )
 			specs[:karate]      = make_gemspec( 'karate',    '1.0.0', false )
 			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
 
-			expect( Gem::Specification ).to receive( :each ).once do |&block|
-				specs.values.each {|spec| block.call(spec) }
-			end
+			expect( Gem::Specification ).to receive( :latest_specs ).and_return( specs.values )
 
 			gymnastics_path  = specs[:gymnastics].full_gem_path
-			cycling_path  = specs[:cycling_new].full_gem_path
+			cycling_path  = specs[:cycling].full_gem_path
 			javelin_path = specs[:javelin].full_gem_path
 
 			expect( Dir ).to receive( :glob ).with( 'data/*/templates' ).
@@ -81,9 +78,7 @@ describe Strelka::App::Templating do
 			specs[:gymnastics]  = make_gemspec( 'gymnastics',  '1.0.0' )
 			specs[:javelin]     = make_gemspec( 'javelin', '1.0.0' )
 
-			expect( Gem::Specification ).to receive( :each ).once do |&block|
-				specs.values.each {|spec| block.call(spec) }
-			end
+			expect( Gem::Specification ).to receive( :latest_specs ).and_return( specs.values )
 
 			gymnastics_path = specs[:gymnastics].full_gem_path
 			javelin_path    = specs[:javelin].full_gem_path

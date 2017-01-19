@@ -194,7 +194,7 @@ module Strelka::Discovery
 		}
 
 		# Find all the gems that depend on Strelka
-		gems = Gem::Specification.find_all do |gemspec|
+		gems = Gem::Specification.latest_specs.find_all do |gemspec|
 			gemspec.dependencies.find {|dep| dep.name == 'strelka'}
 		end
 
