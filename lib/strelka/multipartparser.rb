@@ -34,7 +34,20 @@ class Strelka::MultipartParser
 	log_to :strelka
 
 	# Configurability API -- use the 'multipartparser' section of the config
-	config_key :multipartparser
+	configurability( 'strelka.multipartparser' ) do
+		##
+		# The configured buffer size to use when parsing
+		setting :bufsize, default: 524288 do |val|
+			Integer( val ) if val
+		end
+
+		##
+		# The configured spool directory for storing attachments
+		setting :spooldir, default: Dir.tmpdir + '/strelka-mimeparts' do |val|
+			Pathname( val ) if val
+		end
+
+	end
 
 
 	# Line-ending regexp. Supports UNIX line-endings for testing.
@@ -46,11 +59,6 @@ class Strelka::MultipartParser
 	# Line-ending for RFC5322 header fields; EOL *not* followed by a WSP char
 	HEADER_FIELD_EOL = /#{CRLF_REGEXP}(?!\x32|\x09)/
 
-	# Configurability API -- configuration defaults
-	CONFIG_DEFAULTS = {
-		bufsize: 524288,
-		spooldir: Pathname( Dir.tmpdir ) + 'strelka-mimeparts',
-	}
 
 	# A mixin that extends the IO objects for uploaded files.
 	module FileInputField
@@ -59,32 +67,6 @@ class Strelka::MultipartParser
 
 	end # module FileInputField
 
-	##
-	# The configured buffer size to use when parsing
-	singleton_attr_accessor :bufsize
-
-	##
-	# The configured spool directory for storing attachments
-	singleton_attr_accessor :spooldir
-
-
-	### Configurability API -- configure the parser with the 'mimeparser' section
-	### of the config:
-	###
-	### bufsize::  the size of the buffer (in bytes) to use when reading the
-	###            document. Larger sizes use more heap, but are faster.
-	### spooldir:: the directory to spool file upload parts to.
-	def self::configure( options=nil )
-		if options
-			self.log.debug "Configuring the %p: %p" % [ self, options ]
-			self.bufsize  = Integer( options[:bufsize] )   || CONFIG_DEFAULTS[:bufsize]
-			self.spooldir = Pathname( options[:spooldir] ) || CONFIG_DEFAULTS[:spooldir]
-		else
-			self.log.debug "Configuring %p with defaults: %p" % [ self, CONFIG_DEFAULTS ]
-			self.bufsize  = CONFIG_DEFAULTS[:bufsize]
-			self.spooldir = CONFIG_DEFAULTS[:spooldir]
-		end
-	end
 
 
 	### Create a new Strelka::MultipartMimeParser

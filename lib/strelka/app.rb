@@ -28,13 +28,13 @@ class Strelka::App < Mongrel2::Handler
 	log_to :strelka
 
 	# Configurability API -- use the 'app' section of the config file.
-	config_key :app
+	configurability( 'strelka.app' ) do
 
+		##
+		# 'Developer mode' flag.
+		setting :devmode, default: true
 
-	# Default config
-	CONFIG_DEFAULTS = {
-		devmode: false,
-	}.freeze
+	end
 
 
 	# Class instance variables
@@ -49,10 +49,6 @@ class Strelka::App < Mongrel2::Handler
 	# loaded from, or +nil+ if they weren't loaded via ::load.
 	singleton_attr_reader :subclasses
 
-	##
-	# 'Developer mode' flag.
-	singleton_attr_writer :devmode
-
 
 	### Returns +true+ if the application has been configured to run in 'developer mode'.
 	### Developer mode is mostly informational by default (it just makes logging more
@@ -61,16 +57,6 @@ class Strelka::App < Mongrel2::Handler
 		return @devmode
 	end
 	singleton_method_alias :in_devmode?, :devmode?
-
-
-	### Configure the App. Override this if you wish to add additional configuration
-	### to the 'app' section of the config that will be passed to you when the config
-	### is loaded.
-	def self::configure( config=nil )
-		config = Strelka::App.defaults.merge( config || {} )
-		self.devmode = config[:devmode] || $DEBUG
-		self.log.info "Enabled developer mode." if self.devmode?
-	end
 
 
 	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if

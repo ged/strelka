@@ -94,29 +94,24 @@ module Strelka::Discovery
 	log_to :strelka
 
 	# Configurability API -- use the 'discovery' section of the config
-	config_key :discovery
+	configurability( 'strelka.discovery' ) do
 
+		##
+		# The glob(3) pattern for matching the discovery hook file.
+		setting :app_discovery_file, default: 'strelka/apps.rb'
 
-	# Default config
-	CONFIG_DEFAULTS = {
-		app_discovery_file: 'strelka/apps.rb',
-		local_data_dirs:  'data/*',
-	}.freeze
+		##
+		# The glob(3) pattern for matching local data directories during discovery. Local
+		# data directories are evaluated relative to the CWD.
+		setting :local_data_dirs, default: 'data/*'
+
+	end
 
 
 	##
 	# The Hash of Strelka::App subclasses, keyed by the Pathname of the file they were
 	# loaded from, or +nil+ if they weren't loaded via ::load.
 	singleton_attr_reader :discovered_classes
-
-	##
-	# The glob(3) pattern for matching the discovery hook file.
-	singleton_attr_accessor :app_discovery_file
-
-	##
-	# The glob(3) pattern for matching local data directories during discovery. Local
-	# data directories are evaluated relative to the CWD.
-	singleton_attr_accessor :local_data_dirs
 
 	##
 	# The name of the file that's currently being loaded (if any)
@@ -171,17 +166,6 @@ module Strelka::Discovery
 	### the current $LOAD_PATH.
 	def self::app_discovery_files
 		return Gem.find_latest_files( self.app_discovery_file )
-	end
-
-
-	### Configure the App. Override this if you wish to add additional configuration
-	### to the 'app' section of the config that will be passed to you when the config
-	### is loaded.
-	def self::configure( config=nil )
-		config = self.defaults.merge( config || {} )
-
-		self.app_discovery_file = config[:app_discovery_file]
-		self.local_data_dirs  = config[:local_data_dirs]
 	end
 
 
