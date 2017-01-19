@@ -25,7 +25,7 @@ module Strelka
 	log_as :strelka
 
 	# Library version constant
-	VERSION = '0.13.1'
+	VERSION = '0.13.0'
 
 	# Version-control revision constant
 	REVISION = %q$Revision$

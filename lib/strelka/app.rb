@@ -54,7 +54,7 @@ class Strelka::App < Mongrel2::Handler
 	### Developer mode is mostly informational by default (it just makes logging more
 	### verbose), but plugins and such might alter their behavior based on this setting.
 	def self::devmode?
-		return @devmode
+		return @devmode || $DEBUG
 	end
 	singleton_method_alias :in_devmode?, :devmode?
 

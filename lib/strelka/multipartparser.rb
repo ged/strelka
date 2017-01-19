@@ -74,8 +74,8 @@ class Strelka::MultipartParser
 		io        = StringIO.new( io ) unless io.respond_to?( :read )
 		boundary  = '--' + boundary # unless boundary.start_with?( '--' )
 
-		@bufsize  = self.class.bufsize || CONFIG_DEFAULTS[:bufsize]
-		@spooldir = self.class.spooldir || CONFIG_DEFAULTS[:spooldir]
+		@bufsize  = self.class.bufsize || self.class.defaults.spooldir
+		@spooldir = self.class.spooldir || Pathname( self.class.defaults.spooldir )
 		@io       = io
 		@boundary = boundary
 		@fields   = {}
