@@ -13,10 +13,9 @@ module Strelka::CLI::Start
 	arg :APPNAME
 	command :start do |cmd|
 
-		cmd.action do |globals, options, args|
+		cmd.action do |global, options, args|
 			appname = args.pop
 			gemname = args.pop
-			path    = nil
 
 			gem( gemname ) if gemname
 
@@ -29,7 +28,7 @@ module Strelka::CLI::Start
 				end
 
 			Strelka::CLI.prompt.say "Starting %s (%p)." % [ appname, app ]
-			Strelka.load_config( options[:c] ) if options[:c]
+			Strelka.load_config( global.config ) if global.config
 			unless_dryrun( "starting the app" ) do
 				app.run
 			end
