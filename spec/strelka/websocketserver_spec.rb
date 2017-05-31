@@ -5,7 +5,6 @@
 require_relative '../helpers'
 
 require 'rspec'
-require 'zmq'
 require 'mongrel2'
 
 require 'strelka'

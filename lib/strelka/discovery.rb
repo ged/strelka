@@ -218,7 +218,7 @@ module Strelka::Discovery
 		new_subclasses = self.discovered_classes[ loading_file ]
 		self.log.debug "  loaded %d new app class/es" % [ new_subclasses.size ]
 
-		return new_subclasses.first
+		return new_subclasses.last
 	ensure
 		Thread.current[ :__loading_file ] = nil
 	end
