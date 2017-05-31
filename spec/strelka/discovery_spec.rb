@@ -107,7 +107,7 @@ describe Strelka::Discovery do
 	end
 
 
-	it "only returns the first class even if the file declares two" do
+	it "only returns the last class that was declared" do
 		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
 
 		app_class = app_class2 = nil
@@ -118,7 +118,7 @@ describe Strelka::Discovery do
 			app_class2 = Class.new( discoverable_class )
 		end
 
-		expect( described_class.load('foo') ).to eq( app_class )
+		expect( described_class.load('foo') ).to eq( app_class2 )
 	end
 
 end
