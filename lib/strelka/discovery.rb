@@ -131,8 +131,9 @@ module Strelka::Discovery
 		@discovered_apps ||= {}
 
 		if @discovered_apps.key?( name )
-			raise "Can't register a second '%s' app at %s; already have one at %s" %
+			warn "Can't register a second '%s' app at %s; already have one at %s" %
 				[ name, path, @discovered_apps[name] ]
+			return
 		end
 
 		self.log.debug "Registered app at %s as %p" % [ path, name ]

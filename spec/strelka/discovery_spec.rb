@@ -53,8 +53,8 @@ describe Strelka::Discovery do
 		described_class.register_app( 'foo', 'a/path/to/foo.rb' )
 		expect {
 			described_class.register_app( 'foo', 'a/path/to/bar.rb' )
-		}.to raise_error( /can't register a second 'foo' app/i )
-			end
+		}.to output( /can't register a second 'foo' app/i ).to_stderr
+	end
 
 
 	it "uses Rubygems discovery to find apps" do
@@ -70,7 +70,7 @@ describe Strelka::Discovery do
 			when %r{other/directory}
 				described_class.register_app( 'bar', 'a/path/to/bar.rb' )
 			end
-	end
+		end
 
 		expect( described_class.discovered_apps ).to include(
 			'foo' => 'a/path/to/foo.rb',
