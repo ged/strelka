@@ -1,3 +1,14 @@
+==  v0.15.0 [2017-06-14] Michael Granger <ged@FaerieMUD.org>
+
+Enhancements:
+
+- Warn instead of raising on duplicate app names during discover.
+- Have Discovery load the last subclass instead of the first, to
+  support classes that inherit from Strelka::App.
+- Load configuration from the global options in the 'start' cli
+  command.
+
+
 == v0.14.0 [2017-01-19] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:
