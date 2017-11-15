@@ -279,18 +279,29 @@ module Strelka
 		### declaring object (e.g., class instance variables and methods if declared
 		### in a Class).
 		def singleton_attr_reader( *symbols )
-			symbols.each do |sym|
-				singleton_class.__send__( :attr_reader, sym )
+			singleton_class.instance_exec( symbols ) do |attrs|
+				attr_reader( *attrs )
 			end
 		end
+
+
+		### Create instance variables and corresponding methods that return
+		### true or false values for each of the specified +symbols+ in the singleton
+		### of the declaring object.
+		def singleton_predicate_reader( *symbols )
+			singleton_class.extend( Strelka::MethodUtilities )
+			singleton_class.attr_predicate( *symbols )
+		end
+
 
 		### Creates methods that allow assignment to the attributes of the singleton
 		### of the declaring object that correspond to the specified +symbols+.
 		def singleton_attr_writer( *symbols )
-			symbols.each do |sym|
-				singleton_class.__send__( :attr_writer, sym )
+			singleton_class.instance_exec( symbols ) do |attrs|
+				attr_writer( *attrs )
 			end
 		end
+
 
 		### Creates readers and writers that allow assignment to the attributes of
 		### the singleton of the declaring object that correspond to the specified
@@ -300,6 +311,16 @@ module Strelka
 				singleton_class.__send__( :attr_accessor, sym )
 			end
 		end
+
+
+		### Create predicate methods and writers that allow assignment to the attributes
+		### of the singleton of the declaring object that correspond to the specified
+		### +symbols+.
+		def singleton_predicate_accessor( *symbols )
+			singleton_class.extend( Strelka::MethodUtilities )
+			singleton_class.attr_predicate_accessor( *symbols )
+		end
+
 
 		### Creates an alias for the +original+ method named +newname+.
 		def singleton_method_alias( newname, original )
