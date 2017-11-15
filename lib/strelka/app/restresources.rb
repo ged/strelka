@@ -55,19 +55,6 @@ require 'strelka/app' unless defined?( Strelka::App )
 #     isn't clearly specified in the RFC (DELETE /resource)
 # [ ] Sequel plugin for adding links to serialized representations
 #
-# == Caveats / Known Problems
-#
-# * Dataset methods declared using the 'subset' declaration don't allow the
-#   introspection necessary for automatically building routes, so you have
-#   to declare them as normal methods in a dataset module:
-#
-#       dataset_module do
-#           def by_name( string )
-#               filter(:name => string)
-#           end
-#       end
-#
-#
 # == Supported/Planned Options
 #
 # The 'resource' directive accepts options that control which methods it
@@ -76,8 +63,9 @@ require 'strelka/app' unless defined?( Strelka::App )
 # [√] :readonly     => false
 # [ ] :include      => <array of verbs>
 # [ ] :exclude      => <array of verbs>
-# [ ] :subsets      => <boolean or array>
+# [ ] :filters      => <boolean or array>
 # [ ] :associations => <boolean or array>
+# [ ] :composite    =< <boolean or array>
 #
 module Strelka::App::RestResources
 	extend Strelka::Plugin
@@ -88,6 +76,7 @@ module Strelka::App::RestResources
 		name:             nil,
 		readonly:         false,
 		use_transactions: true,
+		composite:        true
 	}.freeze
 
 
@@ -184,7 +173,7 @@ module Strelka::App::RestResources
 			end
 
 			# Add any composite resources based on the +rsrcobj+'s associations
-			self.add_composite_resource_handlers( route, rsrcobj, options )
+			self.add_composite_resource_handlers( route, rsrcobj, options ) if options[:composite]
 		end
 
 
@@ -199,7 +188,7 @@ module Strelka::App::RestResources
 
 				# Gather up metadata describing the resource
 				verbs = self.class.resource_verbs[ route ].sort
-				columns = rsrcobj.allowed_columns || rsrcobj.columns
+				columns = rsrcobj.columns
 				attributes = columns.each_with_object({}) do |col, hash|
 					hash[ col ] = rsrcobj.db_schema[ col ][:type]
 				end
@@ -259,7 +248,7 @@ module Strelka::App::RestResources
 				[ rsrcobj, route ]
 
 			# Make a column regexp for validating the order field
-			colunion = Regexp.union( (rsrcobj.allowed_columns || rsrcobj.columns).map(&:to_s) )
+			colunion = Regexp.union( rsrcobj.columns.map(&:to_s) )
 			colre = /^(?<column>#{colunion})$/
 
 			self.add_route( :GET, route, options ) do |req|
@@ -522,6 +511,8 @@ module Strelka::App::RestResources
 
 		### Add routes for any associations +rsrcobj+ has as composite resources.
 		def add_composite_resource_handlers( route_prefix, rsrcobj, options )
+			self.log.debug "Adding composite resource handlers for %p to %s (%p)" %
+				[ rsrcobj, route_prefix, options ]
 
 			# Add methods declared by (user-declared) dataset modules.
 			ds_mods = rsrcobj.dataset_method_modules.select do |mod|
@@ -621,7 +612,7 @@ module Strelka::App::RestResources
 			self.log.debug "Adding composite read handler for association: %s" % [ association ]
 
 			pkey = rsrcobj.primary_key
-			colunion = Regexp.union( (rsrcobj.allowed_columns || rsrcobj.columns).map(&:to_s) )
+			colunion = Regexp.union( rsrcobj.columns.map(&:to_s) )
 			colre = /^(?<column>#{colunion})$/
 
 			self.add_route( :GET, path, options ) do |req|
@@ -686,7 +677,7 @@ module Strelka::App::RestResources
 	### Add parameter validations for the given +columns+ of the specified resource object +rsrcobj+
 	### to the specified parameter +validator+.
 	def add_resource_params( validator, rsrcobj, *columns )
-		columns = rsrcobj.allowed_columns || rsrcobj.columns if columns.empty?
+		columns = rsrcobj.columns if columns.empty?
 
 		columns.each do |col|
 			config = rsrcobj.db_schema[ col ] or

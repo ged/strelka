@@ -32,8 +32,12 @@ describe Strelka::App::RestResources do
 				return self.filter( name: name )
 			end
 		end
-		Mongrel2::Config::Server.subset( :with_ephemeral_ports ) { port > 1024 }
 		Mongrel2::Config::Server.dataset_module( name_selection )
+		Mongrel2::Config::Server.dataset_module do
+			def with_ephemeral_ports
+				return self.where { port > 1024 }
+			end
+		end
 	end
 
 
@@ -287,7 +291,7 @@ describe Strelka::App::RestResources do
 					expect( body.first['uuid'] ).to eq( 'test-server' )
 				end
 
-				it "has a GET route for fetching the resource via a subset" do
+				it "has a GET route for fetching the resource via a dataset module method" do
 					req = @request_factory.get( '/api/v1/servers/with_ephemeral_ports',
 						:accept => 'application/json' )
 					res = @app.new.handle( req )
@@ -406,8 +410,6 @@ describe Strelka::App::RestResources do
 					expect( server.name ).to eq( 'Staging Server' )
 					expect( server.uuid ).to eq( @server_values['uuid'] )
 				end
-
-				it "ignores attributes that aren't in the allowed columns list"
 
 			end # POST routes
 
