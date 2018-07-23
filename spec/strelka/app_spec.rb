@@ -207,35 +207,16 @@ describe Strelka::App do
 
 	it "uses the app's ID constant for the appid if .run is called without one" do
 		@app.const_set( :ID, 'testing-app' )
-		conn = double( "Mongrel2 connection", close: true )
-		allow( conn ).to receive( :request_sock )
-		allow( CZTop::Poller ).to receive( :new )
-
-		expect( Mongrel2::Handler ).to receive( :connection_info_for ).with( 'testing-app' ).
-			and_return([ TEST_SEND_SPEC, TEST_RECV_SPEC ])
-		expect( Mongrel2::Connection ).to receive( :new ).
-			with( 'testing-app', TEST_SEND_SPEC, TEST_RECV_SPEC ).
-			and_return( conn )
-
-		@app.run
+		expect( @app.default_appid ).to eq( 'testing-app' )
 	end
 
 
-	it "uses the app's name for the appid if .run is called without one and it has no ID constant" do
+	it "uses the app's name for the appid it has no ID constant" do
 		@app.class_eval do
 			def self::name; "My::First::Blog" ; end
 		end
-		conn = double( "Mongrel2 connection", close: true )
-		allow( conn ).to receive( :request_sock )
-		allow( CZTop::Poller ).to receive( :new )
 
-		expect( Mongrel2::Handler ).to receive( :connection_info_for ).with( 'my-first-blog' ).
-			and_return([ TEST_SEND_SPEC, TEST_RECV_SPEC ])
-		expect( Mongrel2::Connection ).to receive( :new ).
-			with( 'my-first-blog', TEST_SEND_SPEC, TEST_RECV_SPEC ).
-			and_return( conn )
-
-		@app.run
+		expect( @app.default_appid ).to eq( 'my-first-blog' )
 	end
 
 

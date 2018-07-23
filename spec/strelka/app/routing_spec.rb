@@ -51,7 +51,7 @@ describe Strelka::App::Routing do
 				options( '/clowns' ) {}
 			end
 
-			expect( @app.route_methods ).to eq( [ :GET, :POST_clowns, :OPTIONS_clowns ] )
+			expect( @app.route_methods ).to include( :GET, :POST_clowns, :OPTIONS_clowns )
 		end
 
 		# OPTIONS GET/HEAD POST PUT DELETE TRACE CONNECT
