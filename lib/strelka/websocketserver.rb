@@ -62,10 +62,80 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	log_to :strelka
 
 
+	### Overridden from Mongrel2::Handler -- use the value returned from .default_appid if
+	### one is not specified.
+	def self::run( appid=nil )
+		appid ||= self.default_appid
+		self.log.info "Starting up with appid %p." % [ appid ]
+		super( appid )
+	end
+
+
+	### Calculate a default application ID for the class based on either its ID
+	### constant or its name and return it.
+	def self::default_appid
+		self.log.info "Looking up appid for %p" % [ self.class ]
+		appid = nil
+
+		if self.const_defined?( :ID )
+			appid = self.const_get( :ID )
+			self.log.info "  app has an ID: %p" % [ appid ]
+		else
+			appid = ( self.name || "anonymous#{self.object_id}" ).downcase
+			appid.gsub!( /[^[:alnum:]]+/, '-' )
+			self.log.info "  deriving one from the class name: %p" % [ appid ]
+		end
+
+		return appid
+	end
+
+
+	### Return an instance of the App configured for the handler in the currently-loaded
+	### Mongrel2 config that corresponds to the #default_appid.
+	def self::default_app_instance
+		appid = self.default_appid
+		return self.app_instance_for( appid )
+	end
+
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	### Dump the application stack when a new instance is created.
+	def initialize( * )
+		self.class.dump_application_stack
+		@connections = {}
+		super
+	end
+
+
+	######
+	public
+	######
+
+	# A Hash of last seen times keyed by [sender ID, connection ID] tuple
+	attr_reader :connections
+
+
+	### Run the app -- overriden to set the process name to something interesting.
+	def run
+		procname = "%s %s: %p %s" % [ RUBY_ENGINE, RUBY_VERSION, self.class, self.conn ]
+		$0 = procname
+
+		super
+	end
+
+
 	### Handle a WebSocket frame in +request+. If not overridden, WebSocket connections are
 	### closed with a policy error status.
 	def handle_websocket( frame )
 		response = nil
+
+		unless frame.opcode == :close
+			self.connections[ [frame.sender_id, frame.conn_id] ] = Time.now
+		end
 
 		# Dispatch the frame
 		response = catch( :close_websocket ) do
@@ -78,8 +148,10 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 
 
 	### Handle a WebSocket handshake HTTP +request+.
+	### :TODO: Register/check for supported Sec-WebSocket-Protocol.
 	def handle_websocket_handshake( handshake )
-		self.log.warn "Incoming WEBSOCKET_HANDSHAKE request (%p)" % [ request.headers.path ]
+		self.log.warn "Incoming WEBSOCKET_HANDSHAKE request (%p)" % [ handshake.headers.path ]
+		self.connections[ [handshake.sender_id, handshake.conn_id] ] = Time.now
 		return handshake.response( handshake.protocols.first )
 	end
 
@@ -87,7 +159,9 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	### Handle a disconnect notice from Mongrel2 via the given +request+. Its return value
 	### is ignored.
 	def handle_disconnect( request )
-		self.log.info "Unhandled disconnect notice."
+		self.log.info "Connection %d closed." % [ request.conn_id ]
+		self.connections.delete( [request.sender_id, request.conn_id] )
+		self.log.debug "  connections remaining: %p" % [ self.connections ]
 		return nil
 	end
 

@@ -43,6 +43,7 @@ describe Strelka::WebSocketServer::Routing do
 			expect( @app.op_callbacks ).to be_a( Hash )
 		end
 
+
 		it "knows what its route methods are" do
 			expect( @app.op_callbacks ).to eq( {} )
 			@app.class_eval do
@@ -54,8 +55,9 @@ describe Strelka::WebSocketServer::Routing do
 			expect( @app.op_callbacks.keys ).to eq([ :text, :binary, :ping ])
 		end
 
+
 		it "allows the declaration of custom opcodes" do
-			@app.opcodes( 0x3 => :nick )
+			@app.opcodes( nick: 0x3 )
 			@app.class_eval do
 				on_nick() {}
 			end
@@ -82,21 +84,21 @@ describe Strelka::WebSocketServer::Routing do
 			expect( response.body.read ).to eq( "Clowns? Yep!\n" )
 		end
 
+
 		it "dispatches custom frame type to its handler if one is declared" do
 			@app.class_eval do
-				opcodes 0xB => :refresh
+				opcodes refresh: 0xb
 
 				on_refresh do |frame|
 					return frame.response
 				end
 			end
 
-			frame = @frame_factory.create( '/chat', '', 0xB )
+			frame = @frame_factory.create( '/chat', '', 0xb )
 			response = @app.new.handle_websocket( frame )
 
 			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
-			expect( response.opcode ).to eq( :reserved )
-			expect( response.numeric_opcode ).to eq( 0xB )
+			expect( response.numeric_opcode ).to eq( 0xb )
 		end
 
 

@@ -65,12 +65,14 @@ describe Strelka::WebSocketServer do
 		expect( res.socket_id ).to eq( ping.socket_id )
 	end
 
+
 	it "ignores PONG frames" do
 		pong = @frame_factory.pong( '/chat' )
 		res = @app.new.handle_websocket( pong )
 
 		expect( res ).to be_nil()
 	end
+
 
 	it "closes the connection on CLOSE frames" do
 		app = @app.new
@@ -82,6 +84,7 @@ describe Strelka::WebSocketServer do
 		expect( res ).to be_nil()
 	end
 
+
 	it "closes the connection with an appropriate error for reserved control opcodes" do
 		reserved = @frame_factory.create( '/chat', '', 0xB )
 		res = @app.new.handle_websocket( reserved )
@@ -92,6 +95,7 @@ describe Strelka::WebSocketServer do
 		expect( res.payload.read ).to match( /Unhandled data type/i )
 		expect( res.socket_id ).to eq( reserved.socket_id )
 	end
+
 
 	#
 	# Content frame defaults
@@ -108,6 +112,7 @@ describe Strelka::WebSocketServer do
 		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
 
+
 	it "replies with a close frame with a bad data type error for BINARY frames" do
 		app = @app.new
 		frame = @frame_factory.binary( '/chat' )
@@ -118,6 +123,7 @@ describe Strelka::WebSocketServer do
 		res.payload.rewind
 		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
+
 
 	it "replies with a close frame with a bad data type error for CONTINUATION frames" do
 		app = @app.new
@@ -130,6 +136,7 @@ describe Strelka::WebSocketServer do
 		expect( res.payload.read ).to match( /Unhandled data type/i )
 	end
 
+
 	it "closes the connection with an appropriate error for reserved content opcodes" do
 		reserved = @frame_factory.create( '/chat', '', 0x3 )
 		res = @app.new.handle_websocket( reserved )
@@ -140,7 +147,6 @@ describe Strelka::WebSocketServer do
 		expect( res.payload.read ).to match( /Unhandled data type/i )
 		expect( res.socket_id ).to eq( reserved.socket_id )
 	end
-
 
 end
 

@@ -42,24 +42,34 @@ module Strelka::WebSocketServer::Routing
 	# Class methods to add to classes with routing.
 	module ClassMethods # :nodoc:
 
+		##
 		# The list of routes to pass to the Router when the application is created
 		attr_reader :op_callbacks
 		@op_callbacks = {}
 
-		# The Hash of opcodes that can be hooked
+		##
+		# The Hash of opcode names to numeric opcodes
 		attr_reader :opcode_map
 		@opcode_map = {}
+
+		##
+		# The Hash of numeric opcodes to opcode names
+		attr_reader :opcode_names
+		@opcode_names = {}
 
 
 		### Declare one or more opcodes in the form:
 		###
 		### {
-		###     <bit> => <label>,
+		###     <label> => <bit>,
 		### }
 		def opcodes( hash )
 			@opcode_map ||= {}
 			@opcode_map.merge!( hash )
-			@opcode_map.each do |bit, label|
+
+			@opcode_names = @opcode_map.invert
+
+			@opcode_map.each do |label, bit|
 				self.log.debug "Set opcode %p to %#0x" % [ label, bit ]
 				declarative = "on_#{label}"
 				block = self.make_declarative( label )
@@ -94,7 +104,7 @@ module Strelka::WebSocketServer::Routing
 		### is registered.
 		def self::extended( mod )
 			super
-			mod.opcodes( Mongrel2::WebSocket::Constants::OPCODE_NAME )
+			mod.opcodes( Mongrel2::WebSocket::Constants::OPCODE )
 		end
 
 	end # module ClassMethods
@@ -104,7 +114,7 @@ module Strelka::WebSocketServer::Routing
 	### Dispatch the incoming frame to its handler based on its opcode
 	def handle_frame( frame )
 		self.log.debug "[:routing] Opcode map is: %p" % [ self.class.opcode_map ]
-		opname = self.class.opcode_map[ frame.numeric_opcode ]
+		opname = self.class.opcode_names[ frame.numeric_opcode ]
 		self.log.debug "[:routing] Routing frame: %p" % [ opname ]
 
 		handler = self.class.op_callbacks[ opname ] or return super
