@@ -83,6 +83,7 @@ lib/strelka/session/db.rb
 lib/strelka/session/default.rb
 lib/strelka/testing.rb
 lib/strelka/websocketserver.rb
+lib/strelka/websocketserver/heartbeat.rb
 lib/strelka/websocketserver/routing.rb
 spec/constants.rb
 spec/data/error.tmpl
@@ -134,6 +135,7 @@ spec/strelka/router_spec.rb
 spec/strelka/session/db_spec.rb
 spec/strelka/session/default_spec.rb
 spec/strelka/session_spec.rb
+spec/strelka/websocketserver/heartbeat_spec.rb
 spec/strelka/websocketserver/routing_spec.rb
 spec/strelka/websocketserver_spec.rb
 spec/strelka_spec.rb
