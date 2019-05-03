@@ -2,6 +2,8 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
+require 'set'
+
 require 'mongrel2/handler'
 require 'mongrel2/websocket'
 
@@ -27,15 +29,17 @@ require 'strelka/discovery'
 #       idle_timeout 15.0
 #
 #       # When a websocket is set up, add a new user to the table, but without a nick.
-#       on_handshake do |frame|
-#           @users[ frame.socket_id ] = nil
-#           return frame.response # accept the connection
+#       def handle_websocket_handshake( request )
+#           @users[ request.socket_id ] = nil
+#           return request.response # accept the connection
 #       end
 #
+#       plugin :routing
+#
 #       # Handle incoming commands, which should be text frames
-#       on_text do |frame|
-#           senderid = frame.socket_id
-#           data = frame.payload.read
+#       on_text do |request|
+#           senderid = request.socket_id
+#           data = request.payload.read
 #
 #           # If the input starts with '/', it's a command (e.g., /quit, /nick, etc.)
 #           output = nil
@@ -45,7 +49,7 @@ require 'strelka/discovery'
 #               output = self.say( senderid, data )
 #           end
 #
-#           response = frame.response
+#           response = request.response
 #           response.puts( output )
 #           return response
 #       end
@@ -106,7 +110,10 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	### Dump the application stack when a new instance is created.
 	def initialize( * )
 		self.class.dump_application_stack
-		@connections = {}
+
+		@connections = Hash.new {|h, k| h[k] = Set.new }
+		@connection_times = Hash.new {|h, k| h[k] = Hash.new }
+
 		super
 	end
 
@@ -115,8 +122,14 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	public
 	######
 
-	# A Hash of last seen times keyed by [sender ID, connection ID] tuple
+	##
+	# A Hash of sender ID => Set of connection IDs.
 	attr_reader :connections
+
+	##
+	# A Hash of [sender ID, connection ID] keys => connection Times
+	attr_reader :connection_times
+
 
 
 	### Run the app -- overriden to set the process name to something interesting.
@@ -130,17 +143,15 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 
 	### Handle a WebSocket frame in +request+. If not overridden, WebSocket connections are
 	### closed with a policy error status.
-	def handle_websocket( frame )
+	def handle_websocket( request )
 		response = nil
 
-		unless frame.opcode == :close
-			self.connections[ [frame.sender_id, frame.conn_id] ] = Time.now
-		end
+		self.connection_times[ request.sender_id ][ request.conn_id ] = Time.now
 
-		# Dispatch the frame
+		# Dispatch the request
 		response = catch( :close_websocket ) do
-			self.log.debug "Incoming WEBSOCKET frame (%p):%s" % [ frame, frame.headers.path ]
-			self.handle_frame( frame )
+			self.log.debug "Incoming WEBSOCKET request (%p):%s" % [ request, request.headers.path ]
+			self.handle_websocket_request( request )
 		end
 
 		return response
@@ -150,8 +161,11 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	### Handle a WebSocket handshake HTTP +request+.
 	### :TODO: Register/check for supported Sec-WebSocket-Protocol.
 	def handle_websocket_handshake( handshake )
-		self.log.warn "Incoming WEBSOCKET_HANDSHAKE request (%p)" % [ handshake.headers.path ]
-		self.connections[ [handshake.sender_id, handshake.conn_id] ] = Time.now
+		self.log.info "Incoming WEBSOCKET_HANDSHAKE request (%p)" % [ handshake.headers.path ]
+		self.connections[ handshake.sender_id ].add( handshake.conn_id )
+		self.connection_times[ handshake.sender_id ][ handshake.conn_id ] = Time.now
+		self.log.debug "  connections: %p" % [ self.connections ]
+
 		return handshake.response( handshake.protocols.first )
 	end
 
@@ -160,9 +174,19 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	### is ignored.
 	def handle_disconnect( request )
 		self.log.info "Connection %d closed." % [ request.conn_id ]
-		self.connections.delete( [request.sender_id, request.conn_id] )
+		self.connection_times[ request.sender_id ].delete( request.conn_id )
+		self.connections.delete( request.sender_id )
 		self.log.debug "  connections remaining: %p" % [ self.connections ]
+
 		return nil
+	end
+
+
+	### Return the Time of the last frame from the client associated with the given
+	### +request+.
+	def last_connection_time( request )
+		table = self.connection_times[ request.sender_id ] or return nil
+		return table[ request.conn_id ]
 	end
 
 
@@ -170,52 +194,52 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	protected
 	#########
 
-	### Default frame handler.
-	def handle_frame( frame )
-		if frame.control?
-			self.handle_control_frame( frame )
+	### Default request handler.
+	def handle_websocket_request( request )
+		if request.control?
+			self.handle_control_request( request )
 		else
-			self.handle_content_frame( frame )
+			self.handle_content_request( request )
 		end
 	end
 
 
-	### Throw a :close_websocket frame that will close the current connection.
-	def close_with( frame, reason )
+	### Throw a response with a 'close' frame that will close the current
+	### connection.
+	def close_with( request, reason )
 		self.log.debug "Closing the connection: %p" % [ reason ]
 
-		# Make a CLOSE frame
-		frame = frame.response( :close )
-		frame.set_status( reason )
+		# Make a CLOSE response
+		response = request.response( :close )
+		response.set_status( reason )
 
-		throw :close_websocket, frame
+		throw :close_websocket, response
 	end
 
 
-	### Handle an incoming control frame.
-	def handle_control_frame( frame )
-		self.log.debug "Handling control frame: %p" % [ frame ]
+	### Handle an incoming request with a control frame.
+	def handle_control_request( request )
+		self.log.debug "Handling control request: %p" % [ request ]
 
-		case frame.opcode
+		case request.opcode
 		when :ping
-			return frame.response
+			return request.response
 		when :pong
 			return nil
 		when :close
-			self.conn.reply_close( frame )
+			self.conn.reply_close( request )
 			return nil
 		else
-			self.close_with( frame, CLOSE_BAD_DATA_TYPE )
+			self.close_with( request, CLOSE_BAD_DATA_TYPE )
 		end
 	end
 
 
-	### Handle an incoming content frame.
-	def handle_content_frame( frame )
-		self.log.warn "Unhandled frame type %p" % [ frame.opcode ]
-		self.close_with( frame, CLOSE_BAD_DATA_TYPE )
+	### Handle an incoming request with a content frame.
+	def handle_content_request( request )
+		self.log.warn "Unhandled request type %p" % [ request.opcode ]
+		self.close_with( request, CLOSE_BAD_DATA_TYPE )
 	end
-
 
 end # class Strelka::WebSocketServer
 

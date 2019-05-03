@@ -10,20 +10,36 @@ require 'strelka/plugin' unless defined?( Strelka::Plugin )
 #
 # For a protocol that defines its own opcodes:
 #
-#    class ChatServer
+#    class ChatServer < Strelka::WebSocketServer
 #        plugin :routing
 #
+#        on_handshake do |request|
+#            # ...
+#        end
+#        on_text do |request|
+#            # ...
+#        end
+#    end
+#
+#    class CustomChatServer < Strelka::WebSocketServer
+#        plugin :routing
 #        opcodes :nick => 7,
 #                :emote => 8
 #
-#        on_text do |frame|
-#            # ...
+#        on_nick do |request|
+#            nick = request.payload.read
+#            self.set_nick( request.socket_id, nick )
+#            return request.response( "Okay, nick set to #{nick}.", :text )
 #        end
 #
-#        on_nick do |frame|
-#            self.set_nick( frame.socket_id, frame.payload.read )
+#        on_emote do |request|
+#            emote = request.payload.read
+#            nick = self.nick_for( request.socket_id )
+#            msg = "%s %s" % [ nick, emote ]
+#            self.broadcast( msg )
+#            return nil
 #        end
-#
+#    end
 #
 module Strelka::WebSocketServer::Routing
 	extend Loggability,
@@ -74,18 +90,18 @@ module Strelka::WebSocketServer::Routing
 				declarative = "on_#{label}"
 				block = self.make_declarative( label )
 				self.log.debug "  declaring method %p on %p" % [ declarative, self ]
-				self.class.send( :define_method, declarative, &block )
+				self.class.define_method( declarative, &block )
 			end
 		end
 
 
-		### Make a declarative method for setting the callback for frames with the specified
-		### +opcode+ (Symbol).
+		### Make a declarative method for setting the callback for requests with frames
+		### with the specified +opcode+ (Symbol).
 		def make_declarative( opcode )
 			self.log.debug "Making a declarative for %p" % [ opcode ]
 			return lambda do |&block|
 				self.log.debug "Setting handler for %p frames to %p" % [ opcode, block ]
-				methodname = "on_#{opcode}_frame"
+				methodname = "on_#{opcode}_request"
 				define_method( methodname, &block )
 				self.op_callbacks[ opcode ] = self.instance_method( methodname )
 			end
@@ -112,14 +128,14 @@ module Strelka::WebSocketServer::Routing
 
 
 	### Dispatch the incoming frame to its handler based on its opcode
-	def handle_frame( frame )
+	def handle_websocket_request( request )
 		self.log.debug "[:routing] Opcode map is: %p" % [ self.class.opcode_map ]
-		opname = self.class.opcode_names[ frame.numeric_opcode ]
-		self.log.debug "[:routing] Routing frame: %p" % [ opname ]
+		opname = self.class.opcode_names[ request.numeric_opcode ]
+		self.log.debug "[:routing] Routing request: %p" % [ opname ]
 
 		handler = self.class.op_callbacks[ opname ] or return super
 
-		return handler.bind( self ).call( frame )
+		return handler.bind( self ).call( request )
 	end
 
 end # module Strelka::WebSocketServer::Routing

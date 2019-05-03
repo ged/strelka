@@ -122,18 +122,22 @@ module Strelka::WebSocketServer::Heartbeat
 
 		earliest = Time.now - self.class.idle_timeout
 
-		self.connections.each do |(sender_id, conn_id), lastframe|
-			next unless earliest > lastframe
+		self.connection_times.each do |sender_id, times|
+			times.each do |conn_id, lastframe|
+				next unless earliest > lastframe
 
-			# Make a CLOSE frame
-			frame = Mongrel2::WebSocket::Frame.new( sender_id, conn_id, '', {}, '' )
-			frame.opcode = :close
-			frame.set_status( CLOSE_EXCEPTION )
+				self.log.warn "Timing out connection %s:%d: last seen %0.3fs ago." %
+					[ sender_id, conn_id, Time.now - lastframe ]
 
-			# Use the connection directly so we can send a frame and close the
-			# connection
-			self.conn.reply( frame )
-			self.conn.send_close( sender_id, conn_id )
+				# Make a CLOSE frame
+				frame = Mongrel2::WebSocket::Frame.close
+				frame.set_status( CLOSE_EXCEPTION )
+
+				# Use the connection directly so we can send a frame and close the
+				# connection
+				self.conn.send( sender_id, conn_id, frame.to_s )
+				self.conn.send_close( sender_id, conn_id )
+			end
 		end
 	end
 
@@ -143,7 +147,7 @@ module Strelka::WebSocketServer::Heartbeat
 		return if self.connections.empty?
 
 		self.log.debug "Pinging %d connected sockets." % [ self.connections.length ]
-		self.connections.each do |(sender_id, conn_id), hash|
+		self.connections.each do |sender_id, conn_ids|
 			frame = Mongrel2::WebSocket::Frame.new( sender_id, conn_id, '', {}, 'heartbeat' )
 			frame.opcode = :ping
 			frame.fin = true

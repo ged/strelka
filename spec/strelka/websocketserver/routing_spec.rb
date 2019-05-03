@@ -20,7 +20,7 @@ require 'strelka/behavior/plugin'
 describe Strelka::WebSocketServer::Routing do
 
 	before( :all ) do
-		@frame_factory = Mongrel2::WebSocketFrameFactory.new( route: '/chat' )
+		@request_factory = Mongrel2::WebSocketRequestFactory.new( route: '/chat' )
 	end
 
 
@@ -29,8 +29,8 @@ describe Strelka::WebSocketServer::Routing do
 
 	describe "an including App" do
 
-		before( :each ) do
-			@app = Class.new( Strelka::WebSocketServer ) do
+		let( :app_class ) do
+			Class.new( Strelka::WebSocketServer ) do
 				plugin :routing
 				def initialize( appid='chat-test', sspec=TEST_SEND_SPEC, rspec=TEST_RECV_SPEC )
 					super
@@ -40,34 +40,34 @@ describe Strelka::WebSocketServer::Routing do
 
 
 		it "has an Hash of raw routes" do
-			expect( @app.op_callbacks ).to be_a( Hash )
+			expect( app_class.op_callbacks ).to be_a( Hash )
 		end
 
 
 		it "knows what its route methods are" do
-			expect( @app.op_callbacks ).to eq( {} )
-			@app.class_eval do
+			expect( app_class.op_callbacks ).to eq( {} )
+			app_class.class_eval do
 				on_text() {}
 				on_binary() {}
 				on_ping() {}
 			end
 
-			expect( @app.op_callbacks.keys ).to eq([ :text, :binary, :ping ])
+			expect( app_class.op_callbacks.keys ).to eq([ :text, :binary, :ping ])
 		end
 
 
 		it "allows the declaration of custom opcodes" do
-			@app.opcodes( nick: 0x3 )
-			@app.class_eval do
+			app_class.opcodes( nick: 0x3 )
+			app_class.class_eval do
 				on_nick() {}
 			end
-			expect( @app.op_callbacks.size ).to eq(  1  )
-			expect( @app.op_callbacks[ :nick ] ).to be_a( UnboundMethod )
+			expect( app_class.op_callbacks.size ).to eq(  1  )
+			expect( app_class.op_callbacks[ :nick ] ).to be_a( UnboundMethod )
 		end
 
 
 		it "dispatches TEXT frames to a text handler if one is declared" do
-			@app.class_eval do
+			app_class.class_eval do
 				on_text do |frame|
 					res = frame.response
 					res.puts( "#{frame.body.read} Yep!" )
@@ -75,18 +75,18 @@ describe Strelka::WebSocketServer::Routing do
 				end
 			end
 
-			frame = @frame_factory.text( "/chat", "Clowns?" )
-			response = @app.new.handle_websocket( frame )
+			frame = @request_factory.text( "/chat", "Clowns?" )
+			response = app_class.new.handle_websocket( frame )
 
-			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response ).to be_a( Mongrel2::WebSocket::Response )
 			expect( response.opcode ).to eq( :text )
-			response.body.rewind
-			expect( response.body.read ).to eq( "Clowns? Yep!\n" )
+			response.payload.rewind
+			expect( response.payload.read ).to eq( "Clowns? Yep!\n" )
 		end
 
 
 		it "dispatches custom frame type to its handler if one is declared" do
-			@app.class_eval do
+			app_class.class_eval do
 				opcodes refresh: 0xb
 
 				on_refresh do |frame|
@@ -94,19 +94,19 @@ describe Strelka::WebSocketServer::Routing do
 				end
 			end
 
-			frame = @frame_factory.create( '/chat', '', 0xb )
-			response = @app.new.handle_websocket( frame )
+			frame = @request_factory.create( '/chat', '', 0xb )
+			response = app_class.new.handle_websocket( frame )
 
-			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response ).to be_a( Mongrel2::WebSocket::Response )
 			expect( response.numeric_opcode ).to eq( 0xb )
 		end
 
 
 		it "falls back to the defaults if a handler isn't declared for a frame" do
-			frame = @frame_factory.text( '/chat', '' )
-			response = @app.new.handle_websocket( frame )
+			frame = @request_factory.text( '/chat', '' )
+			response = app_class.new.handle_websocket( frame )
 
-			expect( response ).to be_a( Mongrel2::WebSocket::Frame )
+			expect( response ).to be_a( Mongrel2::WebSocket::Response )
 			expect( response.opcode ).to eq( :close )
 		end
 
