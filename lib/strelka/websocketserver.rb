@@ -190,6 +190,21 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 	end
 
 
+	### Send the specified +frame+ to all current connections, except those listed in
+	### +except+. The +except+ argument is a single [sender_id, conn_id] tuple.
+	def broadcast( frame, except: nil )
+		self.connections.each do |sender_id, conn_ids|
+			id_list = conn_ids.to_a.
+				reject {|cid| except&.first == sender_id && except&.last == cid }
+
+			self.log.debug "Broadcasting to %d connections for sender %s" %
+				[ conn_ids.length, sender_id ]
+
+			self.conn.broadcast( sender_id, id_list, frame.to_s )
+		end
+	end
+
+
 	#########
 	protected
 	#########
@@ -240,6 +255,7 @@ class Strelka::WebSocketServer < Mongrel2::Handler
 		self.log.warn "Unhandled request type %p" % [ request.opcode ]
 		self.close_with( request, CLOSE_BAD_DATA_TYPE )
 	end
+
 
 end # class Strelka::WebSocketServer
 

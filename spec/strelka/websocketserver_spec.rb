@@ -217,5 +217,65 @@ describe Strelka::WebSocketServer do
 
 	end
 
+
+	describe "broadcasting" do
+
+		let( :sender1 ) { '2ac271e0-6dfe-11e9-904a-177944ec9af0' }
+		let( :sender2 ) { '91562be6-6dfd-11e9-bcf6-63596c9a6a08' }
+
+		let( :factory1 ) do
+			Mongrel2::WebSocketRequestFactory.new( route: '/chat', sender_id: sender1, conn_id: 1 )
+		end
+		let( :factory2 ) do
+			Mongrel2::WebSocketRequestFactory.new( route: '/chat', sender_id: sender1, conn_id: 2 )
+		end
+		let( :factory3 ) do
+			Mongrel2::WebSocketRequestFactory.new( route: '/chat', sender_id: sender2, conn_id: 1 )
+		end
+
+
+		it "can broadcast a frame to all current connections" do
+			app = app_class.new
+
+			request1 = factory1.handshake( '/chat' )
+			app.dispatch_request( request1 )
+
+			request2 = factory2.handshake( '/chat' )
+			app.dispatch_request( request2 )
+
+			request3 = factory3.handshake( '/chat' )
+			app.dispatch_request( request3 )
+
+			frame = Mongrel2::WebSocket::Frame.text( 'Server running.' )
+
+			expect( app.conn ).to receive( :broadcast ).with( sender1, [1, 2], frame.to_s )
+			expect( app.conn ).to receive( :broadcast ).with( sender2, [1], frame.to_s )
+
+			app.broadcast( frame )
+		end
+
+
+		it "can broadcast a frame to all current connections with exceptions" do
+			app = app_class.new
+
+			request1 = factory1.handshake( '/chat' )
+			app.dispatch_request( request1 )
+
+			request2 = factory2.handshake( '/chat' )
+			app.dispatch_request( request2 )
+
+			request3 = factory3.handshake( '/chat' )
+			app.dispatch_request( request3 )
+
+			frame = Mongrel2::WebSocket::Frame.text( 'Server running.' )
+
+			expect( app.conn ).to receive( :broadcast ).with( sender1, [1, 2], frame.to_s )
+			expect( app.conn ).to_not receive( :broadcast ).with( sender2, [1], frame.to_s )
+
+			app.broadcast( frame, except: [sender2, 1] )
+		end
+
+	end
+
 end
 

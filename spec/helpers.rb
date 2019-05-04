@@ -3,11 +3,12 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent
 
 	srcdir = basedir.parent
 	mongrel2dir = srcdir + 'Mongrel2/lib'
 
+	$stderr.puts "Adding %s to the LOAD_PATH..." % [ mongrel2dir ]
 	$LOAD_PATH.unshift( mongrel2dir.to_s ) unless
 		!mongrel2dir.directory? || $LOAD_PATH.include?( mongrel2dir.to_s )
 }
