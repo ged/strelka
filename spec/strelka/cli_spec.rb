@@ -75,7 +75,9 @@ describe Strelka::CLI do
 
 		it "doesn't execute the block if dry-run mode *is* enabled" do
 			expect {
-				described_class.run([ '-n', 'test_dryrun' ])
+				Loggability.outputting_to( [] ) do
+					described_class.run([ '-n', 'test_dryrun' ])
+				end
 			}.to_not output( /Ran it!/ ).to_stdout
 		end
 
