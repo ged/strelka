@@ -310,7 +310,7 @@ describe Strelka::App::Auth do
 
 			req = @request_factory.get( '/api/v1/foom' )
 			expect( app.request_should_auth?(req) ).to be_truthy()
-			req = @request_factory.post( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
+			req = @request_factory.post( '/api/v1/foom', '', :accept => 'text/plain, text/html; q=0.5' )
 			expect( app.request_should_auth?(req) ).to be_truthy()
 			req = @request_factory.get( '/api/v1/foom', :accept => 'text/plain, text/html; q=0.5' )
 			expect( app.request_should_auth?(req) ).to be_falsey()

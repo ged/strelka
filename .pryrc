@@ -1,4 +1,5 @@
-#!/usr/bin/ruby -*- ruby -*-
+# -*- ruby -*-
+# frozen_string_literal: true
 
 require 'loggability'
 require 'pathname'
