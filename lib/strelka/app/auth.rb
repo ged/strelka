@@ -370,7 +370,7 @@ module Strelka::App::Auth
 			block ||= Proc.new { true }
 
 			criteria.each do |pattern|
-				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+				pattern = pattern.gsub( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub )
 				self.log.debug "  adding require_auth for %p" % [ pattern ]
 				self.positive_auth_criteria[ pattern ] = block
 			end
@@ -398,7 +398,7 @@ module Strelka::App::Auth
 			block ||= Proc.new { true }
 
 			criteria.each do |pattern|
-				pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+				pattern = pattern.gsub( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub )
 				self.log.debug "  adding no_auth for %p" % [ pattern ]
 				self.negative_auth_criteria[ pattern ] = block
 			end
@@ -419,7 +419,7 @@ module Strelka::App::Auth
 				true
 			}
 
-			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+			pattern = pattern.gsub( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub )
 			self.log.debug "  adding require_perms (%p) for %p" % [ perms, pattern ]
 			self.positive_perms_criteria << [ pattern, block, perms.freeze ]
 		end
@@ -435,7 +435,7 @@ module Strelka::App::Auth
 			block   ||= Proc.new { true }
 			pattern ||= /(?##{block.object_id})/
 
-			pattern.gsub!( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub! )
+			pattern = pattern.gsub( %r{^/+|/+$}, '' ) if pattern.respond_to?( :gsub )
 			self.log.debug "  adding no_auth for %p" % [ pattern ]
 			self.negative_perms_criteria << [ pattern, block ]
 		end

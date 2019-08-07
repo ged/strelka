@@ -80,7 +80,7 @@ module Strelka
 		### Return the name of the receiving plugin
 		def plugin_name
 			name = self.name || "anonymous#{self.object_id}"
-			name.sub!( /.*::/, '' )
+			name = name.sub( /.*::/, '' )
 			return name.downcase.to_sym
 		end
 

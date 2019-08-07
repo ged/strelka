@@ -208,7 +208,7 @@ class Strelka::ParamValidator
 
 			if self.block
 				location = self.block.source_location
-				desc << " on line %d of %s" % [ location[1], location[0] ]
+				desc += " on line %d of %s" % [ location[1], location[0] ]
 			end
 
 			return desc

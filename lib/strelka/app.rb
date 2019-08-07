@@ -175,13 +175,14 @@ class Strelka::App < Mongrel2::Handler
 		response.headers.connection = 'close'
 		self.conn.reply( response )
 
-		explanation = "If you wish to handle requests like this, either set your server's "
-		explanation << "'limits.content_length' setting to a higher value than %d, or override " %
-			 [ request.content_length ]
-		explanation << "#handle_async_upload_start."
+		explanation = <<~END_OF_MESSAGE
+		If you wish to handle requests like this, either set your server's 
+		'limits.content_length' setting to a higher value than %{content_length}, or override
+		#handle_async_upload_start.
+		END_OF_MESSAGE
 
 		self.log.warn "Async upload from %s dropped." % [ request.remote_ip ]
-		self.log.info( explanation )
+		self.log.info( explanation % {content_length: request.content_length} )
 
 		self.conn.reply_close( request )
 

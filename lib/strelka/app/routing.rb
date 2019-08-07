@@ -235,9 +235,7 @@ module Strelka::App::Routing
 		def split_route_pattern( pattern )
 			return [pattern] if pattern.is_a?( Regexp )
 
-			pattern.slice!( 0, 1 ) if pattern.start_with?( '/' )
-
-			return pattern.split( '/' ).collect do |component|
+			return pattern.split( '/' ).reject( &:empty? ).collect do |component|
 
 				if component.start_with?( ':' )
 					self.log.debug "translating parameter component %p to a regexp" % [component]
@@ -256,10 +254,11 @@ module Strelka::App::Routing
 		### Generate a name based on the parts of the given +pattern+.
 		def make_route_name( pattern )
 			name = '_re_'
+
 			if pattern.names.empty?
-				name << ("%s%#x" % [ pattern.class.name, pattern.object_id * 2 ])
+				name += ("%s%#x" % [ pattern.class.name, pattern.object_id * 2 ])
 			else
-				name << pattern.names.join( '_' )
+				name += pattern.names.join( '_' )
 			end
 
 			return name

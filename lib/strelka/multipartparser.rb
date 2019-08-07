@@ -79,7 +79,7 @@ class Strelka::MultipartParser
 		@io       = io
 		@boundary = boundary
 		@fields   = {}
-		@buffer   = ''
+		@buffer   = String.new( encoding: io.internal_encoding || io.external_encoding )
 
 		# Ensure that the buffer can contain at least a whole boundary,
 		# otherwise we can't scan for it.

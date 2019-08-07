@@ -72,7 +72,7 @@ module Strelka::App::RestResources
 
 	# Resource route option defaults
 	DEFAULTS = {
-		prefix:           '',
+		prefix:           nil,
 		name:             nil,
 		readonly:         false,
 		use_transactions: true,
@@ -137,6 +137,7 @@ module Strelka::App::RestResources
 		def resource( rsrcobj, options={} )
 			self.log.debug "Adding REST resource for %p" % [ rsrcobj ]
 			options = self.service_options.merge( options )
+			self.log.warn "Options = %p" % [ options ]
 
 			# Add a parameter for the primary key
 			pkey = rsrcobj.primary_key
@@ -149,6 +150,7 @@ module Strelka::App::RestResources
 			# Figure out what the resource name is, and make the route from it
 			name = options[:name] || rsrcobj.implicit_table_name
 			route = [ options[:prefix], name ].compact.join( '/' )
+			self.log.warn "Route is: %p" % [[ options[:prefix], name ]]
 
 			# Ensure validated parameters are untainted
 			self.untaint_all_constraints
