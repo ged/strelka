@@ -54,6 +54,10 @@ describe Strelka::HTTPRequest do
 			expect( @req.base_uri.to_s ).to eq( 'http://localhost:8080/directory' )
 		end
 
+		it "doesn't modify its URI when calculating its base URI" do
+			expect { @req.base_uri }.to_not change { @req.uri }
+		end
+
 		it "knows what the path of the request past its route is" do
 			expect( @req.app_path ).to eq( '/userinfo/ged' )
 		end
@@ -77,6 +81,7 @@ describe Strelka::HTTPRequest do
 				@req.redirect( uri, true )
 			}.to finish_with( HTTP::MOVED_PERMANENTLY, nil, :location => uri )
 		end
+
 	end
 
 
