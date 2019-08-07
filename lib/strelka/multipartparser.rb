@@ -1,6 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-# encoding: utf-8
+# frozen-string-literal: true
 
 require 'tmpdir'
 require 'tempfile'

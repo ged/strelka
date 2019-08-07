@@ -1,4 +1,6 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# frozen-string-literal: true
 
 require 'strelka/constants'
 require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )

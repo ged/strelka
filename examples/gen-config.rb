@@ -1,7 +1,6 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-#encoding: utf-8
-
+# frozen-string-literal: true
 # The Mongrel config used by the examples. Load it with:
 #
 #   m2sh.rb -c examples/mongrel2.sqlite load examples/gen-config.rb

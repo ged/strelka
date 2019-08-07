@@ -1,5 +1,6 @@
-# -*- rspec -*-
+# -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
+# frozen-string-literal: true
 
 require_relative '../../helpers'
 

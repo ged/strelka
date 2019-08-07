@@ -1,5 +1,6 @@
-#!/usr/bin/env ruby
-#encoding: utf-8
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# frozen-string-literal: true#encoding: utf-8
 
 require_relative '../../helpers'
 

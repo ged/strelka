@@ -1,5 +1,6 @@
 # -*- ruby -*-
-#encoding: utf-8
+# vim: set nosta noet ts=4 sw=4:
+# frozen-string-literal: true
 
 require 'strelka/cli' unless defined?( Strelka::CLI )
 

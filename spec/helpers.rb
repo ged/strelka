@@ -1,5 +1,6 @@
-#!/usr/bin/ruby
-# coding: utf-8
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# frozen-string-literal: true
 
 BEGIN {
 	require 'pathname'
