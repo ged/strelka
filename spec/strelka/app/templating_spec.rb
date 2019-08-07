@@ -18,7 +18,7 @@ require 'strelka/behavior/plugin'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::Templating do
+RSpec.describe Strelka::App::Templating do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )

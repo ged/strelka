@@ -15,7 +15,7 @@ require 'strelka/app'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App do
+RSpec.describe Strelka::App do
 
 	before( :all ) do
 		@initial_registry = Strelka::App.loaded_plugins.dup

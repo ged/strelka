@@ -9,7 +9,7 @@ require 'rspec'
 
 require 'strelka/cli'
 
-describe Strelka::CLI do
+RSpec.describe Strelka::CLI do
 
 	before( :all ) do
 		testcommands = Module.new

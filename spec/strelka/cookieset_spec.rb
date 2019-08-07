@@ -14,7 +14,7 @@ require 'strelka/cookieset'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::CookieSet do
+RSpec.describe Strelka::CookieSet do
 
 	before( :each ) do
 		@cookieset = Strelka::CookieSet.new

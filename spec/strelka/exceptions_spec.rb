@@ -15,7 +15,7 @@ require 'strelka/exceptions'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka, "exception classes" do
+RSpec.describe Strelka, "exception classes" do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/exceptions' )

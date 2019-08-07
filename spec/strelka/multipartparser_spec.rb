@@ -14,7 +14,7 @@ require 'strelka/multipartparser'
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-describe Strelka::MultipartParser do
+RSpec.describe Strelka::MultipartParser do
 
 	BOUNDARY = 'sillyBoundary'
 	MIMEPARSER_SPECDIR = Pathname.new( __FILE__ ).dirname.parent

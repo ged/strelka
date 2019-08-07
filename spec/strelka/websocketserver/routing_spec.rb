@@ -17,7 +17,7 @@ require 'strelka/behavior/plugin'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::WebSocketServer::Routing do
+RSpec.describe Strelka::WebSocketServer::Routing do
 
 	before( :all ) do
 		@request_factory = Mongrel2::WebSocketRequestFactory.new( route: '/chat' )

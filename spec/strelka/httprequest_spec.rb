@@ -14,7 +14,7 @@ require 'strelka/cookie'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPRequest do
+RSpec.describe Strelka::HTTPRequest do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/directory' )

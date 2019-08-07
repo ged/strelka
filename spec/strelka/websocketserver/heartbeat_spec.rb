@@ -11,7 +11,7 @@ require 'strelka/websocketserver/heartbeat'
 require 'strelka/behavior/plugin'
 
 
-describe Strelka::WebSocketServer::Heartbeat do
+RSpec.describe Strelka::WebSocketServer::Heartbeat do
 
 	it_should_behave_like( "A Strelka Plugin" )
 

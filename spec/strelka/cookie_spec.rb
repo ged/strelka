@@ -13,7 +13,7 @@ require 'strelka/cookie'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Cookie do
+RSpec.describe Strelka::Cookie do
 
 	it "parses a 'nil' Cookie header field as an empty Hash" do
 		expect( Strelka::Cookie.parse( nil ) ).to eq( {} )

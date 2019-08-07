@@ -22,7 +22,7 @@ require 'strelka/plugins'
 #
 #    end
 
-shared_examples_for "A Strelka Plugin" do
+RSpec.shared_examples_for "A Strelka Plugin" do
 
 	let( :plugin ) do
 		described_class

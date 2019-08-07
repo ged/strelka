@@ -18,7 +18,7 @@ require 'mongrel2/config/dsl'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::RestResources do
+RSpec.describe Strelka::App::RestResources do
 	include Mongrel2::Config::DSL
 
 	before( :all ) do

@@ -14,7 +14,7 @@ require 'strelka/session/db'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Session::Db do
+RSpec.describe Strelka::Session::Db do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/frothy' )

@@ -19,7 +19,7 @@ class Strelka::Pluggable
 end
 
 
-describe "Strelka plugin system" do
+RSpec.describe "Strelka plugin system" do
 
 	before( :all ) do
 		@original_registry = Strelka::Pluggable.loaded_plugins.dup

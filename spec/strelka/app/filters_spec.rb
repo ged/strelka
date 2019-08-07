@@ -17,7 +17,7 @@ require 'strelka/behavior/plugin'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::Filters do
+RSpec.describe Strelka::App::Filters do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '' )

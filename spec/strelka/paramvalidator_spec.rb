@@ -14,7 +14,7 @@ require 'strelka/paramvalidator'
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-describe Strelka::ParamValidator do
+RSpec.describe Strelka::ParamValidator do
 
 
 	before(:each) do

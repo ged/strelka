@@ -14,7 +14,7 @@ require 'strelka/session/default'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Session::Default do
+RSpec.describe Strelka::Session::Default do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/hungry' )

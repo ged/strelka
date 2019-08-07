@@ -15,7 +15,7 @@ require 'strelka/httprequest/auth'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPRequest::Auth do
+RSpec.describe Strelka::HTTPRequest::Auth do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/service/user' )

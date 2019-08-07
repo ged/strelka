@@ -14,7 +14,7 @@ require 'strelka/router/default'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Router::Default do
+RSpec.describe Strelka::Router::Default do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )

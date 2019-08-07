@@ -16,7 +16,7 @@ require 'strelka/behavior/plugin'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::Parameters do
+RSpec.describe Strelka::App::Parameters do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )
@@ -119,7 +119,7 @@ describe Strelka::App::Parameters do
 			end
 
 			it "validates parameters from the request" do
-				req = @request_factory.get( '/user/search?username=anheptoh'.taint )
+				req = @request_factory.get( (+'/user/search?username=anheptoh').taint )
 				@app.new.handle( req )
 
 				expect( req.params ).to be_a( Strelka::ParamValidator )
@@ -135,7 +135,7 @@ describe Strelka::App::Parameters do
 				end
 
 				expect( @app.untaint_all_constraints ).to be_truthy()
-				req = @request_factory.get( '/user/search?username=shereshnaheth'.taint )
+				req = @request_factory.get( (+'/user/search?username=shereshnaheth').taint )
 				@app.new.handle( req )
 
 				expect( req.params[:username] ).to eq( 'shereshnaheth' )
@@ -147,7 +147,7 @@ describe Strelka::App::Parameters do
 					param :message, :printable, :untaint
 				end
 
-				req = @request_factory.get( '/user/search?message=I+love+the+circus.'.taint )
+				req = @request_factory.get( (+'/user/search?message=I+love+the+circus.').taint )
 				@app.new.handle( req )
 
 				expect( req.params[:message] ).to_not be_tainted()

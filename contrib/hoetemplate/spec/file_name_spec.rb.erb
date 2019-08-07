@@ -11,7 +11,7 @@ BEGIN {
 require 'rspec'
 require '<%= file_name %>'
 
-describe <%= klass %> do
+RSpec.describe <%= klass %> do
 
 	it "is well-tested" do
 		fail "it isn't"

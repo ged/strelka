@@ -16,7 +16,7 @@ require 'strelka/behavior/plugin'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::App::Negotiation do
+RSpec.describe Strelka::App::Negotiation do
 
 
 	before( :all ) do

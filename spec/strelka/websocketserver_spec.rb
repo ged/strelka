@@ -15,7 +15,7 @@ require 'strelka/websocketserver'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::WebSocketServer do
+RSpec.describe Strelka::WebSocketServer do
 
 	before( :all ) do
 		@initial_registry = described_class.loaded_plugins.dup

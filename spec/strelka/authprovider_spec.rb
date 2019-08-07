@@ -14,7 +14,7 @@ require 'strelka/authprovider'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::AuthProvider do
+RSpec.describe Strelka::AuthProvider do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/admin' )

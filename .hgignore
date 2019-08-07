@@ -11,3 +11,4 @@ examples/\.env$
 ^doc/
 ^pkg/
 ^static/
+spec/.status

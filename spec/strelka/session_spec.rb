@@ -14,7 +14,7 @@ require 'strelka/session'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Session do
+RSpec.describe Strelka::Session do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/user' )

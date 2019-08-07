@@ -14,7 +14,7 @@ require 'strelka/httprequest/acceptparams'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPRequest, "accept params" do
+RSpec.describe Strelka::HTTPRequest, "accept params" do
 
 
 	describe Strelka::HTTPRequest::MediaType do

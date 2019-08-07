@@ -15,7 +15,7 @@ require 'strelka/discovery'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::Discovery do
+RSpec.describe Strelka::Discovery do
 
 	before( :all ) do
 		@real_discovered_apps = described_class.instance_variable_get( :@discovered_apps )

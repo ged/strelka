@@ -7,7 +7,7 @@ require_relative 'helpers'
 require 'rspec'
 require 'strelka'
 
-describe Strelka do
+RSpec.describe Strelka do
 
 	before( :all ) do
 		@original_config_env = ENV[Strelka::CONFIG_ENV]

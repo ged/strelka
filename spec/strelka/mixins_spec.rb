@@ -13,7 +13,7 @@ require 'strelka/mixins'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka, "mixins" do
+RSpec.describe Strelka, "mixins" do
 
 
 	describe Strelka::AbstractClass do

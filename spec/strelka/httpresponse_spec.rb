@@ -12,7 +12,7 @@ require 'strelka/httpresponse'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPResponse do
+RSpec.describe Strelka::HTTPResponse do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/glossary' )

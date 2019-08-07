@@ -15,7 +15,7 @@ require 'strelka/httpresponse/negotiation'
 ###	C O N T E X T S
 #####################################################################
 
-describe Strelka::HTTPResponse::Negotiation do
+RSpec.describe Strelka::HTTPResponse::Negotiation do
 
 	before( :all ) do
 		@request_factory = Mongrel2::RequestFactory.new( route: '/service/user' )
