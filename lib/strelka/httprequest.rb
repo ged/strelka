@@ -92,7 +92,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.base_uri
 	###   # => #<URI::HTTP:0x007fe34d16b2e0 URL:http://localhost:8080/user>
 	def base_uri
-		rval = self.uri
+		rval = self.uri.dup
 		rval.path = self.headers.pattern
 		rval.query = nil
 		return rval
