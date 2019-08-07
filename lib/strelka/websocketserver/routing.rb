@@ -90,6 +90,7 @@ module Strelka::WebSocketServer::Routing
 				declarative = "on_#{label}"
 				block = self.make_declarative( label )
 				self.log.debug "  declaring method %p on %p" % [ declarative, self ]
+				self.class.remove_method( declarative ) if self.class.method_defined?( declarative )
 				self.class.define_method( declarative, &block )
 			end
 		end

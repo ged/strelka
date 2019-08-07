@@ -107,7 +107,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.route
 	###   # => "/user"
 	def route
-		return URI.unescape( self.headers.pattern )
+		return URI.decode_www_form_component( self.headers.pattern )
 	end
 	alias_method :pattern, :route
 
@@ -119,7 +119,7 @@ class Strelka::HTTPRequest < Mongrel2::HTTPRequest
 	###   request.app_path
 	###   # => "/1/profile"
 	def app_path
-		rval = URI.unescape( self.uri.path )
+		rval = URI.decode_www_form_component( self.uri.path )
 		rval.slice!( 0, self.route.bytesize )
 		return rval
 	end
