@@ -167,7 +167,7 @@ module Strelka
 
 
 		### Load the plugins with the given +names+ and install them.
-		def plugins( *names )
+		def plugins( *names, &block )
 			self.log.info "Adding plugins: %s" % [ names.flatten.map(&:to_s).join(', ') ]
 
 			# Load the associated Plugin Module objects
@@ -187,7 +187,7 @@ module Strelka
 				end
 
 				self.log.debug "  registering %p" % [ name ]
-				self.register_plugin( plugin )
+				self.register_plugin( plugin, &block )
 			end
 		end
 		alias_method :plugin, :plugins
@@ -214,7 +214,7 @@ module Strelka
 		### Register the plugin +mod+ in the receiving class. This adds any
 		### declaratives and class-level data necessary for configuring the
 		### plugin.
-		def register_plugin( mod )
+		def register_plugin( mod, &block )
 			if mod.const_defined?( :ClassMethods )
 				cm_mod = mod.const_get(:ClassMethods)
 				self.log.debug "  adding class methods from %p" % [ cm_mod ]
@@ -231,6 +231,15 @@ module Strelka
 					instance_variable_set( ivar, copy )
 					self.log.debug "  instance variable %p set to %p in %p" %
 						[ ivar, self.instance_variable_get(ivar), self ]
+				end
+			end
+
+			if block
+				if mod.respond_to?( :configure_block )
+					mod.configure_block( self, &block )
+				else
+					self.log.warn "Blocked passed to %p, which doesn't support block config." %
+						[ mod ]
 				end
 			end
 		end

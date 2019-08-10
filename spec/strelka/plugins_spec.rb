@@ -181,6 +181,28 @@ RSpec.describe "Strelka plugin system" do
 			expect( app.testing_value ).to eq( :pre_existing_value )
 		end
 
+
+		it "passes a block to the plugin's ::init_block if given" do
+			plugin = Module.new do
+				def self::name; "Strelka::Pluggable::InitBlockTestPlugin"; end
+				def self::configure_block( object, &block )
+					object.block = block
+				end
+				include Strelka::Plugin
+
+				module ClassMethods
+					@block = nil
+					attr_accessor :block
+				end
+			end
+
+			app = Class.new( Strelka::Pluggable )
+			block = Proc.new {}
+			app.register_plugin( plugin, &block )
+
+			expect( app.block ).to be( block )
+		end
+
 	end
 
 
