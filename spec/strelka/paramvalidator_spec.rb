@@ -1,6 +1,6 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-# frozen-string-literal: true#encoding: utf-8
+# frozen-string-literal: true
 
 require_relative '../helpers'
 
@@ -15,6 +15,11 @@ require 'strelka/paramvalidator'
 ###	C O N T E X T S
 #####################################################################
 RSpec.describe Strelka::ParamValidator do
+
+	# Utility function to make tainted frozen strings out of frozen string literals
+	def tainted( string )
+		return ( +string ).taint.freeze
+	end
 
 
 	before(:each) do
@@ -134,8 +139,7 @@ RSpec.describe Strelka::ParamValidator do
 		end
 
 		it "untaints valid args if told to do so" do
-			tainted_one = "1"
-			tainted_one.taint
+			tainted_one = tainted( "1" )
 
 			@validator.add( :number, /^\d+$/, :untaint )
 			@validator.validate( 'number' => tainted_one )
@@ -344,10 +348,10 @@ RSpec.describe Strelka::ParamValidator do
 			@validator.untaint_all_constraints = true
 
 			args = {
-				'recipe[ingredient][rarity]'.taint => 'super-rare'.taint,
-				'recipe[ingredient][name]'.taint => 'nutmeg'.taint,
-				'recipe[ingredient][cost]'.taint => '$0.18'.taint,
-				'recipe[yield]'.taint => '2 loaves'.taint,
+				tainted('recipe[ingredient][rarity]') => tainted('super-rare'),
+				tainted('recipe[ingredient][name]') => tainted('nutmeg'),
+				tainted('recipe[ingredient][cost]') => tainted('$0.18'),
+				tainted('recipe[yield]') => tainted('2 loaves'),
 			}
 			@validator.validate( args )
 
@@ -450,7 +454,7 @@ RSpec.describe Strelka::ParamValidator do
 
 			it "returns the captures with named captures as a Hash" do
 				@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/, :untaint )
-				@validator.validate( 'order_number' => "   JVV-886451300133   ".taint )
+				@validator.validate( 'order_number' => tainted("   JVV-886451300133   ") )
 
 				expect( @validator[:order_number] ).to eq( {:category => 'JVV', :sku => '886451300133'} )
 				expect( @validator[:order_number][:category] ).to_not be_tainted()

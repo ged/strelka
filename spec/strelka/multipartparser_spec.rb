@@ -1,6 +1,6 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-# frozen-string-literal: true#encoding: utf-8
+# frozen-string-literal: true
 
 require_relative '../helpers'
 
@@ -139,7 +139,7 @@ RSpec.describe Strelka::MultipartParser do
 	end
 
 
-	JPEG_MAGIC = "\xff\xd8".force_encoding( 'ascii-8bit' )
+	JPEG_MAGIC = "\xff\xd8".b
 
 	it "parses the files from multiple uploads" do
 		socket = load_form( "2_images.form" )

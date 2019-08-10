@@ -1,6 +1,6 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-# frozen-string-literal: true#encoding: utf-8
+# frozen-string-literal: true
 
 require_relative '../../helpers'
 
@@ -328,7 +328,7 @@ RSpec.describe Strelka::HTTPResponse::Negotiation do
 		   "acceptable charsets includes ISO8859-1" do
 			@req.headers.accept_charset = 'iso-8859-1, utf-8;q=0.8'
 			@res.content_type = 'text/plain'
-			@res.body = "some stuff".force_encoding( Encoding::ASCII_8BIT )
+			@res.body = "some stuff".dup.force_encoding( Encoding::ASCII_8BIT )
 
 			expect( @res ).to have_acceptable_charset()
 		end
@@ -337,7 +337,7 @@ RSpec.describe Strelka::HTTPResponse::Negotiation do
 		   "text subtype, and the list of acceptable charsets doesn't include ISO8859-1" do
 			@req.headers.accept_charset = 'iso-8859-15, utf-8;q=0.8'
 			@res.content_type = 'text/plain'
-			@res.body = "some stuff".force_encoding( Encoding::ASCII_8BIT )
+			@res.body = "some stuff".dup.force_encoding( Encoding::ASCII_8BIT )
 
 			expect( @res ).to_not have_acceptable_charset()
 		end

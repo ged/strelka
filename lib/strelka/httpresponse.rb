@@ -117,8 +117,7 @@ class Strelka::HTTPResponse < Mongrel2::HTTPResponse
 		charset = self.find_header_charset
 		self.log.debug "Setting the charset in the content-type header to: %p" % [ charset.name ]
 
-		headers.content_type.slice!( CONTENT_TYPE_CHARSET_RE ) and
-			self.log.debug "  removed old charset parameter."
+		headers.content_type = headers.content_type.sub( CONTENT_TYPE_CHARSET_RE, '' )
 		headers.content_type += "; charset=#{charset.name}" unless
 			charset == Encoding::ASCII_8BIT
 	end
