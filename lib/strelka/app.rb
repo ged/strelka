@@ -176,7 +176,7 @@ class Strelka::App < Mongrel2::Handler
 		self.conn.reply( response )
 
 		explanation = <<~END_OF_MESSAGE
-		If you wish to handle requests like this, either set your server's 
+		If you wish to handle requests like this, either set your server's
 		'limits.content_length' setting to a higher value than %{content_length}, or override
 		#handle_async_upload_start.
 		END_OF_MESSAGE

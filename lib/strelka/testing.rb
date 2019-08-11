@@ -22,9 +22,15 @@ module Strelka::Testing
 		end
 	end
 
+	RSpec::Matchers.define_negated_matcher( :exclude, :include )
+
 
 	# finish_with matcher
 	class FinishWithMatcher
+		extend Loggability
+
+		log_to :strelka
+
 
 		### Create a new matcher for the specified +status+, +expected_message+, and
 		### +expected_headers+.
@@ -79,7 +85,7 @@ module Strelka::Testing
 				nil
 			end
 
-			Loggability[ Strelka ].debug "Test proc called; status info is: %p" % [ status_info ]
+			self.log.debug "Test proc called; status info is: %p" % [ status_info ]
 
 			return self.check_finish( status_info ) &&
 			       self.check_status_code( status_info ) &&
@@ -133,13 +139,20 @@ module Strelka::Testing
 			headers = self.expected_headers or return true
 			return true if headers.empty?
 
-			status_headers = status_info[:headers]
+			status_headers = Mongrel2::Table.new( status_info[:headers] )
 			headers.each do |name, value|
+				self.log.debug "Testing for %p header: %p" % [ name, value ]
 				unless status_value = status_headers[ name ]
 					@failure = "a %s header" % [ name ]
 					return false
 				end
 
+				if status_value.empty?
+					@failure = "a %s header matching %p, but it was blank" % [ name, value ]
+					return false
+				end
+
+				self.log.debug "  got value: %p" % [ status_value ]
 				if value.respond_to?( :match )
 					unless value.match( status_value )
 						@failure = "a %s header matching %p, but got %p" %

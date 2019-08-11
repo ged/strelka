@@ -48,6 +48,110 @@ RSpec.describe( Strelka::Testing ) do
 	end
 
 
+	describe "finish_with matcher" do
+
+		before( :each ) do
+			@app = Class.new( Strelka::App ) do
+				def initialize( &block )
+					@block = block
+					super( TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC )
+				end
+
+				def handle_request( req )
+					self.instance_exec( req, &@block )
+				end
+			end
+		end
+
+		let( :request ) { @request_factory.get('/v1/api/users') }
+
+
+		it "passes if the app finishes with the expected criteria" do
+			expect {
+				expect {
+					@app.new { finish_with(404, "Not found.") }.handle_request( request )
+				}.to finish_with( 404, /not found/i )
+			}.not_to raise_error
+		end
+
+
+		it "passes if the app finishes with the expected criteria and headers" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 303, "See other resource.", location: 'http://ac.me/resource' )
+					}.handle_request( request )
+				}.to finish_with( 303, /see other/i, 'Location' => 'http://ac.me/resource' )
+			}.not_to raise_error
+		end
+
+
+		it "fails if the app doesn't call finish_with" do
+			expect {
+				expect {
+					@app.new {|req| req.response }.handle_request( request )
+				}.to finish_with( 404, /not found/i )
+			}.to fail_matching( /expected response to finish_with/i )
+		end
+
+
+		it "fails if the app finishes with a different status" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 415, "Unsupported media type." )
+					}.handle_request( request )
+				}.to finish_with( 404, /not found/i )
+			}.to fail_matching( /with a 404 status, but got 415/i )
+		end
+
+
+		it "fails if the app finishes with the correct status, but the wrong message" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 404, "No such user." )
+					}.handle_request( request )
+				}.to finish_with( 404, /not found/i )
+			}.to fail_matching( /with a message matching/i )
+		end
+
+
+		it "fails if the app finishes with the correct status and message, but missing a header" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 301, "Moved permanently" )
+					}.handle_request( request )
+				}.to finish_with( 301, /moved/i, location: 'http://ac.me/this' )
+			}.to fail_matching( /with a location header/i )
+		end
+
+
+		it "fails if the app finishes with the specified header set to an empty string" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 301, "Moved permanently", location: '' )
+					}.handle_request( request )
+				}.to finish_with( 301, /moved/i, location: 'http://ac.me/this' )
+			}.to fail_matching( /with a location header.*blank/i )
+		end
+
+
+		it "fails if the app finishes with the specified header set to the wrong value" do
+			expect {
+				expect {
+					@app.new {
+						finish_with( 301, "Moved permanently", location: 'http://localhost' )
+					}.handle_request( request )
+				}.to finish_with( 301, /moved/i, location: 'http://ac.me/this' )
+			}.to fail_matching( /with a location header.*ac\.me.*localhost/i )
+		end
+
+	end
+
+
 	describe "have_json_body matcher" do
 
 		let( :request ) { @request_factory.get('/v1/api') }
@@ -62,7 +166,7 @@ RSpec.describe( Strelka::Testing ) do
 		end
 
 
-		fit "fails if the response doesn't have an 'application/json' content type" do
+		it "fails if the response doesn't have an 'application/json' content type" do
 			response = request.response
 			response.content_type = 'text/plain'
 			response.puts "Stuff."
@@ -74,7 +178,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 		it "fails if the response body doesn't contain valid JSON" do
-			response = Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '<' )
+			response = request.response
+			response.content_type = 'application/json'
+			response.body = '<'
 
 			expect {
 				expect( response ).to have_json_body
@@ -85,7 +191,9 @@ RSpec.describe( Strelka::Testing ) do
 		context "with no additional criteria" do
 
 			it "passes for a valid JSON response" do
-				response = Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '{}' )
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '{}'
 
 				expect {
 					expect( response ).to have_json_body
@@ -98,7 +206,10 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a type specification" do
 
 			let( :response ) do
-				Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '{}' )
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{}'
+				res
 			end
 
 
@@ -121,18 +232,16 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a member specification" do
 
 			let( :object_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"message":"the message"}'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{"message":"the message"}'
+				res
 			end
 			let( :array_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'["message"]'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '["message"]'
+				res
 			end
 
 
@@ -183,18 +292,16 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a length specification" do
 
 			let( :object_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"ebb":"nitzer", "chant":"join in the"}'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{"ebb":"nitzer", "chant":"join in the"}'
+				res
 			end
 			let( :array_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'["lies","gold","guns","fire","gold","judge","guns","fire"]'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '["lies","gold","guns","fire","gold","judge","guns","fire"]'
+				res
 			end
 
 
@@ -224,18 +331,16 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a type and a member specification" do
 
 			let( :object_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"message":"the message"}'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{"message":"the message"}'
+				res
 			end
 			let( :array_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'["message"]'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '["message"]'
+				res
 			end
 
 
@@ -268,18 +373,16 @@ RSpec.describe( Strelka::Testing ) do
 		context	"with a type and a length specification" do
 
 			let( :object_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"message":"the message","type":"the type"}'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{"message":"the message","type":"the type"}'
+				res
 			end
 			let( :array_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'["message","type","brand"]'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '["message","type","brand"]'
+				res
 			end
 
 
@@ -310,18 +413,16 @@ RSpec.describe( Strelka::Testing ) do
 		context "with additional expectations" do
 
 			let( :object_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"message":"the message", "massage":"Shiatsu", "messiah":"complex"}'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '{"message":"the message", "massage":"Shiatsu", "messiah":"complex"}'
+				res
 			end
 			let( :array_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'["message", "note", "postage", "demiurge"]'
-				)
+				res = request.response
+				res.content_type = 'application/json'
+				res.body = '["message", "note", "postage", "demiurge"]'
+				res
 			end
 
 
@@ -366,8 +467,11 @@ RSpec.describe( Strelka::Testing ) do
 
 	describe "have_json_collection matcher" do
 
+		let( :request ) { @request_factory.get('/v1/api') }
+
+
 		it "fails if the response doesn't have a content type" do
-			response = Rack::MockResponse.new( 204, {}, '' )
+			response = request.response
 
 			expect {
 				expect( response ).to have_json_collection
@@ -376,7 +480,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 		it "fails if the response doesn't have an 'application/json' content type" do
-			response = Rack::MockResponse.new( 200, { 'content-type' => 'text/plain' }, 'Stuff.' )
+			response = request.response
+			response.content_type = 'text/plain'
+			response.body = 'Stuff.'
 
 			expect {
 				expect( response ).to have_json_collection
@@ -385,7 +491,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 		it "fails if the response body doesn't contain valid JSON" do
-			response = Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '<' )
+			response = request.response
+			response.content_type = 'application/json'
+			response.body = '<'
 
 			expect {
 				expect( response ).to have_json_collection
@@ -394,7 +502,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 		it "fails if the response body isn't an Array" do
-			response = Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '{}' )
+			response = request.response
+			response.content_type = 'application/json'
+			response.body = '{}'
 
 			expect {
 				expect( response ).to have_json_collection
@@ -403,7 +513,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 		it "fails if the response body isn't an Array of Objects" do
-			response = Rack::MockResponse.new( 200, { 'content-type' => 'application/json' }, '[[], []]' )
+			response = request.response
+			response.content_type = 'application/json'
+			response.body = '[[],[]]'
 
 			expect {
 				expect( response ).to have_json_collection
@@ -414,11 +526,9 @@ RSpec.describe( Strelka::Testing ) do
 		context "with no additional criteria" do
 
 			it "passes for a response that has a JSON array of objects" do
-				response = Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{}, {}, {}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{},{},{}]'
 
 				expect {
 					expect( response ).to have_json_collection
@@ -431,11 +541,10 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a set of IDs to match" do
 
 			let( :response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{"id": 11}, {"id": 19}, {"id": 5}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{"id": 11}, {"id": 19}, {"id": 5}]'
+				return response
 			end
 
 
@@ -447,11 +556,9 @@ RSpec.describe( Strelka::Testing ) do
 
 
 			it "fails for a response whose objects don't have ID fields" do
-				response = Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{"size": 11}, {"size": 19}, {"size": 5}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{"size": 11}, {"size": 19}, {"size": 5}]'
 
 				expect {
 					expect( response ).to have_json_collection.with_ids( 5, 11, 19 )
@@ -485,11 +592,10 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a set of model objects to match" do
 
 			let( :response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{"id": 11}, {"id": 19}, {"id": 5}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{"id": 11}, {"id": 19}, {"id": 5}]'
+				return response
 			end
 
 
@@ -530,11 +636,10 @@ RSpec.describe( Strelka::Testing ) do
 		context	"with a set of ordered IDs to match" do
 
 			let( :response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{"id": 11}, {"id": 19}, {"id": 5}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{"id": 11}, {"id": 19}, {"id": 5}]'
+				return response
 			end
 
 
@@ -557,11 +662,11 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a set of fields to require" do
 
 			let( :response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'[{"id": 11, "name": "Chris", "age": 23}, {"id": 19, "name": "Simone", "age": 37}]'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '[{"id": 11, "name": "Chris", "age": 23}, ' +
+					'{"id": 19, "name": "Simone", "age": 37}]'
+				return response
 			end
 
 
@@ -586,9 +691,12 @@ RSpec.describe( Strelka::Testing ) do
 
 	describe "last_response_json_body" do
 
+		let( :request ) { @request_factory.get('/v1/api') }
+
+
 		context "with a non-JSON response" do
 
-			let( :last_response ) { Rack::MockResponse.new( 204, {}, '' ) }
+			let( :last_response ) { request.response }
 
 
 			it "fails due to the have_json_body expectation first" do
@@ -603,11 +711,10 @@ RSpec.describe( Strelka::Testing ) do
 		context "with a JSON response" do
 
 			let( :last_response ) do
-				Rack::MockResponse.new(
-					200,
-					{ 'content-type' => 'application/json' },
-					'{"title":"Ethel the Aardvark"}'
-				)
+				response = request.response
+				response.content_type = 'application/json'
+				response.body = '{"title":"Ethel the Aardvark"}'
+				return response
 			end
 
 

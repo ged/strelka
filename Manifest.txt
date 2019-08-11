@@ -135,6 +135,7 @@ spec/strelka/router_spec.rb
 spec/strelka/session/db_spec.rb
 spec/strelka/session/default_spec.rb
 spec/strelka/session_spec.rb
+spec/strelka/testing_spec.rb
 spec/strelka/websocketserver/heartbeat_spec.rb
 spec/strelka/websocketserver/routing_spec.rb
 spec/strelka/websocketserver_spec.rb
