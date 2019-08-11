@@ -200,6 +200,39 @@ RSpec.describe( Strelka::Testing ) do
 				}.to_not raise_error
 			end
 
+
+			it "passes for a valid JSON-subtype response" do
+				response = request.response
+				response.content_type = 'application/hal+json'
+				response.body = '{}'
+
+				expect {
+					expect( response ).to have_json_body
+				}.to_not raise_error
+			end
+
+
+			it "passes for a valid JSON vendor-subtype response" do
+				response = request.response
+				response.content_type = 'application/vnd.api+json'
+				response.body = '{}'
+
+				expect {
+					expect( response ).to have_json_body
+				}.to_not raise_error
+			end
+
+
+			it "passes for a valid JSON response that includes a charset" do
+				response = request.response
+				response.content_type = 'application/json; charset=utf-8'
+				response.body = '{}'
+
+				expect {
+					expect( response ).to have_json_body
+				}.to_not raise_error
+			end
+
 		end
 
 

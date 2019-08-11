@@ -363,7 +363,7 @@ module Strelka::Testing
 
 			return fail_with "response's Content-type is %p" % [ content_type ] unless
 				content_type.start_with?( 'application/json' ) ||
-				content_type.match?( %r|\Aapplication/\w+\+json\z| )
+				content_type.match?( %r|\Aapplication/(vnd\.)?\w+\+json\b| )
 
 			return true
 		end
