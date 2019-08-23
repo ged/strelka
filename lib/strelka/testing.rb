@@ -7,6 +7,9 @@ require 'loggability'
 require 'rspec'
 require 'rspec/matchers'
 
+require 'strelka' unless defined?( Strelka )
+
+
 # A collection of testing functions and classes for use in Strelka handlers
 # and libraries.
 module Strelka::Testing
