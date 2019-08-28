@@ -12,7 +12,13 @@ module Strelka::CLI::Start
 	desc 'Start a Strelka app'
 	arg :GEMNAME, :optional
 	arg :APPNAME
+
 	command :start do |cmd|
+
+		cmd.flag [ :n, :number ],
+			desc: 'Spin up this many handlers via fork()',
+			default_value: 1,
+			type: Integer
 
 		cmd.action do |global, options, args|
 			appname = args.pop
@@ -31,7 +37,12 @@ module Strelka::CLI::Start
 			Strelka::CLI.prompt.say "Starting %s (%p)." % [ appname, app ]
 			Strelka.load_config( global.config ) if global.config
 			unless_dryrun( "starting the app" ) do
-				app.run
+				if options.number == 1
+					app.run
+				else
+					options.number.times { fork { app.run } }
+					Process.waitall
+				end
 			end
 		end
 	end
