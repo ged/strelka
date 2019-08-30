@@ -149,21 +149,21 @@ require 'strelka/authprovider'
 #
 #    no_perms_for '/login'
 #
-# Incoming requests are matched against +require_perms_for+ patterns, and the union
-# of all matching permissions is gathered, then any +no_auth_for+ patterns
-# are used to remove permissions from that set.
+# Incoming requests are matched against +require_perms_for+ patterns, and the union of all
+# matching permissions is gathered, then any +no_auth_for+ patterns are used to remove permissions
+# from that set.
 #
 # If no require_perms_for patterns are declared, authorization is not checked, unless there is
 # at least one no_perms_for pattern, in which case all requests that don't match the negative
 # patterns are checked (with the permission set to the ID of the app).
 #
-# Authorization will be checked once authentication has succeeded. It will be called with at least the
-# credentials object returned from the authentication stage and the request object. Some AuthProviders
-# may opt to return authentication credentials as a User object of some kind (e.g., a database row,
-# LDAP entry, model object, etc.), but the simpler ones just return the login of the authenticated
-# +user+. The AuthProvider may also furnish additional useful arguments such as a database handle,
-# permission objects, etc. to your authorization block. See the documentation for your chosen
-# AuthProvider for details.
+# Authorization will be checked once authentication has succeeded. It will be called with at least
+# the credentials object returned from the authentication stage and the request object. Some
+# AuthProviders may opt to return authentication credentials as a User object of some kind (e.g.,
+# a database row, LDAP entry, model object, etc.), but the simpler ones just return the login of
+# the authenticated +user+. The AuthProvider may also furnish additional useful arguments such as
+# a database handle, permission objects, etc. to your authorization block. See the documentation
+# for your chosen AuthProvider for details.
 #
 #
 # == Customizing Failure
