@@ -5,7 +5,6 @@ Enhancements:
 - Add spec matchers for matching JSON entity bodies
 - Allow a block to be passed when loading a plugin
 - Fix up to work under frozen-string-literals mode
-- Add setup subcommand to bin/strelka
 - Rewrite the WebSocketServer to be easier to use and offer some common facilities
   for managing connections, broadcasting to them, etc.
 - Update the restresources plugin for Sequel 5.0
