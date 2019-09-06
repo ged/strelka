@@ -3,8 +3,8 @@ packages:
   - ruby
   - rubygem-gems
   - rubygem-rake
-  - zeromq
-  - czmq
+  - libzmq4
+  - czmq4
 sources:
   - hg+https://hg.sr.ht/~ged/Strelka
 tasks:
