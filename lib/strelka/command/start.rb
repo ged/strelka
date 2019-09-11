@@ -15,6 +15,13 @@ module Strelka::CLI::Start
 
 	command :start do |cmd|
 
+		cmd.switch [:I, :isolate],
+			desc: "Run in a sandboxed environment",
+			long_desc: %{Run the app inside a sandbox using the Isolate gem. This is not
+				installed by default, so you'll need to ensure it's installed before
+				using this option.
+			},
+			negatable: false
 		cmd.flag [ :n, :number ],
 			desc: 'Spin up this many handlers via fork()',
 			default_value: 1,
@@ -23,6 +30,10 @@ module Strelka::CLI::Start
 		cmd.action do |global, options, args|
 			appname = args.pop
 			gemname = args.pop
+
+			if options.isolate
+				require 'isolate/now'
+			end
 
 			gem( gemname ) if gemname
 

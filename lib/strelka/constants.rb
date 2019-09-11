@@ -13,6 +13,7 @@ module Strelka::Constants
 	# Import Mongrel2's constants, too
 	include Mongrel2::Constants
 
+
 	# Extend Mongrel2's HTTP constants collection
 	module HTTP
 		include Mongrel2::Constants::HTTP

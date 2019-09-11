@@ -32,8 +32,10 @@ class Strelka::AuthProvider
 	       Pluggability,
 	       Strelka::AbstractClass,
 	       Strelka::Delegation
-	include Strelka::Constants,
+
+	prepend Strelka::Constants,
 	        Strelka::ResponseHelpers
+
 
 	# Loggability API -- set up logging under the 'strelka' log host
 	log_to :strelka
