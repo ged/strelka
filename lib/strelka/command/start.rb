@@ -3,6 +3,7 @@
 # frozen-string-literal: true
 
 require 'strelka/cli' unless defined?( Strelka::CLI )
+require 'strelka/multirunner'
 
 
 # Command to start a Strelka application
@@ -51,8 +52,7 @@ module Strelka::CLI::Start
 				if options.number == 1
 					app.run
 				else
-					options.number.times { fork { app.run } }
-					Process.waitall
+					Strelka::MultiRunner.new( app, options.number ).run
 				end
 			end
 		end

@@ -73,6 +73,7 @@ lib/strelka/httpresponse/negotiation.rb
 lib/strelka/httpresponse/session.rb
 lib/strelka/mixins.rb
 lib/strelka/multipartparser.rb
+lib/strelka/multirunner.rb
 lib/strelka/paramvalidator.rb
 lib/strelka/plugins.rb
 lib/strelka/router.rb
@@ -81,6 +82,7 @@ lib/strelka/router/exclusive.rb
 lib/strelka/session.rb
 lib/strelka/session/db.rb
 lib/strelka/session/default.rb
+lib/strelka/signal_handling.rb
 lib/strelka/testing.rb
 lib/strelka/websocketserver.rb
 lib/strelka/websocketserver/heartbeat.rb
