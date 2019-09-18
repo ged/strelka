@@ -194,28 +194,28 @@ module Strelka::Testing
 	#
 	# Expect that the response consists of JSON of some sort:
 	#
-	#   expect( last_response ).to have_json_body
+	#   expect( response ).to have_json_body
 	#
 	# Expect that it's a JSON body that deserializes as an Object:
 	#
-	#   expect( last_response ).to have_json_body( Object )
+	#   expect( response ).to have_json_body( Object )
 	#   # -or-
-	#   expect( last_response ).to have_json_body( Hash )
+	#   expect( response ).to have_json_body( Hash )
 	#
 	# Expect that it's a JSON body that deserializes as an Array:
 	#
-	#   expect( last_response ).to have_json_body( Array )
+	#   expect( response ).to have_json_body( Array )
 	#
 	# Expect that it's a JSON body that deserializes as an Object that has
 	# expected keys:
 	#
-	#   expect( last_response ).to have_json_body( Object ).
+	#   expect( response ).to have_json_body( Object ).
 	#       that_includes( :id, :first_name, :last_name )
 	#
 	# Expect that it's a JSON body that deserializes as an Object that has
 	# expected keys and values:
 	#
-	#   expect( last_response ).to have_json_body( Object ).
+	#   expect( response ).to have_json_body( Object ).
 	#       that_includes(
 	#           id: 118,
 	#           first_name: 'Princess',
@@ -224,7 +224,7 @@ module Strelka::Testing
 	#
 	# Expect that it's a JSON body that has other expected stuff:
 	#
-	#   expect( last_response ).to have_json_body( Object ).
+	#   expect( response ).to have_json_body( Object ).
 	#       that_includes(
 	#           last_name: a_string_matching(/humperdink/i),
 	#           profile: a_hash_including(:age, :eyecolor, :tracking_ability)
@@ -232,7 +232,7 @@ module Strelka::Testing
 	#
 	# Expect a JSON Array with objects that all match the criteria:
 	#
-	#   expect( last_response ).to have_json_body( Array ).
+	#   expect( response ).to have_json_body( Array ).
 	#       of_lenth( 20 ).
 	#       and( all( be_an(Integer) ) )
 	#
@@ -430,43 +430,43 @@ module Strelka::Testing
 	#
 	# Expect that the response is a JSON Array of Objects:
 	#
-	#   expect( last_response ).to have_json_collection
+	#   expect( response ).to have_json_collection
 	#
 	# Expect that there be 4 Objects in the collection:
 	#
-	#   expect( last_response ).to have_json_collection.of_length( 4 )
+	#   expect( response ).to have_json_collection.of_length( 4 )
 	#
 	# Expect that the collection's objects each have an `id` field with the specified
 	# IDs:
 	#
-	#   expect( last_response ).to have_json_collection.with_ids( 3, 6, 11, 14 )
+	#   expect( response ).to have_json_collection.with_ids( 3, 6, 11, 14 )
 	#   # -or- with an Array of IDs (no need to splat them)
 	#   ids = [3, 6, 11, 14]
-	#   expect( last_response ).to have_json_collection.with_ids( ids )
+	#   expect( response ).to have_json_collection.with_ids( ids )
 	#
 	# Expect that the collection's objects have the same IDs as an Array of model
 	# objects (or other objects that respond to #pk):
 	#
 	#   payments = payment_fixture_factory.take( 4 )
-	#   expect( last_response ).to have_json_collection.
+	#   expect( response ).to have_json_collection.
 	#       with_same_ids_as( payments )
 	#
 	# Expect that the collection's objects have the same IDs as an Array of Hashes with
 	# `:id` fields:
 	#
 	#   payment_rows = payments_table.where( sender_id: 71524 ).all
-	#   expect( last_response ).to have_json_collection.
+	#   expect( response ).to have_json_collection.
 	#       with_same_ids_as( payment_rows )
 	#
 	# Expect that the collection's objects appear in the same order as the source Array:
 	#
 	#   payments = payment_fixture_factory.take( 4 )
-	#   expect( last_response ).to have_json_collection.
+	#   expect( response ).to have_json_collection.
 	#       with_same_ids_as( payments ).in_same_order
 	#
 	# Add aggregate matchers for each object in the collection:
 	#
-	#   expect( last_response ).to have_json_collection.
+	#   expect( response ).to have_json_collection.
 	#       with_same_ids_as( payments ).
 	#       and_all( include(amount_cents: a_value > 0) )
 	#
@@ -620,15 +620,10 @@ module Strelka::Testing
 	end
 
 
-	### Parse the body of the last response and return it as a Ruby object.
-	def last_response_json_body( expected_type=nil )
-		@have_json_body_matcher ||= begin
-			matcher = have_json_body( expected_type )
-			expect( last_response ).to( matcher )
-			matcher
-		end
-
-		return @have_json_body_matcher.parsed_response_body
+	### Parse the body of the given +response+ and return it as a Ruby object.
+	def response_json_body( response )
+		response.body.rewind
+		Yajl::Parser.parse( response.body, check_utf8: true, symbolize_keys: true )
 	end
 
 end # module Strelka::Testing

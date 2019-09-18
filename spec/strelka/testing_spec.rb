@@ -722,48 +722,21 @@ RSpec.describe( Strelka::Testing ) do
 	end
 
 
-	describe "last_response_json_body" do
+	describe "response_json_body" do
 
 		let( :request ) { @request_factory.get('/v1/api') }
 
-
-		context "with a non-JSON response" do
-
-			let( :last_response ) { request.response }
-
-
-			it "fails due to the have_json_body expectation first" do
-				expect {
-					expect( last_response_json_body[:title] ).to eq( 'Ethel the Aardvark' )
-				}.to fail_matching( /doesn't have a content-type/i )
-			end
-
+		let( :response ) do
+			response = request.response
+			response.content_type = 'application/json'
+			response.body = StringIO.new( '{"title":"Ethel the Aardvark"}' )
+			return response
 		end
 
 
-		context "with a JSON response" do
-
-			let( :last_response ) do
-				response = request.response
-				response.content_type = 'application/json'
-				response.body = '{"title":"Ethel the Aardvark"}'
-				return response
-			end
-
-
-			it "returns the JSON body if the inner expectation passes" do
-				expect {
-					expect( last_response_json_body[:title] ).to eq( 'Ethel the Aardvark' )
-				}.to_not raise_error()
-			end
-
-
-			it "fails if the outer expectation fails" do
-				expect {
-					expect( last_response_json_body ).to be_empty
-				}.to fail_matching( /empty\?/ )
-			end
-
+		it "returns the JSON body as a Hash with Symbol keys" do
+			expect( response_json_body(response) ).to be_a( Hash ).
+				and( include(title: "Ethel the Aardvark") )
 		end
 
 	end
