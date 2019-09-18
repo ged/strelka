@@ -22,7 +22,7 @@ module Strelka
 	extend Loggability
 
 	# Library version constant
-	VERSION = '0.16.0'
+	VERSION = '0.17.0'
 
 	# Version-control revision constant
 	REVISION = %q$Revision$
