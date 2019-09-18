@@ -361,11 +361,15 @@ module Strelka::HTTPResponse::Negotiation
 		end
 
 		self.log.debug "  successfully transformed: %p! Setting up response." % [ new_body.class ]
-		stringifiers = Strelka::HTTPResponse::Negotiation.stringifiers
-		if stringifiers.key?( mimetype )
-			new_body = stringifiers[ mimetype ].call( new_body )
+		unless new_body.is_a?( String )
+			stringifiers = Strelka::HTTPResponse::Negotiation.stringifiers
+			if stringifiers.key?( mimetype )
+				new_body = stringifiers[ mimetype ].call( new_body )
+			else
+				self.log.debug "    no stringifier registered for %p" % [ mimetype ]
+			end
 		else
-			self.log.debug "    no stringifier registered for %p" % [ mimetype ]
+			self.log.debug "  body is already a String"
 		end
 
 		self.body = new_body
