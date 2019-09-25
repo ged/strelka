@@ -70,6 +70,7 @@ class Strelka::MultiRunner
 	### Start the handlers using fork().
 	def spawn_children
 		self.number.times do
+			Strelka.call_before_fork_hooks
 			pid = Process.fork do
 				Process.setpgrp
 				self.app_class.run

@@ -189,5 +189,19 @@ RSpec.describe Strelka do
 	end
 
 
+	it "provides a way to register blocks that should run before a fork" do
+		callback_ran = false
+		Strelka.before_fork { callback_ran = true }
+		Strelka.call_before_fork_hooks
+
+		expect( callback_ran ).to be( true )
+	end
+
+	it "raises an exception if .before_fork is called without a block" do
+		expect {
+			Strelka.before_fork
+		}.to raise_error( LocalJumpError, /no block given/i )
+	end
+
 end
 

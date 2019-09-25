@@ -22,7 +22,7 @@ module Strelka
 	extend Loggability
 
 	# Library version constant
-	VERSION = '0.17.0'
+	VERSION = '0.18.0'
 
 	# Version-control revision constant
 	REVISION = %q$Revision$
@@ -78,6 +78,11 @@ module Strelka
 	@after_configure_hooks = Set.new
 
 	##
+	# An Array of callbacks to be run before forking a handler process
+	singleton_attr_reader :before_fork_hooks
+	@before_fork_hooks = Set.new
+
+	##
 	# True if the after_configure hooks have already (started to) run.
 	singleton_predicate_reader :after_configure_hooks_run
 	@after_configure_hooks_run = false
@@ -120,6 +125,25 @@ module Strelka
 			self.log.debug "    %s line %s..." % hook.source_location
 			hook.call
 		end
+	end
+
+
+	### Call the before-fork hooks.
+	def self::call_before_fork_hooks
+		self.log.debug "  calling %d before-fork hooks" % [ self.before_fork_hooks.length ]
+
+		self.before_fork_hooks.to_a.each do |hook|
+			self.log.debug "    %s line %s..." % hook.source_location
+			hook.call
+		end
+	end
+
+
+	### Register a callback to be run before forking a Strelka::Handler
+	### subprocess.
+	def self::before_fork( &block )
+		raise LocalJumpError, "no block given" unless block
+		self.before_fork_hooks << block
 	end
 
 
