@@ -5,6 +5,7 @@ highline
 hoe
 hoe-deveiate
 inversion
+isolate
 loggability
 mongrel2
 pluggability
