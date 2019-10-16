@@ -5,7 +5,7 @@
 require 'strelka' unless defined?( Strelka )
 require 'strelka/signal_handling'
 
-# Load multiple simulatneous Strelka handlers (of a single type) with
+# Load multiple simultaneous Strelka handlers (of a single type) with
 # proper signal handling.
 #
 class Strelka::MultiRunner
@@ -53,7 +53,9 @@ class Strelka::MultiRunner
 
 		self.log.debug "Starting multirunner loop..."
 		self.spawn_children
-		self.wait_for_signals while self.running
+		while self.running
+			self.reap_children if self.wait_for_signals
+		end
 		self.log.debug "Ending multirunner."
 
 		# Restore the default signal handlers
@@ -81,16 +83,37 @@ class Strelka::MultiRunner
 	end
 
 
-	### Wait on the child associated with the given +pid+, deleting it from the
-	### running tasks Hash if successful.
-	def reap_children( signal )
-		self.handler_pids.dup.each do |pid|
-			self.log.debug "  sending %p to pid %p" % [ signal, pid ]
-			Process.kill( signal, pid )
-			pid, status = Process.waitpid2( pid, Process::WUNTRACED )
-			self.log.debug "  waitpid2 returned: [ %p, %p ]" % [ pid, status ]
+	### Clean up after any children that have died.
+	def reap_children
+		pid, status = Process.waitpid2( -1, Process::WNOHANG|Process::WUNTRACED )
+		self.log.debug "  waitpid2 returned: [ %p, %p ]" % [ pid, status ]
+		while pid
 			self.handler_pids.delete( pid )
+			pid, status = Process.waitpid2( -1, Process::WNOHANG|Process::WUNTRACED )
+			self.log.debug "  waitpid2 returned: [ %p, %p ]" % [ pid, status ]
 		end
+	end
+
+
+	### Kill all current children with the specified +signal+. Returns
+	### +true+ if the signal was sent to one or more children.
+	def kill_children( signal=:TERM )
+		return false if self.handler_pids.empty?
+
+		self.log.info "Sending %s signal to %d task pids: %p." %
+			 [ signal, self.handler_pids.length, self.handler_pids ]
+		self.handler_pids.each do |pid|
+			begin
+				Process.kill( signal, pid )
+			rescue Errno::ESRCH => err
+				self.log.error "%p when trying to %s child %d: %s" %
+					[ err.class, signal, pid, err.message ]
+			end
+		end
+
+		return true
+	rescue Errno::ESRCH
+		self.log.debug "Ignoring signals to unreaped children."
 	end
 
 
@@ -101,7 +124,7 @@ class Strelka::MultiRunner
 		when :INT, :TERM, :QUIT
 			if @running
 				self.log.warn "%s signal: graceful shutdown" % [ sig ]
-				self.reap_children( sig )
+				self.kill_children( sig )
 				@running = false
 			else
 				self.ignore_signals
