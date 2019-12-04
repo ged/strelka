@@ -245,18 +245,6 @@ RSpec.describe Strelka::App do
 		expect( @app ).to be_in_devmode()
 	end
 
-	it "configures itself to be in 'developer mode' if debugging is enabled" do
-		debugsetting = $DEBUG
-
-		begin
-			$DEBUG = true
-			@app.configure
-			expect( @app ).to be_in_devmode()
-		ensure
-			$DEBUG = debugsetting
-		end
-	end
-
 	it "closes async uploads with a 413 Request Entity Too Large by default" do
 		@req.headers.x_mongrel2_upload_start = 'an/uploaded/file/path'
 

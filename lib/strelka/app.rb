@@ -32,7 +32,7 @@ class Strelka::App < Mongrel2::Handler
 
 		##
 		# 'Developer mode' flag.
-		setting :devmode, default: true
+		setting :devmode, default: false
 
 	end
 
@@ -40,7 +40,6 @@ class Strelka::App < Mongrel2::Handler
 	# Class instance variables
 	@devmode          = false
 	@default_type     = nil
-	@loading_file     = nil
 	@subclasses       = Hash.new {|h,k| h[k] = [] }
 
 
@@ -54,7 +53,7 @@ class Strelka::App < Mongrel2::Handler
 	### Developer mode is mostly informational by default (it just makes logging more
 	### verbose), but plugins and such might alter their behavior based on this setting.
 	def self::devmode?
-		return @devmode || $DEBUG
+		return @devmode
 	end
 	singleton_method_alias :in_devmode?, :devmode?
 
