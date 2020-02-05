@@ -244,7 +244,7 @@ module Strelka
 			newhash = {}
 
 			hash.each do |key,val|
-				keysym = key.to_s.dup.untaint.to_sym
+				keysym = key.to_s.dup.to_sym
 
 				if val.is_a?( Hash )
 					newhash[ keysym ] = symbolify_keys( val )

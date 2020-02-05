@@ -79,7 +79,7 @@ class Strelka::Cookie
 				raise Strelka::ParseError, "malformed cookie pair: %p" % [ cookie_pair ]
 
 			# self.log.debug "  matched cookie: %p" % [ match ]
-			name = match[:cookie_name].untaint
+			name = match[:cookie_name]
 			value = match[:cookie_value]
 			value = self.dequote( value ) if value.start_with?( DQUOTE )
 			value = nil if value.empty?

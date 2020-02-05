@@ -26,10 +26,7 @@ require 'strelka/app' unless defined?( Strelka::App )
 #	validator.add( :feedback, :printable, "Customer Feedback" )
 #	validator.override( :email, :printable, "Your Email Address" )
 #
-#	# Untaint all parameter values which match their constraints
-#	validate.untaint_all_constraints = true
-#
-#	# Now pass in tainted values in a hash (e.g., from an HTML form)
+#	# Now pass in values in a hash (e.g., from an HTML form)
 #	validator.validate( req.params )
 #
 #	# Now if there weren't any errors, use some form values to fill out the
@@ -79,7 +76,7 @@ class Strelka::ParamValidator
 
 
 		# Flags that are passed as Symbols when declaring a parameter
-		FLAGS = [ :required, :untaint, :multiple ]
+		FLAGS = [ :required, :multiple ]
 
 		# Map of constraint specification types to their equivalent Constraint class.
 		TYPES = { Proc => self }
@@ -124,7 +121,6 @@ class Strelka::ParamValidator
 			@description = args.shift if args.first.is_a?( String )
 
 			@required	 = args.include?( :required )
-			@untaint	 = args.include?( :untaint )
 			@multiple	 = args.include?( :multiple )
 		end
 
@@ -151,19 +147,13 @@ class Strelka::ParamValidator
 		# order for the parameters to be valid.
 		attr_predicate :required?
 
-		##
-		# Returns true if the constraint will also untaint its result before returning it.
-		attr_predicate :untaint?
-
 
 		### Check the given value against the constraint and return the result if it passes.
-		def apply( value, force_untaint=false )
-			untaint = self.untaint? || force_untaint
-
+		def apply( value )
 			if self.multiple?
-				return self.check_multiple( value, untaint )
+				return self.check_multiple( value )
 			else
-				return self.check( value, untaint )
+				return self.check( value )
 			end
 		end
 
@@ -190,7 +180,6 @@ class Strelka::ParamValidator
 			flags = []
 			flags << 'required' if self.required?
 			flags << 'multiple' if self.multiple?
-			flags << 'untaint' if self.untaint?
 
 			desc << " (%s)" % [ flags.join(',') ] unless flags.empty?
 
@@ -218,21 +207,20 @@ class Strelka::ParamValidator
 		### Check the specified value against the constraint and return the results. By
 		### default, this just calls to_proc and the block and calls the result with the
 		### value as its argument.
-		def check( value, untaint )
+		def check( value )
 			return self.block.to_proc.call( value ) if self.block
-			value.untaint if untaint && value.respond_to?( :untaint )
 			return value
 		end
 
 
 		### Check the given +values+ against the constraint and return the results if
 		### all of them succeed.
-		def check_multiple( values, untaint )
+		def check_multiple( values )
 			values = [ values ] unless values.is_a?( Array )
 			results = []
 
 			values.each do |value|
-				result = self.check( value, untaint ) or return nil
+				result = self.check( value ) or return nil
 				results << result
 			end
 
@@ -280,38 +268,35 @@ class Strelka::ParamValidator
 
 		### Check the +value+ against the regular expression and return its
 		### match groups if successful.
-		def check( value, untaint )
+		def check( value )
 			self.log.debug "Validating %p via regexp %p" % [ value, self.pattern ]
 			match = self.pattern.match( value.to_s ) or return nil
 
 			if match.captures.empty?
 				self.log.debug "  no captures, using whole match: %p" % [match[0]]
-				return super( match[0], untaint )
+				return super( match[0] )
 
 			elsif match.names.length > 1
 				self.log.debug "  extracting hash of named captures: %p" % [ match.names ]
-				rhash = self.matched_hash( match, untaint )
-				return super( rhash, untaint )
+				rhash = self.matched_hash( match )
+				return super( rhash )
 
 			elsif match.captures.length == 1
 				self.log.debug "  extracting one capture: %p" % [match.captures.first]
-				return super( match.captures.first, untaint )
+				return super( match.captures.first )
 
 			else
 				self.log.debug "  extracting multiple captures: %p" % [match.captures]
 				values = match.captures
-				values.map {|val| val.untaint if val } if untaint
-				return super( values, untaint )
+				return super( values )
 			end
 		end
 
 
-		### Return a Hash of the given +match+ object's named captures, untainting the values
-		### if +untaint+ is true.
-		def matched_hash( match, untaint )
+		### Return a Hash of the given +match+ object's named captures.
+		def matched_hash( match )
 			return match.names.inject( {} ) do |accum,name|
 				value = match[ name ]
-				value.untaint if untaint && value
 				accum[ name.to_sym ] = value
 				accum
 			end
@@ -566,7 +551,6 @@ class Strelka::ParamValidator
 	def initialize
 		@constraints = {}
 		@fields      = {}
-		@untaint_all = false
 
 		self.reset
 	end
@@ -590,12 +574,6 @@ class Strelka::ParamValidator
 
 	# The Hash of raw field data (if validation has occurred)
 	attr_reader :fields
-
-	##
-	# Global untainting flag
-	attr_predicate_accessor :untaint_all?
-	alias_method :untaint_all_constraints=, :untaint_all=
-	alias_method :untaint_all_constraints?, :untaint_all?
 
 	##
 	# Returns +true+ if the paramvalidator has been given parameters to validate. Adding or
@@ -680,13 +658,12 @@ class Strelka::ParamValidator
 			constraint.required?
 		end
 
-		return "#<%p:0x%016x %s, profile: [required: %s, optional: %s] global untaint: %s>" % [
+		return "#<%p:0x%016x %s, profile: [required: %s, optional: %s]>" % [
 			self.class,
 			self.object_id / 2,
 			self.to_s,
 			required.empty? ? "(none)" : required.map( &:last ).map( &:name ).join(','),
 			optional.empty? ? "(none)" : optional.map( &:last ).map( &:name ).join(','),
-			self.untaint_all? ? "enabled" : "disabled",
 		]
 	end
 
@@ -754,7 +731,7 @@ class Strelka::ParamValidator
 	### result.
 	def apply_constraint( constraint, value )
 		if !( value.nil? || value == '' )
-			result = constraint.apply( value, self.untaint_all? )
+			result = constraint.apply( value )
 
 			if !result.nil?
 				self.log.debug "  constraint for %p passed: %p" % [ constraint.name, result ]
@@ -976,7 +953,7 @@ class Strelka::ParamValidator
 	### Build a deep hash out of the given parameter +value+
 	def build_deep_hash( value, hash, levels )
 		if levels.length == 0
-			value.untaint
+			value
 		elsif hash.nil?
 			{ levels.first => build_deep_hash(value, nil, levels[1..-1]) }
 		else
@@ -992,11 +969,11 @@ class Strelka::ParamValidator
 		if main.nil?
 			return []
 		elsif trailing
-			return [key.untaint]
+			return [key]
 		elsif bracketed
-			return [main.untaint] + bracketed.slice(1...-1).split('][').collect {|k| k.untaint }
+			return [main] + bracketed.slice(1...-1).split('][')
 		else
-			return [main.untaint]
+			return [main]
 		end
 	end
 

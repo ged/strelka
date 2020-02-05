@@ -279,16 +279,6 @@ RSpec.describe Strelka, "mixins" do
 			expect( copy.default_proc ).to eq( original.default_proc )
 		end
 
-		it "preserves taintedness of copied objects" do
-			original = Object.new
-			original.taint
-
-			copy = Strelka::DataUtilities.deep_copy( original )
-
-			expect( copy ).to_not be( original )
-			expect( copy ).to be_tainted()
-		end
-
 		it "preserves frozen-ness of copied objects" do
 			original = Object.new
 			original.freeze

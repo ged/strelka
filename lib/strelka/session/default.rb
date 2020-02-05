@@ -78,7 +78,7 @@ class Strelka::Session::Default < Strelka::Session
 		cookie = request.cookies[ self.cookie_name ] or return nil
 
 		if cookie.value =~ /^([[:xdigit:]]+)$/i
-			return $1.untaint
+			return $1
 		else
 			self.log.warn "Request with a malformed session cookie: %p" % [ request ]
 			return nil

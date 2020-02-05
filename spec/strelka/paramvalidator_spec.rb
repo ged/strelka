@@ -16,12 +16,6 @@ require 'strelka/paramvalidator'
 #####################################################################
 RSpec.describe Strelka::ParamValidator do
 
-	# Utility function to make tainted frozen strings out of frozen string literals
-	def tainted( string )
-		return ( +string ).taint.freeze
-	end
-
-
 	before(:each) do
 		@validator = Strelka::ParamValidator.new
 	end
@@ -136,16 +130,6 @@ RSpec.describe Strelka::ParamValidator do
 			expect( @validator ).to_not be_okay()
 			expect( @validator ).to have_errors()
 			expect( @validator.error_messages.first ).to match( /foo/i )
-		end
-
-		it "untaints valid args if told to do so" do
-			tainted_one = tainted( "1" )
-
-			@validator.add( :number, /^\d+$/, :untaint )
-			@validator.validate( 'number' => tainted_one )
-
-			expect( @validator[:number] ).to eq( "1" )
-			expect( @validator[:number].tainted? ).to be_falsey()
 		end
 
 		it "knows the names of fields that were required but missing from the parameters" do
@@ -340,38 +324,6 @@ RSpec.describe Strelka::ParamValidator do
 			})
 		end
 
-		it "untaints both keys and values in complex hash fields if untainting is turned on" do
-			@validator.add( 'recipe[ingredient][rarity]', /^([\w\-]+)$/, :required )
-			@validator.add( 'recipe[ingredient][name]', :string )
-			@validator.add( 'recipe[ingredient][cost]', :string )
-			@validator.add( 'recipe[yield]', :string )
-			@validator.untaint_all_constraints = true
-
-			args = {
-				tainted('recipe[ingredient][rarity]') => tainted('super-rare'),
-				tainted('recipe[ingredient][name]') => tainted('nutmeg'),
-				tainted('recipe[ingredient][cost]') => tainted('$0.18'),
-				tainted('recipe[yield]') => tainted('2 loaves'),
-			}
-			@validator.validate( args )
-
-			expect( @validator.valid ).to eq({
-				'recipe' => {
-					'ingredient' => { 'name' => 'nutmeg', 'cost' => '$0.18', 'rarity' => 'super-rare' },
-					'yield' => '2 loaves'
-				}
-			})
-
-			@validator.valid.keys.each {|key| expect(key).to_not be_tainted() }
-			@validator.valid.values.each {|key| expect(key).to_not be_tainted() }
-			@validator.valid['recipe'].keys.each {|key| expect(key).to_not be_tainted() }
-			@validator.valid['recipe']['ingredient'].keys.each {|key| expect(key).to_not be_tainted() }
-			expect( @validator.valid['recipe']['yield'] ).to_not be_tainted()
-			expect( @validator.valid['recipe']['ingredient']['rarity'] ).to_not be_tainted()
-			expect( @validator.valid['recipe']['ingredient']['name'] ).to_not be_tainted()
-			expect( @validator.valid['recipe']['ingredient']['cost'] ).to_not be_tainted()
-		end
-
 	end # describe "hash parameters"
 
 	describe "merging new parameters" do
@@ -453,12 +405,10 @@ RSpec.describe Strelka::ParamValidator do
 			end
 
 			it "returns the captures with named captures as a Hash" do
-				@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/, :untaint )
-				@validator.validate( 'order_number' => tainted("   JVV-886451300133   ") )
+				@validator.add( :order_number, /(?<category>[[:upper:]]{3})-(?<sku>\d{12})/ )
+				@validator.validate( 'order_number' => "   JVV-886451300133   ".dup )
 
 				expect( @validator[:order_number] ).to eq( {:category => 'JVV', :sku => '886451300133'} )
-				expect( @validator[:order_number][:category] ).to_not be_tainted()
-				expect( @validator[:order_number][:sku] ).to_not be_tainted()
 			end
 
 			it "returns the captures as an array " +
@@ -782,7 +732,7 @@ RSpec.describe Strelka::ParamValidator do
 
 		end
 
-		describe ":date constaints" do
+		describe ":date constraints" do
 
 			before( :each ) do
 				@validator.add( :expires, :date )
@@ -808,7 +758,7 @@ RSpec.describe Strelka::ParamValidator do
 
 		end
 
-		describe ":datetime constaints" do
+		describe ":datetime constraints" do
 
 			before( :each ) do
 				@validator.add( :expires, :datetime )

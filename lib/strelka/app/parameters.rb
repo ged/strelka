@@ -8,11 +8,10 @@ require 'strelka/plugins'
 require 'strelka/paramvalidator'
 
 
-# Parameter validation and untainting for Strelka apps.
+# Parameter validation for Strelka apps.
 #
-# When you include the +:parameters+ plugin, you can declare valid parameters, specify
-# constraints that describe what they should contain, and automatically untaint the incoming
-# values that match.
+# When you include the +:parameters+ plugin, you can declare valid parameters and specify
+# constraints that describe what incoming values should match.
 #
 # == Parameter Declaration
 #
@@ -98,14 +97,6 @@ module Strelka::App::Parameters
 			self.log.debug "New param %p" % [ name ]
 			self.log.debug "  adding parameter %p to %p" % [ name, self.paramvalidator ]
 			self.paramvalidator.add( name, *args, &block )
-		end
-
-
-		### Get/set the untainting flag. If set, all parameters which match their constraints
-		### will also be untainted.
-		def untaint_all_constraints( newval=nil )
-			self.paramvalidator.untaint_all = newval unless newval.nil?
-			return self.paramvalidator.untaint_all?
 		end
 
 

@@ -152,9 +152,6 @@ module Strelka::App::RestResources
 			route = [ options[:prefix], name ].compact.join( '/' )
 			self.log.warn "Route is: %p" % [[ options[:prefix], name ]]
 
-			# Ensure validated parameters are untainted
-			self.untaint_all_constraints
-
 			# Make and install handler methods
 			self.log.debug "  adding readers"
 			self.add_options_handler( route, rsrcobj, options )

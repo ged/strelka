@@ -119,39 +119,13 @@ RSpec.describe Strelka::App::Parameters do
 			end
 
 			it "validates parameters from the request" do
-				req = @request_factory.get( (+'/user/search?username=anheptoh').taint )
+				req = @request_factory.get( (+'/user/search?username=anheptoh') )
 				@app.new.handle( req )
 
 				expect( req.params ).to be_a( Strelka::ParamValidator )
 				expect( req.params ).to be_okay()
 				expect( req.params ).to_not have_errors()
 				expect( req.params[:username] ).to eq( 'anheptoh' )
-				expect( req.params[:username] ).to be_tainted()
-			end
-
-			it "untaints all parameters if global untainting is enabled" do
-				@app.class_eval do
-					untaint_all_constraints true
-				end
-
-				expect( @app.untaint_all_constraints ).to be_truthy()
-				req = @request_factory.get( (+'/user/search?username=shereshnaheth').taint )
-				@app.new.handle( req )
-
-				expect( req.params[:username] ).to eq( 'shereshnaheth' )
-				expect( req.params[:username] ).to_not be_tainted()
-			end
-
-			it "untaints parameters flagged for untainting" do
-				@app.class_eval do
-					param :message, :printable, :untaint
-				end
-
-				req = @request_factory.get( (+'/user/search?message=I+love+the+circus.').taint )
-				@app.new.handle( req )
-
-				expect( req.params[:message] ).to_not be_tainted()
-				expect( req.params[:message] ).to eq( 'I love the circus.' )
 			end
 
 		end
