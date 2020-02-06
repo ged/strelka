@@ -13,7 +13,7 @@ gem 'safe_yaml', '~> 1.0'
 gem 'gli', '~> 2.14'
 
 group( :development ) do
-	gem 'rake-deveiate', '~> 0.5'
+	gem 'rake-deveiate', '~> 0.9'
 	gem 'rspec', '~> 3.8'
 	gem 'simplecov', '~> 0.7'
 	gem 'rdoc-generator-fivefish', '~> 0.1'
